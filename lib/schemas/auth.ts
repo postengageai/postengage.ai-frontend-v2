@@ -6,7 +6,27 @@ export const UserSchema = z.object({
   email: z.string().email(),
   first_name: z.string().min(2).max(50),
   last_name: z.string().min(2).max(50),
+  phone: z.string().nullable(),
+  avatar: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      url: z.string().url(),
+      mime_type: z.string(),
+      size: z.number(),
+      tags: z.array(z.string()),
+      status: z.string(),
+      created_at: z.string(),
+      updated_at: z.string(),
+    })
+    .nullable(),
   is_verified: z.boolean(),
+  status: z.string(),
+  timezone: z.string().nullable(),
+  language: z.string(),
+  role: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
 });
 
 export type User = z.infer<typeof UserSchema>;

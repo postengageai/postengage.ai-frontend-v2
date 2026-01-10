@@ -7,13 +7,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
 import {
   Card,
   CardContent,
@@ -23,19 +17,29 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Camera, Check, Loader2 } from 'lucide-react';
-import { mockUser } from '@/lib/mock/settings-data';
+import { Camera, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { User } from '@/lib/types/settings';
+import { useUserActions, useUserStore } from '@/lib/user/store';
+import { UserApi } from '@/lib/api/user';
+import { ProfileFormSkeleton } from './profile-form-skeleton';
 
 export function ProfileForm() {
-  const [user, setUser] = useState<User>(mockUser);
+  const { user, isLoading: isUserLoading } = useUserStore();
+  const userActions = useUserActions();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Show skeleton while user data is loading
+  if (isUserLoading || !user) {
+    return <ProfileFormSkeleton />;
+  }
+
   const handleInputChange = (field: keyof User, value: string) => {
-    setUser(prev => ({ ...prev, [field]: value }));
+    userActions.updateUser({ [field]: value });
     setHasChanges(true);
     setIsSaved(false);
   };
@@ -44,27 +48,57 @@ export function ProfileForm() {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In production, upload to server and get URL
-      const url = URL.createObjectURL(file);
-      setUser(prev => ({
-        ...prev,
-        avatar: { id: 'new', url },
-      }));
-      setHasChanges(true);
-      setIsSaved(false);
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Upload avatar to server
+        const response = await UserApi.uploadAvatar(file);
+
+        // Update local state with the uploaded media object
+        userActions.updateUser({
+          avatar: response.media,
+        });
+
+        setHasChanges(true);
+        setIsSaved(false);
+      } catch (_error) {
+        setError('Failed to upload avatar. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   const handleSave = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setIsSaved(true);
-    setHasChanges(false);
+    setError(null);
+
+    try {
+      // Prepare update data
+      const updateData = {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone: user.phone,
+        // ...(user.avatar ? { avatar_id: user.avatar.id } : {}),
+      };
+
+      // Call API to update profile
+      const updatedUser = await UserApi.updateProfile(updateData);
+
+      // Update local store with the response
+      userActions.setUser(updatedUser);
+
+      setIsSaved(true);
+      setHasChanges(false);
+    } catch (_error) {
+      setError('Failed to save profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getInitials = () => {
@@ -81,6 +115,15 @@ export function ProfileForm() {
 
   return (
     <div className='space-y-6'>
+      {/* Error Alert */}
+      {error && (
+        <Alert variant='destructive'>
+          <AlertCircle className='h-4 w-4' />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Profile Card */}
       <Card>
         <CardHeader>
@@ -165,37 +208,13 @@ export function ProfileForm() {
             />
           </div>
 
-          <div className='space-y-2'>
-            <Label htmlFor='status'>Status</Label>
-            <Select
-              value={user.status}
-              onValueChange={value => handleInputChange('status', value)}
-            >
-              <SelectTrigger id='status'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='active'>Active</SelectItem>
-                <SelectItem value='inactive'>Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <Separator />
 
           {/* Read-only Fields */}
-          <div className='grid gap-4 sm:grid-cols-2'>
+          <div className='grid'>
             <div className='space-y-2'>
               <Label className='text-muted-foreground'>Email</Label>
               <Input value={user.email} disabled className='bg-muted' />
-            </div>
-            <div className='space-y-2'>
-              <Label className='text-muted-foreground'>Role</Label>
-              <Input
-                value={user.role}
-                disabled
-                className='bg-muted capitalize'
-              />
             </div>
           </div>
 

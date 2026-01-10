@@ -1,3 +1,12 @@
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosHeaders,
+} from 'axios';
+
 export interface SuccessResponse<T = unknown> {
   data: T;
   meta: {
@@ -34,7 +43,7 @@ export interface ApiSuccessResponse<T = unknown> {
   data: T;
   error: null;
   status: number;
-  headers: Headers;
+  headers: AxiosHeaders;
   raw: SuccessResponse<T>;
 }
 
@@ -42,13 +51,13 @@ export interface ApiErrorResponse {
   data: null;
   error: ErrorResponse;
   status: number;
-  headers: Headers;
+  headers: AxiosHeaders;
   raw: ErrorResponse;
 }
 
 export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
-export interface ApiRequestOptions extends RequestInit {
+export interface ApiRequestOptions extends AxiosRequestConfig {
   baseURL?: string;
   timeout?: number;
   retry?: number;
@@ -61,137 +70,181 @@ const DEFAULT_RETRY = 2;
 const DEFAULT_RETRY_DELAY = 1000; // 1 second
 
 export class HttpClient {
+  private axiosInstance: AxiosInstance;
   private baseURL: string;
-  private defaultOptions: ApiRequestOptions;
 
   constructor(baseURL: string, defaultOptions: ApiRequestOptions = {}) {
     this.baseURL = baseURL;
-    this.defaultOptions = {
+
+    this.axiosInstance = axios.create({
+      baseURL,
       timeout: DEFAULT_TIMEOUT,
-      retry: DEFAULT_RETRY,
-      retryDelay: DEFAULT_RETRY_DELAY,
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include', // Include cookies for auth
+      withCredentials: true, // Include cookies for auth
       ...defaultOptions,
-    };
-  }
-
-  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const contentType = response.headers.get('content-type');
-    let rawData: unknown = {};
-
-    if (contentType?.includes('application/json')) {
-      try {
-        rawData = await response.json();
-      } catch {
-        rawData = {};
-      }
-    }
-
-    if (!response.ok) {
-      // Handle backend error response format
-      const errorResponse = rawData as ErrorResponse;
-      throw createAppropriateError(response.status, errorResponse);
-    }
-
-    // Handle backend success response format
-    const successResponse = rawData as SuccessResponse<T>;
-
-    return {
-      data: successResponse.data,
-      error: null,
-      status: response.status,
-      headers: response.headers,
-      raw: successResponse,
-    };
-  }
-
-  private timeout(ms: number): Promise<never> {
-    return new Promise((_, reject) => {
-      setTimeout(() => reject(new TimeoutError()), ms);
     });
+
+    // Request interceptor
+    this.axiosInstance.interceptors.request.use(
+      (config: InternalAxiosRequestConfig) => {
+        // Log request in development
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, {
+            data: config.data,
+            params: config.params,
+          });
+        }
+
+        return config;
+      },
+      (error: AxiosError) => {
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('❌ Request Error:', error);
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => {
+        // Log response in development
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.log(`✅ ${response.status} ${response.config.url}`, {
+            data: response.data,
+          });
+        }
+        return response;
+      },
+      (error: AxiosError) => {
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('❌ Response Error:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            url: error.config?.url,
+          });
+        }
+
+        // Convert Axios error to our ApiError
+        if (error.response) {
+          const status = error.response.status;
+          const errorData = error.response.data as ErrorResponse;
+          throw createAppropriateError(status, errorData);
+        }
+
+        if (error.code === 'ECONNABORTED') {
+          throw new TimeoutError();
+        }
+
+        if (error.code === 'ERR_NETWORK') {
+          throw new NetworkError('Network error', error);
+        }
+
+        throw new NetworkError('Unknown error', error);
+      }
+    );
   }
 
   private async requestWithRetry<T>(
-    url: string,
-    options: ApiRequestOptions,
-    attempt = 1
-  ): Promise<ApiResponse<T>> {
-    const timeoutMs = options.timeout ?? DEFAULT_TIMEOUT;
-    const retryCount = options.retry ?? DEFAULT_RETRY;
-    const retryDelayMs = options.retryDelay ?? DEFAULT_RETRY_DELAY;
-
-    const {
-      timeout: _,
-      retry: __,
-      retryDelay: ___,
-      ...requestOptions
-    } = options;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
+    config: AxiosRequestConfig,
+    retryCount: number = DEFAULT_RETRY,
+    retryDelay: number = DEFAULT_RETRY_DELAY,
+    attempt: number = 1
+  ): Promise<AxiosResponse<SuccessResponse<T>>> {
     try {
-      const response = await fetch(url, {
-        ...requestOptions,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return this.handleResponse<T>(response);
+      const response =
+        await this.axiosInstance.request<SuccessResponse<T>>(config);
+      return response;
     } catch (error) {
-      clearTimeout(timeoutId);
+      const axiosError = error as AxiosError;
 
-      const err = error as { statusCode?: number };
-
-      // Don't retry on auth errors or client errors (4xx)
+      // Don't retry on client errors (4xx) except 429 (Too Many Requests)
       if (
-        typeof err.statusCode === 'number' &&
-        err.statusCode >= 400 &&
-        err.statusCode < 500
+        axiosError.response &&
+        axiosError.response.status >= 400 &&
+        axiosError.response.status < 500 &&
+        axiosError.response.status !== 429
       ) {
         throw error;
       }
 
-      // Don't retry on abort errors
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new TimeoutError();
-      }
-
       // Retry logic
       if (attempt < retryCount) {
-        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
-        return this.requestWithRetry(url, options, attempt + 1);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.requestWithRetry(
+          config,
+          retryCount,
+          retryDelay,
+          attempt + 1
+        );
       }
 
-      throw new NetworkError('Network error', error);
+      throw error;
     }
+  }
+
+  private transformResponse<T>(
+    axiosResponse: AxiosResponse<SuccessResponse<T>>
+  ): ApiSuccessResponse<T> {
+    return {
+      data: axiosResponse.data.data,
+      error: null,
+      status: axiosResponse.status,
+      headers: axiosResponse.headers as AxiosHeaders,
+      raw: axiosResponse.data,
+    };
   }
 
   async request<T = unknown>(
     endpoint: string,
     options: ApiRequestOptions = {}
   ): Promise<ApiResponse<T>> {
-    const mergedOptions: ApiRequestOptions = {
-      ...this.defaultOptions,
-      ...options,
-      headers: {
-        ...this.defaultOptions.headers,
-        ...options.headers,
-      },
+    const {
+      retry = DEFAULT_RETRY,
+      retryDelay = DEFAULT_RETRY_DELAY,
+      ...axiosConfig
+    } = options;
+
+    const config: AxiosRequestConfig = {
+      url: endpoint,
+      ...axiosConfig,
     };
 
-    const url = endpoint.startsWith('http')
-      ? endpoint
-      : `${this.baseURL}${endpoint}`;
-
     try {
-      return await this.requestWithRetry<T>(url, mergedOptions);
+      const response = await this.requestWithRetry<T>(
+        config,
+        retry,
+        retryDelay
+      );
+      return this.transformResponse(response);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
       }
+
+      // Handle Axios errors that weren't converted by interceptor
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const status = error.response.status;
+          const errorData = error.response.data as ErrorResponse;
+          throw createAppropriateError(status, errorData);
+        }
+
+        if (error.code === 'ECONNABORTED') {
+          throw new TimeoutError();
+        }
+
+        if (error.code === 'ERR_NETWORK') {
+          throw new NetworkError('Network error', error);
+        }
+      }
+
       throw new NetworkError('Unknown error', error);
     }
   }
@@ -208,11 +261,7 @@ export class HttpClient {
     data?: unknown,
     options?: ApiRequestOptions
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    return this.request<T>(endpoint, { ...options, method: 'POST', data });
   }
 
   async put<T>(
@@ -220,11 +269,7 @@ export class HttpClient {
     data?: unknown,
     options?: ApiRequestOptions
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    return this.request<T>(endpoint, { ...options, method: 'PUT', data });
   }
 
   async patch<T>(
@@ -232,11 +277,7 @@ export class HttpClient {
     data?: unknown,
     options?: ApiRequestOptions
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    return this.request<T>(endpoint, { ...options, method: 'PATCH', data });
   }
 
   async delete<T>(
