@@ -1,6 +1,7 @@
 'use client';
 
 import type React from 'react';
+import Image from 'next/image';
 
 import {
   MessageCircle,
@@ -189,10 +190,11 @@ export function TriggerCard({
                       key={post.id}
                       className='relative w-12 h-12 rounded-lg overflow-hidden border border-border group'
                     >
-                      <img
+                      <Image
                         src={post.thumbnail || '/placeholder.svg'}
                         alt=''
-                        className='w-full h-full object-cover'
+                        fill
+                        className='object-cover'
                       />
                       <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
                         {postTypeIcons[post.postType]}

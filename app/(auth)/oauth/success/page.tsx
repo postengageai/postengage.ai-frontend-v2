@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+// import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -28,13 +28,13 @@ const mockConnectedAccount = {
 };
 
 export default function OAuthSuccessPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  // const searchParams = useSearchParams();
+  // const router = useRouter();
   const [showAnimation, setShowAnimation] = useState(false);
 
   // In production, this would come from the URL params or API
   const account = mockConnectedAccount;
-  const platform = searchParams.get('platform') || account.platform;
+  // const platform = searchParams.get('platform') || account.platform;
 
   useEffect(() => {
     // Trigger success animation on mount

@@ -17,11 +17,13 @@ import {
 import { FormError } from '@/components/auth/form-error';
 import { AuthApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/auth/store';
+import { useUserActions } from '@/lib/user/store';
 import { ApiError } from '@/lib/http/errors';
 
 export default function LoginPage() {
   const router = useRouter();
   const { actions, errors } = useAuthStore();
+  const userActions = useUserActions();
   const [isLoading, setIsLoading] = useState(false);
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [email, setEmail] = useState('');
@@ -43,13 +45,14 @@ export default function LoginPage() {
       const response = await AuthApi.login({ email, password });
 
       // Update auth store with user data
-      actions.setUser(response.user);
+      userActions.setUser(response.user);
+      actions.setIsAuthenticated(true);
 
       // Redirect to dashboard on success
       router.push('/dashboard');
       router.refresh(); // Refresh to update auth state
     } catch (error: unknown) {
-      console.error('Login error:', error);
+      // console.error('Login error:', error);
 
       // Handle specific error cases
       if (

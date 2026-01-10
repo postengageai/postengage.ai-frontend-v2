@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -34,8 +34,8 @@ import type {
 } from '@/lib/types/automation-builder';
 
 export default function EditAutomationPage() {
-  const params = useParams();
-  const id = params.id as string;
+  // const params = useParams();
+  // const id = params.id as string;
   const router = useRouter();
   const [automation, setAutomation] =
     useState<AutomationBuilder>(mockAutomation);

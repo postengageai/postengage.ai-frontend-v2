@@ -1,10 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { AuthSession, User, AuthActions } from '../schemas/auth';
+import { useRouter, usePathname } from 'next/navigation';
+import { AuthSession, AuthActions } from '../schemas/auth';
 import { ApiError } from '../http/errors';
+import { AuthApi } from '../api/auth';
+import { useUserStore } from '../user/store';
+import { useAuthStore } from './store';
 
-interface AuthState extends AuthSession {
+// Omit user from AuthState as it is managed by UserStore
+interface AuthState extends Omit<AuthSession, 'user'> {
   errors: {
     loginError?: ApiError;
     signupError?: ApiError;
@@ -14,7 +19,7 @@ interface AuthState extends AuthSession {
 }
 
 type AuthAction =
-  | { type: 'SET_USER'; payload: User | null }
+  | { type: 'SET_AUTHENTICATED'; payload: boolean }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_INITIALIZED'; payload: boolean }
   | { type: 'UPDATE_LAST_ACTIVITY' }
@@ -26,9 +31,8 @@ type AuthAction =
     };
 
 const initialState: AuthState = {
-  user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start loading by default
   isInitialized: false,
   lastActivity: undefined,
   errors: {},
@@ -36,12 +40,11 @@ const initialState: AuthState = {
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case 'SET_USER':
+    case 'SET_AUTHENTICATED':
       return {
         ...state,
-        user: action.payload,
-        isAuthenticated: !!action.payload,
-        lastActivity: Date.now(),
+        isAuthenticated: action.payload,
+        lastActivity: action.payload ? Date.now() : undefined,
       };
 
     case 'SET_LOADING':
@@ -65,6 +68,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     case 'CLEAR_AUTH':
       return {
         ...initialState,
+        isLoading: false,
         isInitialized: true,
       };
 
@@ -95,50 +99,77 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const PUBLIC_ROUTES = [
+  '/login',
+  '/signup',
+  '/verify-email',
+  '/forgot-password',
+  '/reset-password',
+  '/', // Landing page often public
+];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setUser } = useUserStore(state => state.actions);
+  const {
+    setIsAuthenticated,
+    setInitialized,
+    setLoading: setAuthLoading,
+  } = useAuthStore(state => state.actions);
 
-  // Initialize auth state from localStorage on mount
+  // Initialize auth state by checking session with backend
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('auth-storage');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.state?.user) {
-          dispatch({ type: 'SET_USER', payload: parsed.state.user });
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load auth state from storage:', error);
-    }
-
-    dispatch({ type: 'SET_INITIALIZED', payload: true });
-  }, []);
-
-  // Persist auth state to localStorage
-  useEffect(() => {
-    if (state.isInitialized) {
+    const initAuth = async () => {
+      setAuthLoading(true);
       try {
-        localStorage.setItem(
-          'auth-storage',
-          JSON.stringify({
-            state: {
-              user: state.user,
-              isAuthenticated: state.isAuthenticated,
-              lastActivity: state.lastActivity,
-            },
-            version: 1,
-          })
-        );
-      } catch (error) {
-        console.warn('Failed to save auth state to storage:', error);
+        const user = await AuthApi.checkAuth();
+        if (user) {
+          setUser(user);
+          setIsAuthenticated(true);
+          dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+
+          // Redirect authenticated users from public routes to dashboard
+          if (PUBLIC_ROUTES.includes(pathname) && pathname !== '/') {
+            router.push('/dashboard');
+          }
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+          dispatch({ type: 'SET_AUTHENTICATED', payload: false });
+
+          // Redirect if not on a public route
+          if (!PUBLIC_ROUTES.includes(pathname)) {
+            router.push('/login');
+          }
+        }
+      } catch (_error) {
+        // console.warn('Failed to check auth status:', _error);
+        setUser(null);
+        setIsAuthenticated(false);
+        dispatch({ type: 'SET_AUTHENTICATED', payload: false });
+
+        if (!PUBLIC_ROUTES.includes(pathname)) {
+          router.push('/login');
+        }
+      } finally {
+        dispatch({ type: 'SET_INITIALIZED', payload: true });
+        dispatch({ type: 'SET_LOADING', payload: false });
+        setInitialized(true);
+        setAuthLoading(false);
       }
-    }
+    };
+
+    initAuth();
   }, [
-    state.user,
-    state.isAuthenticated,
-    state.lastActivity,
-    state.isInitialized,
+    dispatch,
+    pathname,
+    router,
+    setUser,
+    setIsAuthenticated,
+    setInitialized,
+    setAuthLoading,
   ]);
 
   const value: AuthContextType = {
@@ -167,11 +198,8 @@ export function useAuth() {
   return context;
 }
 
-// Helper hooks
-export function useUser() {
-  const { user } = useAuth();
-  return user;
-}
+// Re-export user hook from store for backward compatibility and convenience
+export { useUser } from '../user/store';
 
 export function useIsAuthenticated() {
   const { isAuthenticated } = useAuth();

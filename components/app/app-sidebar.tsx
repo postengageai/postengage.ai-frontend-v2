@@ -36,7 +36,6 @@ import {
   Share2,
   SlidersHorizontal,
   ChevronDown,
-  Instagram,
   CreditCard,
   HelpCircle,
   ChevronUp,
@@ -88,10 +87,10 @@ const mockUser = {
   plan: 'pro' as const,
 };
 
-const mockConnectedAccount = {
-  username: 'alexcreates',
-  isConnected: true,
-};
+// const mockConnectedAccount = {
+//   username: 'alexcreates',
+//   isConnected: true,
+// };
 
 const mockCredits = {
   remaining: 127,

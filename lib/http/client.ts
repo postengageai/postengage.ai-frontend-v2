@@ -140,11 +140,17 @@ export class HttpClient {
       });
       clearTimeout(timeoutId);
       return this.handleResponse<T>(response);
-    } catch (error: any) {
+    } catch (error) {
       clearTimeout(timeoutId);
 
+      const err = error as { statusCode?: number };
+
       // Don't retry on auth errors or client errors (4xx)
-      if (error.statusCode >= 400 && error.statusCode < 500) {
+      if (
+        typeof err.statusCode === 'number' &&
+        err.statusCode >= 400 &&
+        err.statusCode < 500
+      ) {
         throw error;
       }
 

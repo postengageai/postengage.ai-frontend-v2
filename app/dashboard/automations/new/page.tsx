@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -23,7 +22,7 @@ import type {
 } from '@/lib/types/automation-builder';
 
 export default function NewAutomationPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const [automation, setAutomation] =
     useState<AutomationBuilder>(mockEmptyAutomation);
   const [uiState, setUiState] = useState<BuilderUIState>(mockBuilderUIState);

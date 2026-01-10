@@ -158,7 +158,7 @@ export function ConditionCard({
             )}
 
             {/* Condition rows */}
-            {conditions.conditions.map((condition, index) => (
+            {conditions.conditions.map(condition => (
               <div key={condition.id} className='flex items-center gap-2'>
                 <GripVertical className='h-4 w-4 text-muted-foreground cursor-grab' />
 

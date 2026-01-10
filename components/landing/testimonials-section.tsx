@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Star, Quote } from 'lucide-react';
 
 export function TestimonialsSection() {
@@ -58,10 +59,12 @@ export function TestimonialsSection() {
               </div>
 
               <div className='flex items-center gap-3 pt-4 border-t border-border'>
-                <img
+                <Image
                   src={testimonial.avatar || '/placeholder.svg'}
                   alt={testimonial.author}
-                  className='w-10 h-10 rounded-full bg-secondary object-cover'
+                  width={40}
+                  height={40}
+                  className='rounded-full bg-secondary object-cover'
                 />
                 <div>
                   <p className='font-medium text-sm'>{testimonial.author}</p>

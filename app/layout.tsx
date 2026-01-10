@@ -2,6 +2,7 @@ import type React from 'react';
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import { Providers } from '@/components/providers';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -14,7 +15,6 @@ export const metadata: Metadata = {
   title: 'PostEngageAI — Your Voice, Amplified',
   description:
     'AI-powered Instagram engagement that sounds like you. Auto-reply to comments and DMs while you sleep.',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
@@ -44,7 +44,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
         <Analytics />
       </body>
     </html>

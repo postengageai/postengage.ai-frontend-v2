@@ -66,16 +66,7 @@ export class AuthApi {
 
   // Logout
   static async logout(): Promise<void> {
-    try {
-      await httpClient.post(`${AUTH_BASE_URL}/logout`);
-    } catch (error) {
-      // Even if logout API fails, we should clear local auth state
-      console.warn(
-        'Logout API call failed, but clearing local auth state:',
-        error
-      );
-      throw error;
-    }
+    await httpClient.post(`${AUTH_BASE_URL}/logout`);
   }
 
   // Forgot password
@@ -88,20 +79,16 @@ export class AuthApi {
     await httpClient.post(`${AUTH_BASE_URL}/reset-password`, request);
   }
 
-  // Get current user profile (if needed from separate endpoint)
+  // Get current user profile
   static async getCurrentUser(): Promise<User> {
-    // This endpoint might not exist yet, but could be added
-    const response = await httpClient.get<{ user: User }>(
-      `${AUTH_BASE_URL}/me`
-    );
-
-    return response.data!.user;
+    const response = await httpClient.get<User>('/api/v1/users/profile');
+    return response.data!;
   }
 
-  // Check if user is authenticated by attempting a refresh
+  // Check if user is authenticated by fetching profile
   static async checkAuth(): Promise<User | null> {
     try {
-      return await this.refreshSession();
+      return await this.getCurrentUser();
     } catch (error) {
       // Check if error is a 401 or 403 status code
       if (
