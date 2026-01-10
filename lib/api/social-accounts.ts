@@ -1,22 +1,15 @@
 import { httpClient } from '../http/client';
+import type {
+  SocialAccount as SocialAccountType,
+  SocialPlatform,
+  SocialAccountConnectionStatus,
+} from '../types/settings';
 
-export interface SocialAccount {
-  id: string;
-  platform: string;
-  username: string;
-  avatar: string | null;
-  connection_status: string;
-  connected_at: string;
-  last_synced_at: string | null;
-  is_active: boolean;
-  is_primary: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export interface SocialAccount extends SocialAccountType {}
 
 export interface ListSocialAccountsParams {
-  platform?: string;
-  status?: string;
+  platform?: SocialPlatform;
+  status?: SocialAccountConnectionStatus;
   search?: string;
 }
 

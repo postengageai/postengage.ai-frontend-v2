@@ -1,5 +1,5 @@
-import { SocialAccountsList } from '@/components/settings/social-accounts-list';
+import { SocialAccounts } from '@/components/settings/social-accounts';
 
 export default function SettingsSocialAccountsPage() {
-  return <SocialAccountsList />;
+  return <SocialAccounts />;
 }

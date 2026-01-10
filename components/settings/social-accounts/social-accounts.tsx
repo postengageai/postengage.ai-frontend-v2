@@ -1,8 +1,6 @@
 'use client';
 
-import type React from 'react';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,11 +32,13 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockSocialAccounts } from '@/lib/mock/settings-data';
+import { SocialAccountsApi } from '@/lib/api/social-accounts';
+import { InstagramOAuthApi } from '@/lib/api/oauth';
 import type {
   SocialAccount,
   SocialAccountConnectionStatus,
 } from '@/lib/types/settings';
+import { SocialAccountsSkeleton } from './social-accounts-skeleton';
 
 const statusConfig: Record<
   SocialAccountConnectionStatus,
@@ -59,49 +59,103 @@ const statusConfig: Record<
   error: { label: 'Error', variant: 'destructive', icon: AlertTriangle },
 };
 
-export function SocialAccountsList() {
-  const [accounts, setAccounts] = useState<SocialAccount[]>(mockSocialAccounts);
+export function SocialAccounts() {
+  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const loadAccounts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await SocialAccountsApi.list({ platform: 'instagram' });
+      setAccounts(data);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load social accounts';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSetPrimary = async (accountId: string) => {
-    setSettingPrimaryId(accountId);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setAccounts(prev =>
-      prev.map(acc => ({
-        ...acc,
-        is_primary: acc.id === accountId,
-      }))
-    );
-    setSettingPrimaryId(null);
+    try {
+      setSettingPrimaryId(accountId);
+
+      await SocialAccountsApi.setPrimary(accountId);
+
+      setTimeout(loadAccounts, 2000);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to set primary account';
+      setError(errorMessage);
+    } finally {
+      setSettingPrimaryId(null);
+    }
   };
 
   const handleDisconnect = async (accountId: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setAccounts(prev => prev.filter(acc => acc.id !== accountId));
-    setDisconnectingId(null);
+    try {
+      // revoke existing connection
+      await InstagramOAuthApi.revoke(accountId);
+
+      setTimeout(loadAccounts, 2000);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to disconnect account';
+      setError(errorMessage);
+    } finally {
+      setDisconnectingId(null);
+    }
   };
 
   const handleReconnect = async (accountId: string) => {
-    setReconnectingId(accountId);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setAccounts(prev =>
-      prev.map(acc =>
-        acc.id === accountId
-          ? { ...acc, connection_status: 'connected' as const, is_active: true }
-          : acc
-      )
-    );
-    setReconnectingId(null);
+    try {
+      setReconnectingId(accountId);
+      // For Instagram accounts, use OAuth revoke and then reconnect flow
+      const account = accounts.find(acc => acc.id === accountId);
+      if (account?.platform === 'instagram') {
+        // Then open new authorization for reconnection
+        await InstagramOAuthApi.openAuthorization();
+        // Reload accounts after a short delay
+        setTimeout(loadAccounts, 2000);
+      } else {
+        // For other platforms, use the same approach as connect
+        await InstagramOAuthApi.openAuthorization();
+        setTimeout(loadAccounts, 2000);
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to reconnect account';
+      setError(errorMessage);
+    } finally {
+      setReconnectingId(null);
+    }
   };
 
   const handleConnect = async () => {
-    setIsConnecting(true);
-    // In production, this would redirect to OAuth
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsConnecting(false);
+    try {
+      setIsConnecting(true);
+      // Open Instagram OAuth in new tab
+      await InstagramOAuthApi.openAuthorization();
+      // Reload accounts after a short delay to allow for OAuth completion
+      setTimeout(loadAccounts, 2000);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to connect account';
+      setError(errorMessage);
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -125,6 +179,28 @@ export function SocialAccountsList() {
     if (diffDays < 7) return `${diffDays}d ago`;
     return formatDate(dateString);
   };
+
+  if (isLoading) {
+    return <SocialAccountsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className='flex flex-col items-center justify-center py-16 text-center'>
+          <AlertTriangle className='mb-4 h-12 w-12 text-destructive' />
+          <h3 className='mb-2 text-lg font-medium text-foreground'>
+            Failed to load accounts
+          </h3>
+          <p className='mb-6 max-w-sm text-sm text-muted-foreground'>{error}</p>
+          <Button onClick={loadAccounts} variant='outline'>
+            <RefreshCw className='mr-2 h-4 w-4' />
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (accounts.length === 0) {
     return (
