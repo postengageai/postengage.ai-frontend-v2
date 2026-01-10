@@ -9,6 +9,7 @@ import { Loader2, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthApi } from '@/lib/api/auth';
 import { AuthCard, AuthCardHeader } from '@/components/auth/auth-card';
 import {
   PasswordStrength,
@@ -52,25 +53,7 @@ export function ResetPasswordForm() {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword: password }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setState('error');
-        setError({
-          title: data.message?.includes('expired')
-            ? 'Link expired'
-            : 'Reset failed',
-          message: data.message?.includes('expired')
-            ? 'This reset link has expired. Please request a new one.'
-            : 'Unable to reset your password. Please try again.',
-        });
-        return;
-      }
+      await AuthApi.resetPassword({ token, password });
 
       setState('success');
     } catch {

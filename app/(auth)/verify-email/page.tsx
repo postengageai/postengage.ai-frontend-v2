@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthCard } from '@/components/auth/auth-card';
+import { AuthApi } from '@/lib/api/auth';
 import { FormSuccess } from '@/components/auth/form-success';
 
 type VerificationState = 'waiting' | 'verifying' | 'success' | 'error';
@@ -41,34 +42,19 @@ function VerifyEmailContent() {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/auth/verify-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setState('error');
-        setError({
-          title: data.code?.includes('EXPIRED')
-            ? 'Link expired'
-            : 'Invalid link',
-          message: data.code?.includes('EXPIRED')
-            ? 'This verification link has expired. Please request a new one.'
-            : 'This link is invalid or has already been used.',
-        });
-        return;
-      }
+      await AuthApi.verifyEmail({ token });
 
       setState('success');
       // Redirect to dashboard after 2 seconds
       setTimeout(() => router.push('/dashboard'), 2000);
-    } catch {
+    } catch (error) {
       setState('error');
       setError({
-        title: 'Connection issue',
-        message: "We're having trouble connecting. Please try again.",
+        title: 'Verification failed',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'This link is invalid or has already been used.',
       });
     }
   };

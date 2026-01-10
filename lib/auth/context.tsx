@@ -105,6 +105,7 @@ const PUBLIC_ROUTES = [
   '/verify-email',
   '/forgot-password',
   '/reset-password',
+  '/resend-verification',
   '/', // Landing page often public
 ];
 

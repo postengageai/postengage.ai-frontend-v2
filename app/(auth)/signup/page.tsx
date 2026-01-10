@@ -19,7 +19,7 @@ import {
   isPasswordValid,
 } from '@/components/auth/password-strength';
 import { FormError } from '@/components/auth/form-error';
-import { getErrorMessage } from '@/lib/auth-errors';
+import { AuthApi } from '@/lib/api/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -67,32 +67,22 @@ export default function SignupPage() {
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          password: formData.password,
-        }),
+      await AuthApi.signup({
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        password: formData.password,
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        const errorInfo = getErrorMessage(data.code);
-        setError(errorInfo);
-        return;
-      }
 
       // Redirect to verification pending page
       router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-    } catch {
+    } catch (error) {
       setError({
-        title: 'Connection issue',
+        title: 'Signup failed',
         message:
-          "We're having trouble connecting. Please check your internet and try again.",
+          error instanceof Error
+            ? error.message
+            : 'Unable to create your account. Please try again.',
       });
     } finally {
       setIsLoading(false);
