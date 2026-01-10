@@ -104,7 +104,10 @@ export class AuthApi {
       return await this.refreshSession();
     } catch (error) {
       // Check if error is a 401 or 403 status code
-      if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+      if (
+        error instanceof ApiError &&
+        (error.statusCode === 401 || error.statusCode === 403)
+      ) {
         return null;
       }
       throw error;

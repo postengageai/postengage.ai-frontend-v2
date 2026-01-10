@@ -27,9 +27,8 @@ import {
   ApiError,
   TimeoutError,
   NetworkError,
-  createAppropriateError
+  createAppropriateError,
 } from './errors';
-
 
 export interface ApiSuccessResponse<T = unknown> {
   data: T;
@@ -94,10 +93,7 @@ export class HttpClient {
     if (!response.ok) {
       // Handle backend error response format
       const errorResponse = rawData as ErrorResponse;
-      throw createAppropriateError(
-        response.status,
-        errorResponse
-      );
+      throw createAppropriateError(response.status, errorResponse);
     }
 
     // Handle backend success response format
@@ -144,14 +140,11 @@ export class HttpClient {
       });
       clearTimeout(timeoutId);
       return this.handleResponse<T>(response);
-    } catch (error:any) {
+    } catch (error: any) {
       clearTimeout(timeoutId);
 
       // Don't retry on auth errors or client errors (4xx)
-      if (
-        error.statusCode >= 400 &&
-        error.statusCode < 500
-      ) {
+      if (error.statusCode >= 400 && error.statusCode < 500) {
         throw error;
       }
 

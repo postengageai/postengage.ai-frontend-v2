@@ -53,17 +53,13 @@ export class ApiError extends Error {
     message: string,
     originalError?: unknown
   ): ApiError {
-    return new ApiError(
-      statusCode,
-      message,
-      undefined,
-      {
-        documentation_url: 'https://docs.postengage.ai/errors',
-        originalError: originalError instanceof Error 
+    return new ApiError(statusCode, message, undefined, {
+      documentation_url: 'https://docs.postengage.ai/errors',
+      originalError:
+        originalError instanceof Error
           ? { name: originalError.name, message: originalError.message }
-          : originalError
-      }
-    );
+          : originalError,
+    });
   }
 
   toJSON() {
@@ -73,7 +69,7 @@ export class ApiError extends Error {
       details: this.details,
       timestamp: this.timestamp,
       statusCode: this.statusCode,
-      name: this.name
+      name: this.name,
     };
   }
 }
@@ -104,15 +100,13 @@ export class ServerError extends ApiError {
 }
 
 export class NetworkError extends ApiError {
-  constructor(
-    message: string,
-    originalError?: unknown
-  ) {
+  constructor(message: string, originalError?: unknown) {
     super(0, message, undefined, {
       documentation_url: 'https://docs.postengage.ai/errors',
-      originalError: originalError instanceof Error 
-        ? { name: originalError.name, message: originalError.message }
-        : originalError
+      originalError:
+        originalError instanceof Error
+          ? { name: originalError.name, message: originalError.message }
+          : originalError,
     });
     this.name = 'NetworkError';
   }
@@ -122,7 +116,7 @@ export class TimeoutError extends ApiError {
   constructor() {
     super(408, 'Request timeout', undefined, {
       documentation_url: 'https://docs.postengage.ai/errors',
-      action: 'retry_request'
+      action: 'retry_request',
     });
     this.name = 'TimeoutError';
   }

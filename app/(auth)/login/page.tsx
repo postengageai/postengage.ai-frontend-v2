@@ -39,25 +39,28 @@ export default function LoginPage() {
     setShowResendVerification(false);
 
     try {
-        // Use the AuthApi class for proper API integration
-        const response = await AuthApi.login({ email, password });
-        
-        // Update auth store with user data
-        actions.setUser(response.user);
-        
-        // Redirect to dashboard on success
-        router.push('/dashboard');
-        router.refresh(); // Refresh to update auth state
-      } catch (error: unknown) {
-        console.error('Login error:', error);
-        
-        // Handle specific error cases
-        if (error instanceof ApiError && error.code === 'AUTH_EMAIL_NOT_VERIFIED_000008') {
-          setShowResendVerification(true);
-        }
-        
-        errors.setError('loginError', error as ApiError);
-      } finally {
+      // Use the AuthApi class for proper API integration
+      const response = await AuthApi.login({ email, password });
+
+      // Update auth store with user data
+      actions.setUser(response.user);
+
+      // Redirect to dashboard on success
+      router.push('/dashboard');
+      router.refresh(); // Refresh to update auth state
+    } catch (error: unknown) {
+      console.error('Login error:', error);
+
+      // Handle specific error cases
+      if (
+        error instanceof ApiError &&
+        error.code === 'AUTH_EMAIL_NOT_VERIFIED_000008'
+      ) {
+        setShowResendVerification(true);
+      }
+
+      errors.setError('loginError', error as ApiError);
+    } finally {
       setIsLoading(false);
       actions.setLoading(false);
     }
@@ -72,8 +75,8 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className='space-y-5'>
         {errors.loginError && (
-           <div className='space-y-3'>
-             <FormError message={errors.loginError.message} />
+          <div className='space-y-3'>
+            <FormError message={errors.loginError.message} />
             {showResendVerification && (
               <p className='text-sm text-center'>
                 <Link
