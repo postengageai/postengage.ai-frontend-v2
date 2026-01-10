@@ -1,7 +1,6 @@
 'use client';
 
 import type React from 'react';
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Check, Eye, EyeOff, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserApi } from '@/lib/api/user';
 
 const passwordRules = [
   {
@@ -64,18 +64,29 @@ export function SecurityForm() {
     setIsLoading(true);
     setError(null);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      await UserApi.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
 
-    // Simulate success
-    setIsLoading(false);
-    setIsSuccess(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+      setIsSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
 
-    // Reset success message after 5 seconds
-    setTimeout(() => setIsSuccess(false), 5000);
+      // Reset success message after 5 seconds
+      setTimeout(() => setIsSuccess(false), 5000);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to change password. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,17 +109,18 @@ export function SecurityForm() {
                   type={showCurrentPassword ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
+                  placeholder='Enter your current password'
                   className='pr-10'
                 />
                 <button
                   type='button'
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground'
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
                   {showCurrentPassword ? (
-                    <EyeOff className='h-4 w-4' />
+                    <EyeOff size={16} />
                   ) : (
-                    <Eye className='h-4 w-4' />
+                    <Eye size={16} />
                   )}
                 </button>
               </div>
@@ -123,45 +135,17 @@ export function SecurityForm() {
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
+                  placeholder='Enter your new password'
                   className='pr-10'
                 />
                 <button
                   type='button'
-                  onClick={() => setShowNewPassword(!showNewPassword)}
                   className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground'
+                  onClick={() => setShowNewPassword(!showNewPassword)}
                 >
-                  {showNewPassword ? (
-                    <EyeOff className='h-4 w-4' />
-                  ) : (
-                    <Eye className='h-4 w-4' />
-                  )}
+                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-
-              {/* Password Rules */}
-              {newPassword.length > 0 && (
-                <ul className='mt-3 space-y-1.5'>
-                  {passwordRules.map(rule => {
-                    const passed = rule.test(newPassword);
-                    return (
-                      <li
-                        key={rule.id}
-                        className={cn(
-                          'flex items-center gap-2 text-xs transition-colors',
-                          passed ? 'text-green-500' : 'text-muted-foreground'
-                        )}
-                      >
-                        {passed ? (
-                          <Check className='h-3 w-3' />
-                        ) : (
-                          <X className='h-3 w-3' />
-                        )}
-                        {rule.label}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
             </div>
 
             {/* Confirm Password */}
@@ -173,74 +157,91 @@ export function SecurityForm() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className={cn(
-                    'pr-10',
-                    confirmPassword.length > 0 &&
-                      (passwordsMatch
-                        ? 'border-green-500 focus-visible:ring-green-500/20'
-                        : 'border-destructive focus-visible:ring-destructive/20')
-                  )}
+                  placeholder='Confirm your new password'
+                  className='pr-10'
                 />
                 <button
                   type='button'
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground'
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className='h-4 w-4' />
+                    <EyeOff size={16} />
                   ) : (
-                    <Eye className='h-4 w-4' />
+                    <Eye size={16} />
                   )}
                 </button>
               </div>
-              {confirmPassword.length > 0 && !passwordsMatch && (
-                <p className='text-xs text-destructive'>
-                  Passwords do not match
-                </p>
-              )}
+            </div>
+
+            {/* Password Rules */}
+            <div className='space-y-2'>
+              <Label>Password requirements</Label>
+              <div className='grid gap-2'>
+                {passwordRules.map(rule => {
+                  const passed = rule.test(newPassword);
+                  return (
+                    <div
+                      key={rule.id}
+                      className='flex items-center gap-2 text-sm'
+                    >
+                      <div
+                        className={cn(
+                          'flex h-4 w-4 items-center justify-center rounded-full',
+                          passed
+                            ? 'bg-green-500 text-white'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {passed ? <Check size={12} /> : <X size={12} />}
+                      </div>
+                      <span
+                        className={cn(
+                          passed ? 'text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        {rule.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className='rounded-lg bg-destructive/10 p-3 text-sm text-destructive'>
-                {error}
+              <div className='rounded-md bg-destructive/15 p-3'>
+                <p className='text-sm text-destructive'>{error}</p>
               </div>
             )}
 
             {/* Success Message */}
             {isSuccess && (
-              <div className='rounded-lg bg-green-500/10 p-3 text-sm text-green-500'>
-                Password changed successfully
+              <div className='rounded-md bg-green-50 p-3'>
+                <p className='text-sm text-green-800'>
+                  Password changed successfully!
+                </p>
               </div>
             )}
 
             {/* Submit Button */}
-            <div className='flex justify-end'>
-              <Button type='submit' disabled={!canSubmit || isLoading}>
-                {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                Change password
+            <div className='flex items-center justify-end gap-3'>
+              <Button
+                type='submit'
+                disabled={!canSubmit || isLoading}
+                className='min-w-32'
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Changing...
+                  </>
+                ) : (
+                  'Change password'
+                )}
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
-
-      {/* Security Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className='text-base'>Security information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className='grid gap-4 text-sm sm:grid-cols-2'>
-            <div>
-              <dt className='text-muted-foreground'>Last password change</dt>
-              <dd className='font-medium text-foreground'>December 15, 2024</dd>
-            </div>
-            <div>
-              <dt className='text-muted-foreground'>Active sessions</dt>
-              <dd className='font-medium text-foreground'>1 device</dd>
-            </div>
-          </dl>
         </CardContent>
       </Card>
     </div>

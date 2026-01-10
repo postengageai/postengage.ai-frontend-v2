@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -17,8 +17,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useUser, useUserActions } from '@/lib/user/store';
+import { UserApi } from '@/lib/api/user';
+import { PreferencesFormSkeleton } from './preferences-form-skeleton';
 
 const timezones = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -47,29 +50,93 @@ const languages = [
 ];
 
 export function PreferencesForm() {
+  const user = useUser();
+  const userActions = useUserActions();
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('America/Los_Angeles');
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [productUpdates, setProductUpdates] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Load user preferences on component mount
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        setIsLoadingData(true);
+        setError(null);
+
+        if (user) {
+          if (user.language) {
+            setLanguage(user.language);
+          }
+          if (user.timezone) {
+            setTimezone(user.timezone);
+          }
+        }
+      } catch (err) {
+        setError(
+          'Failed to load user preferences. Please try refreshing the page.'
+        );
+        console.error('Error loading user preferences:', err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadUserPreferences();
+  }, [user]);
 
   const handleChange = () => {
     setHasChanges(true);
     setIsSaved(false);
+    setError(null);
   };
 
   const handleSave = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setIsSaved(true);
-    setHasChanges(false);
+    setError(null);
+
+    try {
+      // Update user preferences via API
+      await UserApi.updateProfile({
+        language,
+        timezone,
+      });
+
+      // Update local user state
+      userActions.updateUser({
+        language,
+        timezone,
+      });
+
+      setIsSaved(true);
+      setHasChanges(false);
+    } catch (err) {
+      setError('Failed to save preferences. Please try again.');
+      console.error('Error saving preferences:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Show loading skeleton while data is being fetched
+  if (isLoadingData) {
+    return <PreferencesFormSkeleton />;
+  }
 
   return (
     <div className='space-y-6'>
+      {/* Error Alert */}
+      {error && (
+        <Alert variant='destructive'>
+          <AlertCircle className='h-4 w-4' />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Language & Region */}
       <Card>
         <CardHeader>
@@ -125,55 +192,6 @@ export function PreferencesForm() {
                 Used for timestamps and scheduled reports
               </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Communication Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Communications</CardTitle>
-          <CardDescription>Manage how we communicate with you</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='flex items-center justify-between rounded-lg border border-border p-4'>
-            <div>
-              <Label
-                htmlFor='email-notifications'
-                className='text-sm font-medium'
-              >
-                Email notifications
-              </Label>
-              <p className='text-xs text-muted-foreground'>
-                Important alerts about your automations and account
-              </p>
-            </div>
-            <Switch
-              id='email-notifications'
-              checked={emailNotifications}
-              onCheckedChange={checked => {
-                setEmailNotifications(checked);
-                handleChange();
-              }}
-            />
-          </div>
-          <div className='flex items-center justify-between rounded-lg border border-border p-4'>
-            <div>
-              <Label htmlFor='product-updates' className='text-sm font-medium'>
-                Product updates
-              </Label>
-              <p className='text-xs text-muted-foreground'>
-                New features, tips, and occasional announcements
-              </p>
-            </div>
-            <Switch
-              id='product-updates'
-              checked={productUpdates}
-              onCheckedChange={checked => {
-                setProductUpdates(checked);
-                handleChange();
-              }}
-            />
           </div>
         </CardContent>
       </Card>
