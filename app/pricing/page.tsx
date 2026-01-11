@@ -1,16 +1,24 @@
+'use client';
+
 import { LandingHeader } from '@/components/landing/landing-header';
 import { LandingFooter } from '@/components/landing/landing-footer';
 import { PageHeader } from '@/components/marketing/page-header';
 import { Button } from '@/components/ui/button';
 import { Check, Coins, MessageCircle, Send, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
+import { usePricing } from '@/hooks/use-pricing';
+import { PricingCard } from '@/components/pricing/pricing-card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
 
 export default function PricingPage() {
-  const creditPacks = [
-    { credits: 100, price: 9, popular: false },
-    { credits: 500, price: 39, popular: true },
-    { credits: 1000, price: 69, popular: false },
-  ];
+  const { data, isLoading } = usePricing();
+
+  // Use dynamic costs if available, else fallback to constants
+  const costs = data?.costs || CREDIT_COSTS;
+
+  const commentReplyCost = costs.REPLY_COMMENT || 2;
+  const dmCost = costs.SEND_DM || 2;
 
   const usageExamples = [
     {
@@ -18,21 +26,21 @@ export default function PricingPage() {
       followers: '10K',
       commentsPerDay: '20-30',
       creditsPerMonth: '~150',
-      recommendation: '100 credits/month',
+      recommendation: 'Starter Pack (500)',
     },
     {
       persona: 'Growing Creator',
       followers: '50K',
       commentsPerDay: '50-100',
       creditsPerMonth: '~400',
-      recommendation: '500 credits/month',
+      recommendation: 'Starter Pack (500)',
     },
     {
       persona: 'Brand / Agency',
       followers: '100K+',
       commentsPerDay: '100-200',
       creditsPerMonth: '~800',
-      recommendation: '1000 credits/month',
+      recommendation: 'Pro Pack (2000)',
     },
   ];
 
@@ -70,7 +78,7 @@ export default function PricingPage() {
                   <div>
                     <div className='font-medium'>Comment Reply</div>
                     <div className='text-sm text-muted-foreground'>
-                      ~0.5 credits
+                      {commentReplyCost} credits
                     </div>
                   </div>
                 </div>
@@ -79,7 +87,7 @@ export default function PricingPage() {
                   <div>
                     <div className='font-medium'>Auto DM</div>
                     <div className='text-sm text-muted-foreground'>
-                      ~1 credit
+                      {dmCost} credits
                     </div>
                   </div>
                 </div>
@@ -95,44 +103,26 @@ export default function PricingPage() {
               Credit packs
             </h2>
 
-            <div className='grid gap-6 md:grid-cols-3'>
-              {creditPacks.map((pack, index) => (
-                <div
-                  key={index}
-                  className={`relative rounded-2xl border p-8 ${
-                    pack.popular
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border bg-card'
-                  }`}
-                >
-                  {pack.popular && (
-                    <div className='absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground'>
-                      Most Popular
-                    </div>
-                  )}
-
-                  <div className='text-center'>
-                    <div className='text-4xl font-bold'>{pack.credits}</div>
-                    <div className='text-muted-foreground'>credits</div>
-
-                    <div className='mt-6'>
-                      <span className='text-3xl font-bold'>${pack.price}</span>
-                    </div>
-                    <div className='text-sm text-muted-foreground mt-1'>
-                      ${(pack.price / pack.credits).toFixed(2)} per credit
-                    </div>
-
-                    <Button
-                      className='w-full mt-8'
-                      variant={pack.popular ? 'default' : 'outline'}
-                      asChild
-                    >
-                      <Link href='/signup'>Buy Credits</Link>
-                    </Button>
+            {isLoading ? (
+              <div className='grid gap-8 md:grid-cols-3'>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className='rounded-2xl border p-8 space-y-4'>
+                    <Skeleton className='h-8 w-3/4' />
+                    <Skeleton className='h-4 w-1/2' />
+                    <Skeleton className='h-12 w-1/3 mt-8' />
+                    <Skeleton className='h-4 w-full mt-8' />
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-full' />
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className='grid gap-8 md:grid-cols-3'>
+                {data?.packs.map(pack => (
+                  <PricingCard key={pack.id} pack={pack} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

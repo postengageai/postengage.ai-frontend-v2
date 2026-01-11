@@ -1,8 +1,42 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Check, ArrowRight } from 'lucide-react';
+import { usePricing } from '@/hooks/use-pricing';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function PricingPreviewSection() {
+  const { data, isLoading } = usePricing();
+
+  // Find starter pack (usually the one with lowest price or specific credits)
+  // We'll use the first pack or the one with ~500 credits if available
+  const starterPack =
+    data?.packs.find(p => p.credits === 500) || data?.packs[0];
+
+  if (isLoading) {
+    return (
+      <section className='py-16 sm:py-24 border-t border-border'>
+        <div className='mx-auto max-w-4xl px-4 sm:px-6'>
+          <div className='text-center max-w-2xl mx-auto mb-12'>
+            <Skeleton className='h-8 w-64 mx-auto mb-4' />
+            <Skeleton className='h-4 w-48 mx-auto' />
+          </div>
+          <Skeleton className='h-[400px] w-full rounded-2xl' />
+        </div>
+      </section>
+    );
+  }
+
+  // Fallback values if data fetch fails but not loading
+  const currency = starterPack?.currency || 'USD';
+  const price = starterPack?.price || 9;
+  const credits = starterPack?.credits || 100;
+
+  const formattedPrice = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    maximumFractionDigits: 0,
+  }).format(price);
+
   return (
     <section className='py-16 sm:py-24 border-t border-border'>
       <div className='mx-auto max-w-4xl px-4 sm:px-6'>
@@ -22,8 +56,12 @@ export function PricingPreviewSection() {
                 Starting at
               </div>
               <div className='flex items-baseline gap-2'>
-                <span className='text-4xl sm:text-5xl font-bold'>$9</span>
-                <span className='text-muted-foreground'>/ 100 credits</span>
+                <span className='text-4xl sm:text-5xl font-bold'>
+                  {formattedPrice}
+                </span>
+                <span className='text-muted-foreground'>
+                  / {credits} credits
+                </span>
               </div>
             </div>
             <div className='text-center sm:text-right'>
@@ -38,7 +76,7 @@ export function PricingPreviewSection() {
 
           <div className='grid sm:grid-cols-2 gap-4 mb-8'>
             {[
-              '50 free credits to start',
+              `${credits} credits to start`,
               'No monthly commitment',
               'Credits never expire',
               'Bulk discounts available',

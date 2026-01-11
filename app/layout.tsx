@@ -12,6 +12,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://postengage.ai'),
   title: 'PostEngageAI — Your Voice, Amplified',
   description:
     'AI-powered Instagram engagement that sounds like you. Auto-reply to comments and DMs while you sleep.',
