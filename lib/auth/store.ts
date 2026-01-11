@@ -6,7 +6,6 @@ import { useUserStore } from '../user/store';
 export interface AuthStore extends Omit<AuthSession, 'user'> {
   actions: {
     setLoading: (isLoading: boolean) => void;
-    setInitialized: (isInitialized: boolean) => void;
     setIsAuthenticated: (isAuthenticated: boolean) => void;
     updateLastActivity: () => void;
     clearAuth: () => void;
@@ -37,10 +36,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
   actions: {
     setLoading: (isLoading: boolean) => {
       set({ isLoading });
-    },
-
-    setInitialized: (isInitialized: boolean) => {
-      set({ isInitialized });
     },
 
     setIsAuthenticated: (isAuthenticated: boolean) => {
@@ -135,7 +130,5 @@ export const useUser = () => useUserStore(state => state.user);
 export const useIsAuthenticated = () =>
   useAuthStore(state => state.isAuthenticated);
 export const useIsLoading = () => useAuthStore(state => state.isLoading);
-export const useIsInitialized = () =>
-  useAuthStore(state => state.isInitialized);
 export const useAuthActions = () => useAuthStore(state => state.actions);
 export const useAuthErrors = () => useAuthStore(state => state.errors);

@@ -1,12 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useRef,
+} from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthSession, AuthActions } from '../schemas/auth';
 import { ApiError } from '../http/errors';
 import { AuthApi } from '../api/auth';
 import { useUserStore } from '../user/store';
 import { useAuthStore } from './store';
+import { setLogoutHandler } from '../http/setup';
 
 // Omit user from AuthState as it is managed by UserStore
 interface AuthState extends Omit<AuthSession, 'user'> {
@@ -21,7 +28,6 @@ interface AuthState extends Omit<AuthSession, 'user'> {
 type AuthAction =
   | { type: 'SET_AUTHENTICATED'; payload: boolean }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_INITIALIZED'; payload: boolean }
   | { type: 'UPDATE_LAST_ACTIVITY' }
   | { type: 'CLEAR_AUTH' }
   | { type: 'CLEAR_ERRORS' }
@@ -33,7 +39,6 @@ type AuthAction =
 const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: true, // Start loading by default
-  isInitialized: false,
   lastActivity: undefined,
   errors: {},
 };
@@ -53,12 +58,6 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         isLoading: action.payload,
       };
 
-    case 'SET_INITIALIZED':
-      return {
-        ...state,
-        isInitialized: action.payload,
-      };
-
     case 'UPDATE_LAST_ACTIVITY':
       return {
         ...state,
@@ -69,7 +68,6 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
       return {
         ...initialState,
         isLoading: false,
-        isInitialized: true,
       };
 
     case 'CLEAR_ERRORS':
@@ -114,64 +112,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { setUser } = useUserStore(state => state.actions);
-  const {
-    setIsAuthenticated,
-    setInitialized,
-    setLoading: setAuthLoading,
-  } = useAuthStore(state => state.actions);
+  const { setIsAuthenticated, setLoading: setAuthLoading } = useAuthStore(
+    state => state.actions
+  );
+
+  // Use ref to track initialization without affecting dependency array
+  const isInitializedRef = useRef(false);
+
+  // Setup logout handler for HTTP client
+  useEffect(() => {
+    setLogoutHandler(() => {
+      // Clear auth state and redirect to login
+      setUser(null);
+      setIsAuthenticated(false);
+      dispatch({ type: 'CLEAR_AUTH' });
+      router.push('/login');
+    });
+  }, [setUser, setIsAuthenticated, router]);
 
   // Initialize auth state by checking session with backend
   useEffect(() => {
     const initAuth = async () => {
-      setAuthLoading(true);
-      try {
-        const user = await AuthApi.checkAuth();
-        if (user) {
-          setUser(user);
-          setIsAuthenticated(true);
-          dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+      // Only check auth if not already initialized
+      if (!isInitializedRef.current) {
+        setAuthLoading(true);
+        try {
+          const user = await AuthApi.checkAuth();
+          if (user) {
+            setUser(user);
+            setIsAuthenticated(true);
+            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
 
-          // Redirect authenticated users from public routes to dashboard
-          if (PUBLIC_ROUTES.includes(pathname) && pathname !== '/') {
-            router.push('/dashboard');
+            // Redirect authenticated users from public routes to dashboard
+            if (PUBLIC_ROUTES.includes(pathname) && pathname !== '/') {
+              router.push('/dashboard');
+            }
+          } else {
+            setUser(null);
+            setIsAuthenticated(false);
+            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
+
+            // Redirect if not on a public route
+            if (!PUBLIC_ROUTES.includes(pathname)) {
+              router.push('/login');
+            }
           }
-        } else {
+        } catch (_error) {
+          // console.warn('Failed to check auth status:', _error);
           setUser(null);
           setIsAuthenticated(false);
           dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
-          // Redirect if not on a public route
           if (!PUBLIC_ROUTES.includes(pathname)) {
             router.push('/login');
           }
+        } finally {
+          dispatch({ type: 'SET_LOADING', payload: false });
+          setAuthLoading(false);
+          isInitializedRef.current = true; // Mark as initialized
         }
-      } catch (_error) {
-        // console.warn('Failed to check auth status:', _error);
-        setUser(null);
-        setIsAuthenticated(false);
-        dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-        if (!PUBLIC_ROUTES.includes(pathname)) {
-          router.push('/login');
-        }
-      } finally {
-        dispatch({ type: 'SET_INITIALIZED', payload: true });
-        dispatch({ type: 'SET_LOADING', payload: false });
-        setInitialized(true);
-        setAuthLoading(false);
       }
     };
 
     initAuth();
-  }, [
-    dispatch,
-    pathname,
-    router,
-    setUser,
-    setIsAuthenticated,
-    setInitialized,
-    setAuthLoading,
-  ]);
+  }, [dispatch, pathname, router, setUser, setIsAuthenticated, setAuthLoading]);
 
   const value: AuthContextType = {
     ...state,
@@ -210,11 +214,6 @@ export function useIsAuthenticated() {
 export function useIsLoading() {
   const { isLoading } = useAuth();
   return isLoading;
-}
-
-export function useIsInitialized() {
-  const { isInitialized } = useAuth();
-  return isInitialized;
 }
 
 export function useAuthActions() {

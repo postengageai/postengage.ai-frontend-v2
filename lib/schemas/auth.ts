@@ -128,7 +128,6 @@ export const AuthSessionSchema = z.object({
   user: UserSchema.nullable(),
   isAuthenticated: z.boolean(),
   isLoading: z.boolean(),
-  isInitialized: z.boolean(),
   lastActivity: z.number().optional(), // timestamp
 });
 

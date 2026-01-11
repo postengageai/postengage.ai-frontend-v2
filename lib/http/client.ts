@@ -39,6 +39,13 @@ import {
   createAppropriateError,
 } from './errors';
 
+// Callback for handling 401 responses
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(callback: () => void) {
+  onUnauthorized = callback;
+}
+
 export interface ApiSuccessResponse<T = unknown> {
   data: T;
   error: null;
@@ -129,6 +136,14 @@ export class HttpClient {
             data: error.response?.data,
             url: error.config?.url,
           });
+        }
+
+        // Handle 401 Unauthorized responses
+        if (error.response?.status === 401) {
+          // Call the unauthorized handler if set
+          if (onUnauthorized) {
+            onUnauthorized();
+          }
         }
 
         // Convert Axios error to our ApiError
