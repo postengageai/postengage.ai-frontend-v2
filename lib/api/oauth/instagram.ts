@@ -1,4 +1,4 @@
-import { httpClient } from '@/lib/http/client';
+import { httpClient, SuccessResponse } from '@/lib/http/client';
 
 export interface OAuthInitResponse {
   url: string;
@@ -12,14 +12,16 @@ export interface OAuthRevokeResponse {
 export class InstagramOAuthApi {
   private static readonly BASE_URL = 'api/v1/instagram/oauth';
 
-  static async init(): Promise<OAuthInitResponse> {
+  static async init(): Promise<SuccessResponse<OAuthInitResponse>> {
     const response = await httpClient.get<OAuthInitResponse>(
       `${this.BASE_URL}/`
     );
     return response.data!;
   }
 
-  static async revoke(accountId: string): Promise<OAuthRevokeResponse> {
+  static async revoke(
+    accountId: string
+  ): Promise<SuccessResponse<OAuthRevokeResponse>> {
     const response = await httpClient.post<OAuthRevokeResponse>(
       `${this.BASE_URL}/${accountId}/revoke`
     );
@@ -28,7 +30,8 @@ export class InstagramOAuthApi {
 
   static async openAuthorization(): Promise<void> {
     try {
-      const { url } = await this.init();
+      const response = await this.init();
+      const { url } = response.data;
       const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
 
       if (!newWindow) {

@@ -77,7 +77,7 @@ export function SocialAccounts() {
       setIsLoading(true);
       setError(null);
       const data = await SocialAccountsApi.list({ platform: 'instagram' });
-      setAccounts(data);
+      setAccounts(data.data);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load social accounts';

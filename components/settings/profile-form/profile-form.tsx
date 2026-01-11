@@ -60,7 +60,7 @@ export function ProfileForm() {
 
         // Update local state with the uploaded media object
         userActions.updateUser({
-          avatar: response.media,
+          avatar: response.data.media,
         });
 
         setHasChanges(true);
@@ -90,7 +90,7 @@ export function ProfileForm() {
       const updatedUser = await UserApi.updateProfile(updateData);
 
       // Update local store with the response
-      userActions.setUser(updatedUser);
+      userActions.setUser(updatedUser.data);
 
       setIsSaved(true);
       setHasChanges(false);

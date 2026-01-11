@@ -1,4 +1,4 @@
-import { httpClient } from '../http/client';
+import { httpClient, SuccessResponse } from '../http/client';
 import type {
   SocialAccount as SocialAccountType,
   SocialPlatform,
@@ -19,7 +19,7 @@ export class SocialAccountsApi {
   // List all connected social accounts
   static async list(
     params?: ListSocialAccountsParams
-  ): Promise<SocialAccount[]> {
+  ): Promise<SuccessResponse<SocialAccount[]>> {
     const response = await httpClient.get<SocialAccount[]>(
       SOCIAL_ACCOUNTS_BASE_URL,
       {
@@ -30,7 +30,7 @@ export class SocialAccountsApi {
   }
 
   // Get specific social account details
-  static async get(id: string): Promise<SocialAccount> {
+  static async get(id: string): Promise<SuccessResponse<SocialAccount>> {
     const response = await httpClient.get<SocialAccount>(
       `${SOCIAL_ACCOUNTS_BASE_URL}/${id}`
     );
@@ -43,7 +43,7 @@ export class SocialAccountsApi {
   }
 
   // Set account as primary
-  static async setPrimary(id: string): Promise<SocialAccount> {
+  static async setPrimary(id: string): Promise<SuccessResponse<SocialAccount>> {
     const response = await httpClient.patch<SocialAccount>(
       `${SOCIAL_ACCOUNTS_BASE_URL}/${id}/primary`,
       { is_primary: true }
@@ -52,7 +52,7 @@ export class SocialAccountsApi {
   }
 
   // Refresh account data
-  static async refresh(id: string): Promise<SocialAccount> {
+  static async refresh(id: string): Promise<SuccessResponse<SocialAccount>> {
     const response = await httpClient.post<SocialAccount>(
       `${SOCIAL_ACCOUNTS_BASE_URL}/${id}/refresh`
     );

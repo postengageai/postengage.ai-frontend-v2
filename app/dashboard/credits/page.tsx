@@ -1,44 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditBalanceCard } from '@/components/credits/credit-balance-card';
 import { UsageSummaryCards } from '@/components/credits/usage-summary-cards';
 import { UsageChart } from '@/components/credits/usage-chart';
 import { TransactionHistory } from '@/components/credits/transaction-history';
-import { InvoicesTable } from '@/components/credits/invoices-table';
 import { CreditsInfoCard } from '@/components/credits/credits-info-card';
-import {
-  mockCreditBalance,
-  mockTransactions,
-  mockUsage,
-  mockInvoices,
-} from '@/lib/mock/credits-data';
 import { Coins, Activity, Receipt } from 'lucide-react';
 import Link from 'next/link';
+import {
+  useCreditsBalance,
+  useCreditsTransactions,
+  useCreditsUsage,
+  useCreditsLoading,
+  useCreditsActions,
+} from '@/lib/user/credits-store';
 
 export default function CreditsPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [invoicePage, setInvoicePage] = useState(1);
   const pageSize = 10;
 
-  // In production, these would be fetched from API
-  const balance = mockCreditBalance.available_credits;
-  const usage = mockUsage;
-  const transactions = mockTransactions;
-  const invoices = mockInvoices;
-  const isLoading = false;
+  // Use the credits store
+  const balance = useCreditsBalance();
+  const transactions = useCreditsTransactions();
+  const usage = useCreditsUsage();
+  const isLoading = useCreditsLoading();
+  const { fetchBalance, fetchTransactions, fetchUsage, fetchInvoices } =
+    useCreditsActions();
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchBalance();
+    fetchTransactions();
+    fetchUsage();
+    fetchInvoices();
+  }, [fetchBalance, fetchTransactions, fetchUsage, fetchInvoices]);
 
   // Paginate transactions
   const paginatedTransactions = transactions.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  const paginatedInvoices = invoices.slice(
-    (invoicePage - 1) * pageSize,
-    invoicePage * pageSize
-  );
+
+  // Handle loading and null states
+  const displayBalance = balance?.available_credits ?? 0;
+  const displayUsage = usage ?? {
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    to: new Date().toISOString(),
+    totals: { purchases: 0, consumption: 0, adjustments: 0 },
+    daily: [],
+    total_transactions: 0,
+  };
 
   return (
     <div className='mx-auto max-w-5xl space-y-6'>
@@ -66,19 +80,19 @@ export default function CreditsPage() {
       </div>
 
       {/* Credit Balance Card */}
-      <CreditBalanceCard balance={balance} isLoading={isLoading} />
+      <CreditBalanceCard balance={displayBalance} isLoading={isLoading} />
 
       {/* Usage Summary Cards */}
       <UsageSummaryCards
-        consumed={usage.totals.consumption}
-        purchased={usage.totals.purchases}
-        totalTransactions={usage.total_transactions}
+        consumed={displayUsage.totals.consumption}
+        purchased={displayUsage.totals.purchases}
+        totalTransactions={displayUsage.total_transactions}
         isLoading={isLoading}
       />
 
       {/* Usage Chart */}
       <UsageChart
-        data={usage.daily.map(d => ({
+        data={displayUsage.daily.map(d => ({
           date: d.date,
           consumption: d.consumption,
           purchases: d.purchases,
@@ -110,8 +124,7 @@ export default function CreditsPage() {
           />
         </TabsContent>
 
-        <TabsContent value='billing' className='mt-6'>
-          {/* Invoices Table */}
+        {/* <TabsContent value='billing' className='mt-6'>
           <InvoicesTable
             invoices={paginatedInvoices}
             total={invoices.length}
@@ -120,7 +133,7 @@ export default function CreditsPage() {
             onPageChange={setInvoicePage}
             isLoading={isLoading}
           />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
 
       {/* Info Card */}

@@ -10,14 +10,16 @@ import {
   VerifyEmailResponse,
   User,
 } from '../schemas/auth';
-import { httpClient } from '../http/client';
+import { httpClient, SuccessResponse } from '../http/client';
 import { ApiError } from '../http/errors';
 
 const AUTH_BASE_URL = '/api/v1/auth';
 
 export class AuthApi {
   // User registration
-  static async signup(request: SignupRequest): Promise<SignupResponse> {
+  static async signup(
+    request: SignupRequest
+  ): Promise<SuccessResponse<SignupResponse>> {
     const response = await httpClient.post<SignupResponse>(
       `${AUTH_BASE_URL}/signup`,
       request
@@ -27,7 +29,9 @@ export class AuthApi {
   }
 
   // User login
-  static async login(request: LoginRequest): Promise<LoginResponse> {
+  static async login(
+    request: LoginRequest
+  ): Promise<SuccessResponse<LoginResponse>> {
     const response = await httpClient.post<LoginResponse>(
       `${AUTH_BASE_URL}/login`,
       request
@@ -39,7 +43,7 @@ export class AuthApi {
   // Verify email
   static async verifyEmail(
     request: VerifyEmailRequest
-  ): Promise<VerifyEmailResponse> {
+  ): Promise<SuccessResponse<VerifyEmailResponse>> {
     const response = await httpClient.post<VerifyEmailResponse>(
       `${AUTH_BASE_URL}/verify-email`,
       request
@@ -56,12 +60,12 @@ export class AuthApi {
   }
 
   // Refresh session (token refresh)
-  static async refreshSession(): Promise<User> {
+  static async refreshSession(): Promise<SuccessResponse<{ user: User }>> {
     const response = await httpClient.post<{ user: User }>(
       `${AUTH_BASE_URL}/refresh`
     );
 
-    return response.data!.user;
+    return response.data!;
   }
 
   // Logout
@@ -80,7 +84,7 @@ export class AuthApi {
   }
 
   // Get current user profile
-  static async getCurrentUser(): Promise<User> {
+  static async getCurrentUser(): Promise<SuccessResponse<User>> {
     const response = await httpClient.get<User>('/api/v1/users/profile');
     return response.data!;
   }
@@ -88,7 +92,8 @@ export class AuthApi {
   // Check if user is authenticated by fetching profile
   static async checkAuth(): Promise<User | null> {
     try {
-      return await this.getCurrentUser();
+      const response = await this.getCurrentUser();
+      return response.data;
     } catch (error) {
       // Check if error is a 401 or 403 status code
       if (

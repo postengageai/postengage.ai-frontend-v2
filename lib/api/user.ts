@@ -1,4 +1,4 @@
-import { httpClient } from '../http/client';
+import { httpClient, SuccessResponse } from '../http/client';
 import { User } from '../schemas/auth';
 
 const USERS_BASE_URL = '/api/v1/users';
@@ -21,15 +21,32 @@ export interface UserProfileResponse {
   user: User;
 }
 
+export interface UploadAvatarResponse {
+  message: string;
+  media: {
+    id: string;
+    name: string;
+    url: string;
+    mime_type: string;
+    size: number;
+    tags: string[];
+    status: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
 export class UserApi {
   // Get current user profile
-  static async getProfile(): Promise<User> {
+  static async getProfile(): Promise<SuccessResponse<User>> {
     const response = await httpClient.get<User>(`${USERS_BASE_URL}/profile`);
     return response.data!;
   }
 
   // Update user profile
-  static async updateProfile(request: UpdateUserRequest): Promise<User> {
+  static async updateProfile(
+    request: UpdateUserRequest
+  ): Promise<SuccessResponse<User>> {
     const response = await httpClient.put<User>(
       `${USERS_BASE_URL}/profile`,
       request
@@ -43,41 +60,21 @@ export class UserApi {
   }
 
   // Upload avatar (implementation depends on backend)
-  static async uploadAvatar(file: File): Promise<{
-    message: string;
-    media: {
-      id: string;
-      name: string;
-      url: string;
-      mime_type: string;
-      size: number;
-      tags: string[];
-      status: string;
-      created_at: string;
-      updated_at: string;
-    };
-  }> {
+  static async uploadAvatar(
+    file: File
+  ): Promise<SuccessResponse<UploadAvatarResponse>> {
     const formData = new FormData();
     formData.append('avatar', file);
 
-    const response = await httpClient.put<{
-      message: string;
-      media: {
-        id: string;
-        name: string;
-        url: string;
-        mime_type: string;
-        size: number;
-        tags: string[];
-        status: string;
-        created_at: string;
-        updated_at: string;
-      };
-    }>(`${USERS_BASE_URL}/upload-avatar`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await httpClient.put<UploadAvatarResponse>(
+      `${USERS_BASE_URL}/upload-avatar`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
 
     return response.data!;
   }

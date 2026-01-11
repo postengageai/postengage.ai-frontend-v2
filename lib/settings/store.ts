@@ -58,7 +58,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       try {
         const user = await UserApi.getProfile();
-        useUserActions().setUser(user);
+        useUserActions().setUser(user.data);
         set({ isProfileLoading: false });
       } catch (error) {
         const errorMessage =
@@ -72,8 +72,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ isProfileLoading: true, profileError: null });
 
       try {
-        const updatedUser = await UserApi.updateProfile(updates);
-        useUserActions().setUser(updatedUser);
+        const response = await UserApi.updateProfile(updates);
+        useUserActions().setUser(response.data);
         set({ isProfileLoading: false });
       } catch (error) {
         const errorMessage =
@@ -102,7 +102,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       try {
         const accounts = await SocialAccountsApi.list(params);
-        set({ socialAccounts: accounts, isSocialAccountsLoading: false });
+        set({ socialAccounts: accounts.data, isSocialAccountsLoading: false });
       } catch (error) {
         const errorMessage =
           error instanceof Error

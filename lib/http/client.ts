@@ -47,11 +47,10 @@ export function setUnauthorizedHandler(callback: () => void) {
 }
 
 export interface ApiSuccessResponse<T = unknown> {
-  data: T;
+  data: SuccessResponse<T>;
   error: null;
   status: number;
   headers: AxiosHeaders;
-  raw: SuccessResponse<T>;
 }
 
 export interface ApiErrorResponse {
@@ -59,7 +58,6 @@ export interface ApiErrorResponse {
   error: ErrorResponse;
   status: number;
   headers: AxiosHeaders;
-  raw: ErrorResponse;
 }
 
 export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
@@ -208,11 +206,10 @@ export class HttpClient {
     axiosResponse: AxiosResponse<SuccessResponse<T>>
   ): ApiSuccessResponse<T> {
     return {
-      data: axiosResponse.data.data,
+      data: axiosResponse.data,
       error: null,
       status: axiosResponse.status,
       headers: axiosResponse.headers as AxiosHeaders,
-      raw: axiosResponse.data,
     };
   }
 
