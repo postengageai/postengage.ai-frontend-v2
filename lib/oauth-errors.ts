@@ -68,6 +68,16 @@ const oauthErrorMessages: Record<string, { heading: string; message: string }> =
       message:
         'Instagram is temporarily unavailable. Please try again in a few minutes.',
     },
+    // Backend Error Codes
+    EXT_INST_OAUTH_ACCESS_DENIED_000526: {
+      heading: 'Access Denied',
+      message: 'You chose not to allow access to your Instagram account.',
+    },
+    MISSING_DATA: {
+      heading: 'Missing Information',
+      message:
+        'We successfully connected to Instagram, but did not receive all the required account information.',
+    },
   };
 
 export function getOAuthErrorMessage(error: OAuthError): {

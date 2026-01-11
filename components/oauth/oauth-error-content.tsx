@@ -1,11 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, Instagram, RefreshCw, Users, Info } from 'lucide-react';
-import { SupportModal } from '@/components/oauth/support-modal';
+import { AlertCircle, Instagram, RefreshCw, Info } from 'lucide-react';
 import {
   getOAuthErrorMessage,
   isRetryableError,
@@ -13,35 +11,38 @@ import {
   type OAuthError,
 } from '@/lib/oauth-errors';
 
-// Mock error for demonstration - in production this comes from URL params or API
-const mockError: OAuthError = {
-  message: 'Authorization was cancelled by the user or access was denied.',
-  code: 'EXT_INST_OAUTH_ACCESS_DENIED_000526',
-  details: {
-    provider: 'instagram',
-    provider_error: 'access_denied',
-    provider_reason: 'user_denied',
-    action: 'retry_authorization',
-    documentation_url:
-      'https://docs.postengage.ai/errors#EXT_INST_OAUTH_ACCESS_DENIED_000526',
-    support_reference: 'af31-4215-b3a1',
-  },
-  timestamp: new Date().toISOString(),
-};
-
 export function OAuthErrorContent() {
-  // const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
-  // In production, parse error from URL params
-  const error = mockError;
+  const errorParam = searchParams.get('error');
+  const errorDescription = searchParams.get('description');
+
+  // Construct error object from URL params
+  const error: OAuthError = {
+    message:
+      errorDescription || 'An unknown error occurred during authentication.',
+    code: errorParam || 'UNKNOWN_ERROR',
+    details: {
+      provider: 'instagram',
+      provider_error: errorParam || 'unknown',
+      provider_reason: errorDescription || 'unknown',
+      action: 'retry_authorization',
+    },
+    timestamp: new Date().toISOString(),
+  };
+
   const { heading, message } = getOAuthErrorMessage(error);
   const canRetry = isRetryableError(error);
   const provider = capitalizeProvider(error.details.provider);
 
   const handleRetry = () => {
-    // In production, redirect to OAuth flow
-    router.push('/settings/social-accounts');
+    // Redirect to social accounts settings page to retry
+    if (window.opener) {
+      window.close();
+    } else {
+      router.push('/dashboard/settings/social-accounts');
+    }
   };
 
   return (
@@ -94,34 +95,9 @@ export function OAuthErrorContent() {
         {/* CTAs */}
         <div className='space-y-3'>
           {/* Primary CTA */}
-          {canRetry && (
-            <Button onClick={handleRetry} className='w-full' size='lg'>
-              <RefreshCw className='mr-2 h-5 w-5' />
-              Try Connecting Again
-            </Button>
-          )}
-
-          {/* Secondary CTAs */}
-          <div className='grid grid-cols-2 gap-3'>
-            <Button variant='outline' asChild>
-              <Link href='/settings/social-accounts'>
-                <Users className='mr-2 h-4 w-4' />
-                Different Account
-              </Link>
-            </Button>
-            <SupportModal
-              errorCode={error.code}
-              supportReference={error.details.support_reference || 'N/A'}
-              timestamp={error.timestamp}
-              documentationUrl={error.details.documentation_url}
-            />
-          </div>
-        </div>
-
-        {/* Back to Dashboard */}
-        <div className='text-center'>
-          <Button variant='link' asChild className='text-muted-foreground'>
-            <Link href='/dashboard'>Return to Dashboard</Link>
+          <Button onClick={handleRetry} className='w-full' size='lg'>
+            <RefreshCw className='mr-2 h-5 w-5' />
+            {canRetry ? 'Try Connecting Again' : 'Return to Settings'}
           </Button>
         </div>
       </div>
