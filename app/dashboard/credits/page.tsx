@@ -13,10 +13,12 @@ import Link from 'next/link';
 import {
   useCreditsBalance,
   useCreditsTransactions,
+  useCreditsTransactionsTotal,
+  useCreditsTransactionsLoading,
   useCreditsUsage,
   useCreditsLoading,
   useCreditsActions,
-} from '@/lib/user/credits-store';
+} from '@/lib/credits/store';
 
 export default function CreditsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,6 +27,8 @@ export default function CreditsPage() {
   // Use the credits store
   const balance = useCreditsBalance();
   const transactions = useCreditsTransactions();
+  const transactionsTotal = useCreditsTransactionsTotal();
+  const isTransactionsLoading = useCreditsTransactionsLoading();
   const usage = useCreditsUsage();
   const isLoading = useCreditsLoading();
   const { fetchBalance, fetchTransactions, fetchUsage, fetchInvoices } =
@@ -33,16 +37,14 @@ export default function CreditsPage() {
   // Fetch data on component mount
   useEffect(() => {
     fetchBalance();
-    fetchTransactions();
     fetchUsage();
     fetchInvoices();
-  }, [fetchBalance, fetchTransactions, fetchUsage, fetchInvoices]);
+  }, [fetchBalance, fetchUsage, fetchInvoices]);
 
-  // Paginate transactions
-  const paginatedTransactions = transactions.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  // Fetch transactions when page changes
+  useEffect(() => {
+    fetchTransactions(pageSize, (currentPage - 1) * pageSize);
+  }, [fetchTransactions, currentPage]);
 
   // Handle loading and null states
   const displayBalance = balance?.available_credits ?? 0;
@@ -115,12 +117,12 @@ export default function CreditsPage() {
         <TabsContent value='activity' className='mt-6'>
           {/* Transaction History */}
           <TransactionHistory
-            transactions={paginatedTransactions}
-            total={transactions.length}
+            transactions={transactions}
+            total={transactionsTotal}
             currentPage={currentPage}
             pageSize={pageSize}
             onPageChange={setCurrentPage}
-            isLoading={isLoading}
+            isLoading={isTransactionsLoading}
           />
         </TabsContent>
 

@@ -163,8 +163,8 @@ export function TransactionHistory({
           <Skeleton className='h-5 w-40' />
         </CardHeader>
         <CardContent>
-          <div className='space-y-3'>
-            {[1, 2, 3, 4, 5].map(i => (
+          <div className='space-y-1'>
+            {Array.from({ length: pageSize }).map((_, i) => (
               <Skeleton key={i} className='h-12 w-full' />
             ))}
           </div>

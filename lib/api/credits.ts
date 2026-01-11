@@ -16,7 +16,13 @@ export interface PaginationDto {
 
 export interface TransactionsResponse {
   transactions: CreditTransaction[];
-  total: number;
+  meta: {
+    total: number;
+    limit: number;
+    skip: number;
+    page: number;
+    totalPages: number;
+  };
 }
 
 export interface BalanceResponse {

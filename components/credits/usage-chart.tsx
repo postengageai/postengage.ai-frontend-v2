@@ -123,9 +123,9 @@ export function UsageChart({
                 {/* Bars */}
                 <div className='relative flex h-[200px] items-end gap-[2px]'>
                   {filteredData.map((item, index) => {
-                    const heightPercent = (item.consumption / maxValue) * 100;
+                    const heightPx = (item.consumption / maxValue) * 200;
                     const barHeight =
-                      item.consumption > 0 ? Math.max(heightPercent, 2) : 0;
+                      item.consumption > 0 ? Math.max(heightPx, 4) : 0;
 
                     const showLabel =
                       selectedRange === '7d' ||
@@ -158,7 +158,7 @@ export function UsageChart({
                         <div
                           className='w-full rounded-t bg-indigo-500/80 transition-all hover:bg-indigo-400'
                           style={{
-                            height: `${barHeight}%`,
+                            height: `${barHeight}px`,
                             minWidth: '4px',
                             maxWidth: selectedRange === '7d' ? '40px' : '16px',
                           }}
