@@ -58,10 +58,18 @@ const navItems = [
     href: '/dashboard/automations',
     icon: Zap,
   },
+];
+
+const creditsSubItems = [
   {
-    title: 'Credits',
-    href: '/dashboard/credits',
-    icon: Coins,
+    title: 'Overview',
+    href: '/dashboard/credits/overview',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Buy Credits',
+    href: '/dashboard/credits/buy',
+    icon: CreditCard,
   },
 ];
 
@@ -100,6 +108,7 @@ const mockCredits = {
 export function AppSidebar() {
   const pathname = usePathname();
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
+  const isCreditsActive = pathname.startsWith('/dashboard/credits');
 
   const creditPercentage = (mockCredits.remaining / mockCredits.total) * 100;
   const isLowCredits = creditPercentage < 25;
@@ -157,6 +166,61 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* Credits Section */}
+              <Collapsible asChild defaultOpen={isCreditsActive}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isCreditsActive}
+                      className={cn(
+                        'h-10 w-full rounded-lg transition-all duration-200',
+                        isCreditsActive &&
+                          'bg-primary/10 text-primary font-medium shadow-sm'
+                      )}
+                    >
+                      <Coins
+                        className={cn(
+                          'h-4 w-4',
+                          isCreditsActive && 'text-primary'
+                        )}
+                      />
+                      <span>Credits</span>
+                      <ChevronDown
+                        className={cn(
+                          'ml-auto h-4 w-4 transition-transform duration-200',
+                          isCreditsActive && 'rotate-180'
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className='mt-1 ml-4 border-l border-border/50 pl-2'>
+                      {creditsSubItems.map(subItem => {
+                        const isSubActive = pathname === subItem.href;
+                        return (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isSubActive}
+                              className={cn(
+                                'h-9 rounded-md transition-all duration-200',
+                                isSubActive &&
+                                  'bg-primary/10 text-primary font-medium'
+                              )}
+                            >
+                              <Link href={subItem.href}>
+                                <subItem.icon className='h-4 w-4 mr-2' />
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
               <Collapsible asChild defaultOpen={isSettingsActive}>
                 <SidebarMenuItem>

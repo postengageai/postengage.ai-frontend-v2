@@ -121,7 +121,7 @@ export function DashboardHeader({
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href='/dashboard/billing'
+                  href='/dashboard/credits/buy'
                   className='flex items-center gap-2'
                 >
                   <CreditCard className='h-4 w-4' />

@@ -30,14 +30,14 @@ export default function AuthLayout({
       <footer className='p-6 text-center'>
         <p className='text-sm text-muted-foreground'>
           <Link
-            href='/privacy'
+            href='https://postengage.ai/privacy'
             className='hover:text-foreground transition-colors'
           >
             Privacy
           </Link>
           <span className='mx-2'>·</span>
           <Link
-            href='/terms'
+            href='https://postengage.ai/terms'
             className='hover:text-foreground transition-colors'
           >
             Terms
