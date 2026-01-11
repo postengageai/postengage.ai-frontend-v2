@@ -6,6 +6,13 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  redirects: async () => [
+    {
+      source: '/',
+      destination: '/dashboard',
+      permanent: false,
+    }
+  ]
 };
 
 export default nextConfig;
