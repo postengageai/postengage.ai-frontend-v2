@@ -1,14 +1,15 @@
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, Loader2 } from 'lucide-react';
 import { CreditPackage } from '@/lib/types/pricing';
 import { calculateActions } from '@/lib/config/credit-pricing';
+import { useRazorpay } from '@/hooks/use-razorpay';
 
 interface PricingCardProps {
   pack: CreditPackage;
 }
 
 export function PricingCard({ pack }: PricingCardProps) {
+  const { processPayment, isProcessing } = useRazorpay();
   const perCredit = pack.price / pack.credits;
   const basicActions = calculateActions(pack.credits, false);
   const aiActions = calculateActions(pack.credits, true);
@@ -115,12 +116,20 @@ export function PricingCard({ pack }: PricingCardProps) {
           className='w-full'
           variant={pack.popular ? 'default' : 'outline'}
           size='lg'
-          asChild
+          onClick={() => processPayment(pack.id)}
+          disabled={isProcessing}
         >
-          <Link href='/signup'>
-            Get {pack.name}
-            <ArrowRight className='ml-2 h-4 w-4' />
-          </Link>
+          {isProcessing ? (
+            <>
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              Processing...
+            </>
+          ) : (
+            <>
+              Get {pack.name}
+              <ArrowRight className='ml-2 h-4 w-4' />
+            </>
+          )}
         </Button>
       </div>
     </div>
