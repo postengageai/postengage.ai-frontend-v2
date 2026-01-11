@@ -15,10 +15,13 @@ import {
   useCreditsTransactions,
   useCreditsTransactionsTotal,
   useCreditsTransactionsLoading,
+  useCreditsUsageLoading,
   useCreditsUsage,
   useCreditsLoading,
   useCreditsActions,
 } from '@/lib/credits/store';
+
+import { DateRange } from '@/lib/types/credits';
 
 export default function CreditsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,6 +32,7 @@ export default function CreditsPage() {
   const transactions = useCreditsTransactions();
   const transactionsTotal = useCreditsTransactionsTotal();
   const isTransactionsLoading = useCreditsTransactionsLoading();
+  const isUsageLoading = useCreditsUsageLoading();
   const usage = useCreditsUsage();
   const isLoading = useCreditsLoading();
   const { fetchBalance, fetchTransactions, fetchUsage, fetchInvoices } =
@@ -45,6 +49,11 @@ export default function CreditsPage() {
   useEffect(() => {
     fetchTransactions(pageSize, (currentPage - 1) * pageSize);
   }, [fetchTransactions, currentPage]);
+
+  const handleDateRangeChange = (range: DateRange) => {
+    const days = range === '7d' ? 7 : 30;
+    fetchUsage(days);
+  };
 
   // Handle loading and null states
   const displayBalance = balance?.available_credits ?? 0;
@@ -99,7 +108,8 @@ export default function CreditsPage() {
           consumption: d.consumption,
           purchases: d.purchases,
         }))}
-        isLoading={isLoading}
+        isLoading={isUsageLoading}
+        onDateRangeChange={handleDateRangeChange}
       />
 
       <Tabs defaultValue='activity' className='w-full'>

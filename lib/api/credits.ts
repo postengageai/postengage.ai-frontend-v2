@@ -12,6 +12,7 @@ export interface GetCreditUsageDto {
 export interface PaginationDto {
   limit?: number;
   skip?: number;
+  page?: number;
 }
 
 export interface TransactionsResponse {

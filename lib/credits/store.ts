@@ -15,6 +15,7 @@ interface CreditsState {
   invoicesTotal: number;
   isLoading: boolean;
   isTransactionsLoading: boolean;
+  isUsageLoading: boolean;
   error: string | null;
   actions: {
     setBalance: (balance: CreditBalance | null) => void;
@@ -24,9 +25,9 @@ interface CreditsState {
     setLoading: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     fetchBalance: () => Promise<void>;
-    fetchTransactions: (limit?: number, skip?: number) => Promise<void>;
+    fetchTransactions: (limit?: number, page?: number) => Promise<void>;
     fetchUsage: (days?: number, from?: string, to?: string) => Promise<void>;
-    fetchInvoices: (limit?: number, skip?: number) => Promise<void>;
+    fetchInvoices: (limit?: number, page?: number) => Promise<void>;
     reset: () => void;
   };
 }
@@ -40,6 +41,7 @@ export const useCreditsStore = create<CreditsState>(set => ({
   invoicesTotal: 0,
   isLoading: false,
   isTransactionsLoading: false,
+  isUsageLoading: false,
   error: null,
 
   actions: {
@@ -69,7 +71,8 @@ export const useCreditsStore = create<CreditsState>(set => ({
     fetchTransactions: async (limit = 20, skip = 0) => {
       set({ isTransactionsLoading: true, error: null });
       try {
-        const response = await CreditsApi.getTransactions({ limit, skip });
+        const page = Math.floor(skip / limit) + 1;
+        const response = await CreditsApi.getTransactions({ limit, page });
         set({
           transactions: response.data.transactions,
           transactionsTotal: response.data.meta.total,
@@ -88,16 +91,16 @@ export const useCreditsStore = create<CreditsState>(set => ({
     },
 
     fetchUsage: async (days, from, to) => {
-      set({ isLoading: true, error: null });
+      set({ isUsageLoading: true, error: null });
       try {
         const response = await CreditsApi.getUsage({ days, from, to });
-        set({ usage: response.data, isLoading: false });
+        set({ usage: response.data, isUsageLoading: false });
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch usage data';
         set({
           error: errorMessage,
-          isLoading: false,
+          isUsageLoading: false,
         });
       }
     },
@@ -105,7 +108,8 @@ export const useCreditsStore = create<CreditsState>(set => ({
     fetchInvoices: async (limit = 20, skip = 0) => {
       set({ isLoading: true, error: null });
       try {
-        const response = await CreditsApi.getInvoices({ limit, skip });
+        const page = Math.floor(skip / limit) + 1;
+        const response = await CreditsApi.getInvoices({ limit, page });
         set({
           invoices: response.data.transactions,
           invoicesTotal: response.data.meta.total,
@@ -146,9 +150,11 @@ export const useCreditsTransactionsTotal = () =>
   useCreditsStore(state => state.transactionsTotal);
 export const useCreditsInvoicesTotal = () =>
   useCreditsStore(state => state.invoicesTotal);
-export const useCreditsLoading = () =>
-  useCreditsStore(state => state.isLoading);
 export const useCreditsTransactionsLoading = () =>
   useCreditsStore(state => state.isTransactionsLoading);
+export const useCreditsUsageLoading = () =>
+  useCreditsStore(state => state.isUsageLoading);
+export const useCreditsLoading = () =>
+  useCreditsStore(state => state.isLoading);
 export const useCreditsError = () => useCreditsStore(state => state.error);
 export const useCreditsActions = () => useCreditsStore(state => state.actions);
