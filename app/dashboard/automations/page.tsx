@@ -33,46 +33,82 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import {
-  mockAutomation,
-  getTriggerTypeLabel,
-  getActionTypeLabel,
-} from '@/lib/mock/automation-builder-data';
-import type { AutomationBuilder } from '@/lib/types/automation-builder';
+import type { TriggerType, ActionType } from '@/lib/types/automation-builder';
 
-// Mock list of automations
-const mockAutomations: AutomationBuilder[] = [
-  mockAutomation,
+interface AutomationListItem {
+  id: string;
+  name: string;
+  status: 'active' | 'paused' | 'draft';
+  pausedReason?: string;
+  platform: 'instagram';
+  trigger: {
+    type: TriggerType;
+  };
+  actions: {
+    id: string;
+    type: ActionType;
+  }[];
+  statistics: {
+    totalExecutions: number;
+    successfulExecutions: number;
+    failedExecutions: number;
+    trend: {
+      executionsChange: number;
+      period: string;
+    };
+  };
+  updatedAt: string;
+}
+
+const mockAutomations: AutomationListItem[] = [
   {
-    ...mockAutomation,
+    id: 'auto_abc123',
+    name: 'Welcome New Commenters',
+    status: 'active',
+    platform: 'instagram',
+    trigger: { type: 'NEW_COMMENT' },
+    actions: [
+      { id: 'act_1', type: 'REPLY_COMMENT' },
+      { id: 'act_2', type: 'PRIVATE_REPLY' },
+    ],
+    statistics: {
+      totalExecutions: 1247,
+      successfulExecutions: 1198,
+      failedExecutions: 49,
+      trend: { executionsChange: 12.5, period: 'week' },
+    },
+    updatedAt: new Date().toISOString(),
+  },
+  {
     id: 'auto_def456',
     name: 'DM Price Inquiries',
     status: 'active',
-    trigger: { ...mockAutomation.trigger, type: 'keyword_mention' },
-    actions: [{ ...mockAutomation.actions[1], id: 'act_3' }],
+    platform: 'instagram',
+    trigger: { type: 'KEYWORD_MENTION' },
+    actions: [{ id: 'act_3', type: 'SEND_DM' }],
     statistics: {
-      ...mockAutomation.statistics,
       totalExecutions: 523,
       successfulExecutions: 498,
       failedExecutions: 25,
       trend: { executionsChange: -5.2, period: 'week' },
     },
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
-    ...mockAutomation,
     id: 'auto_ghi789',
     name: 'Welcome New Followers',
     status: 'paused',
     pausedReason: 'Low credit balance',
-    trigger: { ...mockAutomation.trigger, type: 'new_follower' },
-    actions: [{ ...mockAutomation.actions[1], id: 'act_4' }],
+    platform: 'instagram',
+    trigger: { type: 'NEW_FOLLOWER' },
+    actions: [{ id: 'act_4', type: 'SEND_DM' }],
     statistics: {
-      ...mockAutomation.statistics,
       totalExecutions: 89,
       successfulExecutions: 87,
       failedExecutions: 2,
       trend: { executionsChange: 0, period: 'week' },
     },
+    updatedAt: new Date(Date.now() - 172800000).toISOString(),
   },
 ];
 
@@ -121,6 +157,31 @@ export default function AutomationsPage() {
     (sum, a) => sum + a.statistics.totalExecutions,
     0
   );
+
+  function getTriggerTypeLabel(type: TriggerType): string {
+    const labels: Record<TriggerType, string> = {
+      NEW_COMMENT: 'New Comment',
+      KEYWORD_MENTION: 'Keyword Mention',
+      NEW_FOLLOWER: 'New Follower',
+      DIRECT_MESSAGE: 'Direct Message',
+      STORY_MENTION: 'Story Mention',
+      STORY_REPLY: 'Story Reply',
+    };
+    return labels[type] || type;
+  }
+
+  function getActionTypeLabel(type: ActionType): string {
+    const labels: Record<ActionType, string> = {
+      REPLY_COMMENT: 'Reply',
+      PRIVATE_REPLY: 'Private Reply',
+      SEND_DM: 'Send DM',
+      HIDE_COMMENT: 'Hide Comment',
+      DELETE_COMMENT: 'Delete Comment',
+      LIKE_COMMENT: 'Like Comment',
+      ADD_TAG: 'Add Tag',
+    };
+    return labels[type] || type;
+  }
 
   return (
     <div className='flex flex-col h-full'>
