@@ -95,11 +95,11 @@ interface AutomationWizardProps {
 export function AutomationWizard({
   initialData,
   onComplete,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCancel,
   isEditMode = false,
 }: AutomationWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  // Start at step 3 (Trigger) when editing an existing automation
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 3 : 1);
   const [formData, setFormData] = useState<AutomationFormData>(
     initialData || {
       platform: AutomationPlatform.INSTAGRAM,
@@ -165,8 +165,12 @@ export function AutomationWizard({
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    const minStep = isEditMode ? 3 : 1;
+    if (currentStep > minStep) {
       setCurrentStep(currentStep - 1);
+    } else if (isEditMode && currentStep === 3) {
+      // In edit mode, when on the first step (step 3), go back to detail page
+      onCancel();
     }
   };
 
@@ -227,6 +231,8 @@ export function AutomationWizard({
     onComplete(payload);
   };
 
+  const steps = isEditMode ? STEPS.slice(2) : STEPS;
+
   return (
     <div className='flex h-full flex-col bg-background'>
       {/* Progress Bar */}
@@ -242,52 +248,56 @@ export function AutomationWizard({
           )}
 
           <div className='flex items-center justify-between gap-2'>
-            {STEPS.map((step, index) => (
-              <div key={step.id} className='flex flex-1 items-center'>
-                <div className='flex flex-1 flex-col items-center'>
-                  <div
-                    className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all sm:h-10 sm:w-10 sm:text-sm',
-                      currentStep > step.id
-                        ? 'bg-primary text-white'
-                        : currentStep === step.id
-                          ? 'bg-primary text-white ring-2 ring-primary/20 sm:ring-4'
-                          : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {currentStep > step.id ? (
-                      <Check className='h-4 w-4 sm:h-5 sm:w-5' />
-                    ) : (
-                      step.id
-                    )}
-                  </div>
-                  <div className='mt-1 text-center sm:mt-2'>
+            {steps.map((step, index) => {
+              const displayIndex = isEditMode ? index + 1 : step.id;
+
+              return (
+                <div key={step.id} className='flex flex-1 items-center'>
+                  <div className='flex flex-1 flex-col items-center'>
                     <div
                       className={cn(
-                        'text-xs font-medium sm:text-sm',
-                        currentStep >= step.id
-                          ? 'text-foreground'
-                          : 'text-muted-foreground'
+                        'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all sm:h-10 sm:w-10 sm:text-sm',
+                        currentStep > step.id
+                          ? 'bg-primary text-white'
+                          : currentStep === step.id
+                            ? 'bg-primary text-white ring-2 ring-primary/20 sm:ring-4'
+                            : 'bg-muted text-muted-foreground'
                       )}
                     >
-                      <span className='hidden sm:inline'>{step.name}</span>
-                      <span className='sm:hidden'>{step.id}</span>
+                      {currentStep > step.id ? (
+                        <Check className='h-4 w-4 sm:h-5 sm:w-5' />
+                      ) : (
+                        displayIndex
+                      )}
                     </div>
-                    <div className='hidden text-xs text-muted-foreground lg:block'>
-                      {step.description}
+                    <div className='mt-1 text-center sm:mt-2'>
+                      <div
+                        className={cn(
+                          'text-xs font-medium sm:text-sm',
+                          currentStep >= step.id
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'
+                        )}
+                      >
+                        <span className='hidden sm:inline'>{step.name}</span>
+                        <span className='sm:hidden'>{displayIndex}</span>
+                      </div>
+                      <div className='hidden text-xs text-muted-foreground lg:block'>
+                        {step.description}
+                      </div>
                     </div>
                   </div>
+                  {index < steps.length - 1 && (
+                    <div
+                      className={cn(
+                        '-mt-6 mx-2 h-px flex-1 transition-colors sm:-mt-8 sm:mx-4',
+                        currentStep > step.id ? 'bg-primary' : 'bg-border'
+                      )}
+                    />
+                  )}
                 </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={cn(
-                      '-mt-6 mx-2 h-px flex-1 transition-colors sm:-mt-8 sm:mx-4',
-                      currentStep > step.id ? 'bg-primary' : 'bg-border'
-                    )}
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -295,14 +305,15 @@ export function AutomationWizard({
       {/* Step Content */}
       <div className='flex-1 overflow-y-auto'>
         <div className='mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-12'>
-          {currentStep === 1 && (
+          {currentStep === 1 && !isEditMode && (
             <SelectAccountTypeStep
               formData={formData}
               updateFormData={updateFormData}
               nextStep={nextStep}
+              onCancel={onCancel}
             />
           )}
-          {currentStep === 2 && (
+          {currentStep === 2 && !isEditMode && (
             <SelectSocialAccountStep
               formData={formData}
               updateFormData={updateFormData}

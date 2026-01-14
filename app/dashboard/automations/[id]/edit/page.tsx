@@ -2,16 +2,22 @@
 
 import { useRouter, useParams } from 'next/navigation';
 import { AutomationEditWizard } from '@/components/automations/automation-edit-wizard';
+import { CreateAutomationRequest, AutomationsApi } from '@/lib/api/automations';
+import { toast } from 'sonner';
 
 export default function EditAutomationPage() {
   const params = useParams();
   const router = useRouter();
   const automationId = params.id as string;
 
-  const handleComplete = (automation: any) => {
-    console.log('Updated automation:', automation);
-    // In production, call API to update
-    router.push(`/dashboard/automations/${automationId}`);
+  const handleComplete = async (automation: CreateAutomationRequest) => {
+    try {
+      await AutomationsApi.update(automationId, automation);
+      toast.success('Automation updated successfully');
+      router.push(`/dashboard/automations/${automationId}`);
+    } catch {
+      toast.error('Failed to update automation');
+    }
   };
 
   const handleCancel = () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,10 +11,12 @@ import {
   Plus,
   X,
   Check,
+  Loader2,
 } from 'lucide-react';
 import { MediaSelectorModal } from '../media-selector-modal';
 import type { AutomationFormData } from '../automation-wizard';
 import type { Media } from '@/lib/api/media';
+import { InstagramMediaApi } from '@/lib/api/instagram/media';
 import {
   AutomationTriggerType,
   type AutomationTriggerTypeType,
@@ -49,6 +51,65 @@ export function SelectTriggerStep({
     formData.selected_media || []
   );
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [isSelectedMediaLoading, setIsSelectedMediaLoading] = useState(false);
+
+  useEffect(() => {
+    const loadSelectedMedia = async () => {
+      if (
+        !formData.social_account_id ||
+        !formData.content_ids ||
+        formData.content_ids.length === 0 ||
+        selectedMedia.length > 0
+      ) {
+        return;
+      }
+
+      setIsSelectedMediaLoading(true);
+
+      try {
+        const responses = await Promise.all(
+          formData.content_ids.map(id =>
+            InstagramMediaApi.getMedia(id, {
+              social_account_id: formData.social_account_id as string,
+            })
+          )
+        );
+
+        const mappedMedia: Media[] = responses.map(response => {
+          const item = response.data;
+          return {
+            id: item.id,
+            name: item.caption || 'Instagram Media',
+            url: item.media_url || item.permalink || '',
+            thumbnail_url: item.thumbnail_url || item.media_url,
+            mime_type:
+              item.media_type === 'VIDEO' || item.media_type === 'REELS'
+                ? 'video/mp4'
+                : 'image/jpeg',
+            size: 0,
+            description: item.caption,
+            created_at: item.timestamp,
+            updated_at: item.timestamp,
+          };
+        });
+
+        setSelectedMedia(mappedMedia);
+        setSelectedMediaIds(formData.content_ids);
+        updateFormData({ selected_media: mappedMedia });
+      } catch (_error) {
+        void 0;
+      } finally {
+        setIsSelectedMediaLoading(false);
+      }
+    };
+
+    loadSelectedMedia();
+  }, [
+    formData.content_ids,
+    formData.social_account_id,
+    selectedMedia.length,
+    updateFormData,
+  ]);
 
   const handleSelectTrigger = (trigger: AutomationTriggerTypeType) => {
     setSelectedTrigger(trigger);
@@ -357,8 +418,13 @@ export function SelectTriggerStep({
                 </Button>
               </div>
 
-              {/* Show selected media thumbnails */}
-              {selectedMediaIds.length > 0 && (
+              {isSelectedMediaLoading && selectedMediaIds.length > 0 && (
+                <div className='mt-3 flex h-16 items-center justify-center'>
+                  <Loader2 className='h-5 w-5 animate-spin text-primary' />
+                </div>
+              )}
+
+              {!isSelectedMediaLoading && selectedMediaIds.length > 0 && (
                 <div className='mt-3 flex flex-wrap gap-2'>
                   {selectedMediaIds.map(id => {
                     const media = selectedMedia.find(m => m.id === id);
@@ -389,7 +455,6 @@ export function SelectTriggerStep({
                 </div>
               )}
 
-              {/* Validation message */}
               {scope === AutomationTriggerScope.SPECIFIC &&
                 selectedMediaIds.length === 0 && (
                   <p className='mt-3 text-xs text-amber-500'>

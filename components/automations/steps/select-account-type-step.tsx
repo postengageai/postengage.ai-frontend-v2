@@ -1,5 +1,6 @@
 'use client';
-import { Instagram, Facebook, Check } from 'lucide-react';
+import { Instagram, Facebook, Check, ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { AutomationFormData } from '../automation-wizard';
 import {
   AutomationPlatform,
@@ -10,12 +11,14 @@ interface SelectAccountTypeStepProps {
   formData: AutomationFormData;
   updateFormData: (data: Partial<AutomationFormData>) => void;
   nextStep: () => void;
+  onCancel: () => void;
 }
 
 export function SelectAccountTypeStep({
   formData,
   updateFormData,
   nextStep,
+  onCancel,
 }: SelectAccountTypeStepProps) {
   const handleSelectPlatform = (platform: AutomationPlatformType) => {
     updateFormData({ platform });
@@ -88,6 +91,17 @@ export function SelectAccountTypeStep({
             </div>
           </div>
         </button>
+      </div>
+
+      <div className='mt-8 flex justify-start'>
+        <Button
+          variant='outline'
+          onClick={onCancel}
+          className='bg-transparent w-full sm:w-auto'
+        >
+          <ChevronLeft className='mr-2 h-4 w-4' />
+          Back
+        </Button>
       </div>
     </div>
   );

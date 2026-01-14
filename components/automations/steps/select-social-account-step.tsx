@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Instagram, Check, Loader2 } from 'lucide-react';
+import { Instagram, Check, Loader2, ChevronLeft } from 'lucide-react';
 import type { AutomationFormData } from '../automation-wizard';
 import {
   SocialAccountsApi,
@@ -24,6 +24,7 @@ export function SelectSocialAccountStep({
   formData,
   updateFormData,
   nextStep,
+  prevStep,
 }: SelectSocialAccountStepProps) {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -158,8 +159,20 @@ export function SelectSocialAccountStep({
         </div>
       )}
 
-      <div className='mt-8 flex justify-end'>
-        <Button onClick={handleNext} disabled={!selectedAccountId}>
+      <div className='mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between'>
+        <Button
+          variant='outline'
+          onClick={prevStep}
+          className='w-full bg-transparent sm:w-auto'
+        >
+          <ChevronLeft className='mr-2 h-4 w-4' />
+          Back
+        </Button>
+        <Button
+          onClick={handleNext}
+          disabled={!selectedAccountId}
+          className='w-full sm:w-auto'
+        >
           Next Step
         </Button>
       </div>

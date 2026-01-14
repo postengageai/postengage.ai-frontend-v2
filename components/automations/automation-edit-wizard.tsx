@@ -56,7 +56,7 @@ function apiToFormData(apiData: Automation): AutomationFormData {
       AutomationPlatform,
       AutomationPlatform.INSTAGRAM
     ),
-    social_account_id: apiData.social_account_id || '',
+    social_account_id: apiData.social_account?.id || '',
     social_account_name: apiData.social_account?.username,
     trigger_type: parseEnum<AutomationTriggerTypeType>(
       apiData.trigger?.trigger_type,
