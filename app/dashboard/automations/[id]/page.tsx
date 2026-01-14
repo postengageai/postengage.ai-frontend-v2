@@ -89,11 +89,11 @@ export default function AutomationDetailPage() {
                   ? 'failed'
                   : 'pending',
             trigger_data: {
-              username: 'Instagram User', // Placeholder since we don't have this data in execution log yet
-              text: 'Triggered automation', // Placeholder
+              username: exec.trigger_data?.username || 'Instagram User',
+              text: exec.trigger_data?.text || 'Triggered automation',
             },
             executed_at: exec.executed_at,
-            credits_used: 1, // Placeholder
+            credits_used: exec.credits_used || 0,
           })),
           created_at: apiData.created_at,
           updated_at: apiData.updated_at,

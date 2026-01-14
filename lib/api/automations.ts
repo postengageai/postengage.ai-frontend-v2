@@ -207,6 +207,14 @@ export interface AutomationExecution {
   duration_ms: number;
   executed_at: string;
   transaction_id?: string;
+  trigger_data?: {
+    username?: string;
+    full_name?: string;
+    text?: string;
+    media_url?: string;
+    [key: string]: unknown;
+  };
+  credits_used?: number;
 }
 
 export class AutomationsApi {
