@@ -198,6 +198,17 @@ export interface AutomationListParams {
   limit?: number;
 }
 
+export interface AutomationExecution {
+  _id: string;
+  automation_id: string;
+  trigger_event_id: string;
+  status: 'success' | 'failed' | 'skipped' | 'partial_success';
+  error_message?: string;
+  duration_ms: number;
+  executed_at: string;
+  transaction_id?: string;
+}
+
 export class AutomationsApi {
   static async create(
     request: CreateAutomationRequest
@@ -235,6 +246,20 @@ export class AutomationsApi {
     });
     return response.data!;
   }
+
+  static async getHistory(
+    id: string,
+    page = 1,
+    limit = 10
+  ): Promise<SuccessResponse<AutomationExecution[]>> {
+    const response = await httpClient.get<AutomationExecution[]>(
+      `${AUTOMATIONS_BASE_URL}/${id}/history`,
+      {
+        params: { page, limit },
+      }
+    );
+    return response.data!;
+  }
 }
 
 export const automationsApi = {
@@ -242,4 +267,5 @@ export const automationsApi = {
   update: AutomationsApi.update,
   get: AutomationsApi.get,
   list: AutomationsApi.list,
+  getHistory: AutomationsApi.getHistory,
 };

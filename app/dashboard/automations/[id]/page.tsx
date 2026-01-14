@@ -9,6 +9,7 @@ import {
 import { automationsApi } from '@/lib/api/automations';
 import { AutomationStatus } from '@/lib/constants/automations';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function AutomationDetailPage() {
   const params = useParams();
@@ -25,9 +26,14 @@ export default function AutomationDetailPage() {
   const fetchAutomation = async (id: string) => {
     setIsLoading(true);
     try {
-      const response = await automationsApi.get(id);
+      const [response, historyResponse] = await Promise.all([
+        automationsApi.get(id),
+        automationsApi.getHistory(id),
+      ]);
+
       if (response && response.data) {
         const apiData = response.data;
+        const historyData = historyResponse.data || [];
 
         // Map API data to UI component data structure
         const mappedData: AutomationData = {
@@ -74,7 +80,21 @@ export default function AutomationDetailPage() {
               period: 'week',
             },
           },
-          execution_history: [], // Not in API yet
+          execution_history: historyData.map(exec => ({
+            id: exec._id,
+            status:
+              exec.status === 'success'
+                ? 'success'
+                : exec.status === 'failed'
+                  ? 'failed'
+                  : 'pending',
+            trigger_data: {
+              username: 'Instagram User', // Placeholder since we don't have this data in execution log yet
+              text: 'Triggered automation', // Placeholder
+            },
+            executed_at: exec.executed_at,
+            credits_used: 1, // Placeholder
+          })),
           created_at: apiData.created_at,
           updated_at: apiData.updated_at,
         };
