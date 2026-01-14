@@ -22,6 +22,8 @@ export interface Automation {
   name: string;
   trigger: 'comment' | 'keyword' | 'dm' | 'mention';
   action: 'reply' | 'dm' | 'like';
+  triggers?: string[];
+  actions?: string[];
   status: 'running' | 'paused';
   creditCost: number;
   handledCount: number;
