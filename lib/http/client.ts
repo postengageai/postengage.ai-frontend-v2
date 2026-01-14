@@ -7,36 +7,40 @@ import axios, {
   AxiosHeaders,
 } from 'axios';
 
+export interface PaginationMeta {
+  total?: number;
+  page?: number;
+  per_page?: number;
+  total_pages?: number;
+  has_next?: boolean;
+  has_prev?: boolean;
+  limit?: number;
+  next_cursor?: string;
+  previous_cursor?: string;
+  has_next_page?: boolean;
+  has_previous_page?: boolean;
+}
+
 export interface SuccessResponse<T = unknown> {
+  success: boolean;
   data: T;
+  pagination?: PaginationMeta;
   meta: {
-    success: boolean;
-    status: number;
+    request_id: string;
     timestamp: string;
-    path: string;
-    trace_id?: string;
+    api_version: string;
+    path?: string;
+    status?: number;
   };
 }
 
-// Backend error response structure
-export interface ErrorResponse {
-  message: string;
-  code: string;
-  details: {
-    documentation_url: string;
-    action?: string;
-    support_reference?: string;
-    [key: string]: unknown;
-  };
-  timestamp: string;
-}
-
-// Import error handling utilities
 import {
   ApiError,
   TimeoutError,
   NetworkError,
   createAppropriateError,
+  BackendErrorResponse,
+  ErrorResponseDetails,
 } from './errors';
 
 // Callback for handling 401 responses
@@ -55,7 +59,7 @@ export interface ApiSuccessResponse<T = unknown> {
 
 export interface ApiErrorResponse {
   data: null;
-  error: ErrorResponse;
+  error: BackendErrorResponse;
   status: number;
   headers: AxiosHeaders;
 }
@@ -144,11 +148,10 @@ export class HttpClient {
           }
         }
 
-        // Convert Axios error to our ApiError
         if (error.response) {
           const status = error.response.status;
-          const errorData = error.response.data as ErrorResponse;
-          throw createAppropriateError(status, errorData);
+          const backendError = this.parseBackendError(error.response.data);
+          throw createAppropriateError(status, backendError);
         }
 
         if (error.code === 'ECONNABORTED') {
@@ -202,6 +205,67 @@ export class HttpClient {
     }
   }
 
+  private parseBackendError(data: unknown): BackendErrorResponse | undefined {
+    if (!data || typeof data !== 'object') {
+      return undefined;
+    }
+
+    const payload = data as {
+      success?: boolean;
+      error?: {
+        code?: string;
+        message?: string;
+        details?: Record<string, unknown>;
+        documentation_url?: string;
+      };
+      meta?: {
+        request_id?: string;
+        timestamp?: string;
+        api_version?: string;
+        path?: string;
+        status?: number;
+      };
+    };
+
+    if (payload.success !== false || !payload.error) {
+      return undefined;
+    }
+
+    const rawDetails = (payload.error.details ?? {}) as Record<string, unknown>;
+
+    const documentationUrlFromError =
+      typeof payload.error.documentation_url === 'string'
+        ? payload.error.documentation_url
+        : undefined;
+    const documentationUrlFromDetails =
+      typeof rawDetails.documentation_url === 'string'
+        ? rawDetails.documentation_url
+        : undefined;
+
+    const documentationUrl =
+      documentationUrlFromError ??
+      documentationUrlFromDetails ??
+      'https://docs.postengage.ai/errors';
+
+    const details: ErrorResponseDetails = {
+      documentation_url: documentationUrl,
+      action: rawDetails.action as string | undefined,
+      support_reference: rawDetails.support_reference as string | undefined,
+      ...rawDetails,
+      request_id: payload.meta?.request_id,
+      api_version: payload.meta?.api_version,
+      path: payload.meta?.path,
+      status: payload.meta?.status,
+    };
+
+    return {
+      message: payload.error.message ?? 'An unexpected error occurred',
+      code: payload.error.code ?? 'internal_server_error',
+      details,
+      timestamp: payload.meta?.timestamp ?? new Date().toISOString(),
+    };
+  }
+
   private transformResponse<T>(
     axiosResponse: AxiosResponse<SuccessResponse<T>>
   ): ApiSuccessResponse<T> {
@@ -240,12 +304,11 @@ export class HttpClient {
         throw error;
       }
 
-      // Handle Axios errors that weren't converted by interceptor
       if (axios.isAxiosError(error)) {
         if (error.response) {
           const status = error.response.status;
-          const errorData = error.response.data as ErrorResponse;
-          throw createAppropriateError(status, errorData);
+          const backendError = this.parseBackendError(error.response.data);
+          throw createAppropriateError(status, backendError);
         }
 
         if (error.code === 'ECONNABORTED') {

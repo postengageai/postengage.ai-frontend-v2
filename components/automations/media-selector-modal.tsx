@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { type Media } from '@/lib/api/media';
 import { InstagramMediaApi } from '@/lib/api/instagram/media';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
 interface MediaSelectorModalProps {
   open: boolean;
@@ -64,13 +65,13 @@ export function MediaSelectorModal({
       const response = await InstagramMediaApi.getMediaList({
         social_account_id: socialAccountId,
         after: cursor,
-        limit: 24, // Matches grid layout
+        limit: 24,
       });
 
-      const instagramMedia = response.data.data || [];
-      const paging = response.data.paging;
+      const instagramMedia = response.data || [];
+      const pagination = response.pagination;
 
-      const mappedMedia: Media[] = instagramMedia.map(item => ({
+      const mappedMedia: Media[] = instagramMedia.map((item: any) => ({
         id: item.id,
         name: item.caption || 'Instagram Media',
         url: item.media_url || item.permalink || '',
@@ -91,7 +92,7 @@ export function MediaSelectorModal({
         setMediaList(prev => [...prev, ...mappedMedia]);
       }
 
-      setNextCursor(paging?.cursors?.after || null);
+      setNextCursor(pagination?.next_cursor || null);
     } catch (error) {
       console.error('Failed to fetch media:', error);
       toast({
@@ -220,10 +221,13 @@ export function MediaSelectorModal({
                   onClick={() => toggleSelection(media.id)}
                 >
                   <div className='aspect-square w-full overflow-hidden bg-muted'>
-                    <img
+                    <Image
                       src={media.thumbnail_url || media.url}
                       alt={media.alt_text || 'Media'}
                       className='h-full w-full object-cover transition-transform duration-300 group-hover:scale-105'
+                      width={200}
+                      height={200}
+                      unoptimized
                     />
                   </div>
 
@@ -233,7 +237,7 @@ export function MediaSelectorModal({
                     </div>
                   )}
 
-                  <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8 text-white opacity-0 transition-opacity group-hover:opacity-100'>
+                  <div className='absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-3 pt-8 text-white opacity-0 transition-opacity group-hover:opacity-100'>
                     <p className='line-clamp-2 text-xs'>
                       {media.description || media.name}
                     </p>

@@ -39,14 +39,22 @@ export function ReviewStep({
 }: ReviewStepProps) {
   const [name, setName] = useState(formData.name || '');
   const [description, setDescription] = useState(formData.description || '');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = (isDraft: boolean) => {
-    updateFormData({
-      name,
-      description,
-      status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
-    });
-    onComplete(isDraft);
+  const handleSave = async (isDraft: boolean) => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      updateFormData({
+        name,
+        description,
+        status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
+      });
+      await onComplete(isDraft);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Calculate total credit cost
@@ -212,18 +220,28 @@ export function ReviewStep({
           <Button
             variant='outline'
             onClick={() => handleSave(true)}
-            disabled={!name.trim()}
+            disabled={!name.trim() || isLoading}
             className='w-full sm:w-auto'
           >
-            {isEditMode ? 'Save as Draft' : 'Save as Draft'}
+            {isLoading
+              ? 'Saving...'
+              : isEditMode
+                ? 'Save as Draft'
+                : 'Save as Draft'}
           </Button>
           <Button
             onClick={() => handleSave(false)}
-            disabled={!name.trim()}
+            disabled={!name.trim() || isLoading}
             className='w-full sm:w-auto'
           >
-            <Check className='mr-2 h-4 w-4' />
-            {isEditMode ? 'Update & Activate' : 'Create & Activate'}
+            {isLoading ? (
+              'Processing...'
+            ) : (
+              <>
+                <Check className='mr-2 h-4 w-4' />
+                {isEditMode ? 'Update & Activate' : 'Create & Activate'}
+              </>
+            )}
           </Button>
         </div>
       </div>

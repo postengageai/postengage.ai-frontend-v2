@@ -27,18 +27,6 @@ export interface GetMediaListParams {
   before?: string;
 }
 
-export interface GetMediaListResponse {
-  data: GetMediaResponse[];
-  paging?: {
-    cursors: {
-      before: string;
-      after: string;
-    };
-    next?: string;
-    previous?: string;
-  };
-}
-
 export class InstagramMediaApi {
   /**
    * Retrieves a list of Instagram media objects.
@@ -48,8 +36,8 @@ export class InstagramMediaApi {
    */
   static async getMediaList(
     params: GetMediaListParams
-  ): Promise<SuccessResponse<GetMediaListResponse>> {
-    const response = await httpClient.get<GetMediaListResponse>(
+  ): Promise<SuccessResponse<GetMediaResponse[]>> {
+    const response = await httpClient.get<GetMediaResponse[]>(
       INSTAGRAM_MEDIA_BASE_URL,
       {
         params: {

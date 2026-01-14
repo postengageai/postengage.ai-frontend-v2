@@ -22,15 +22,21 @@ import {
   type AutomationActionTypeType,
   type AutomationStatusType,
 } from '@/lib/constants/automations';
+import {
+  automationsApi,
+  type Automation,
+  type CreateAutomationRequest,
+} from '@/lib/api/automations';
+import { toast } from '@/hooks/use-toast';
 
 interface AutomationEditWizardProps {
   automationId: string;
-  onComplete: (automation: any) => void;
+  onComplete: (automation: CreateAutomationRequest) => void;
   onCancel: () => void;
 }
 
 function parseEnum<T>(
-  value: any,
+  value: unknown,
   enumValues: Record<string, T>,
   defaultValue: T
 ): T {
@@ -43,7 +49,7 @@ function parseEnum<T>(
 }
 
 // Convert API data to form data format
-function apiToFormData(apiData: any): AutomationFormData {
+function apiToFormData(apiData: Automation): AutomationFormData {
   return {
     platform: parseEnum<AutomationPlatformType>(
       apiData.platform,
@@ -86,12 +92,13 @@ function apiToFormData(apiData: any): AutomationFormData {
             AutomationConditionSource,
             AutomationConditionSource.COMMENT_TEXT
           ),
-          condition_value: apiData.conditions[0].condition_value || [],
+          condition_value:
+            (apiData.conditions[0].condition_value as string[]) || [],
           status: 'active',
         }
       : null,
     actions:
-      apiData.actions?.map((action: any, index: number) => ({
+      apiData.actions?.map((action, index) => ({
         action_type: parseEnum<AutomationActionTypeType>(
           action.action_type,
           AutomationActionType,
@@ -127,62 +134,29 @@ export function AutomationEditWizard({
   );
 
   useEffect(() => {
-    // Simulate fetching automation data
     const fetchAutomation = async () => {
       setIsLoading(true);
-
-      // Mock API response - in production this would be a real API call
-      const mockApiData = {
-        id: automationId,
-        name: 'Welcome New Commenters',
-        description:
-          'Automatically reply to new comments and send a welcome DM',
-        social_account_id: 'acc_123',
-        social_account: {
-          username: 'alexcreates',
-        },
-        platform: 'instagram',
-        status: 'active',
-        trigger: {
-          trigger_type: 'new_comment',
-          trigger_source: 'post',
-          trigger_scope: 'all',
-        },
-        conditions: [
-          {
-            condition_type: 'keyword',
-            condition_operator: 'contains',
-            condition_keyword_mode: 'any',
-            condition_source: 'comment_text',
-            condition_value: ['price', 'cost', 'how much'],
-          },
-        ],
-        actions: [
-          {
-            action_type: 'reply_comment',
-            execution_order: 1,
-            delay_seconds: 0,
-            action_payload: {
-              text: 'Thanks for your comment! Check your DMs for more info 💬',
-            },
-          },
-          {
-            action_type: 'private_reply',
-            execution_order: 2,
-            delay_seconds: 5,
-            action_payload: {
-              text: 'Hey! Thanks for showing interest. Our pricing starts at ₹499. Would you like more details?',
-            },
-          },
-        ],
-      };
-
-      const formData = apiToFormData(mockApiData);
-      setInitialData(formData);
-      setIsLoading(false);
+      try {
+        const response = await automationsApi.get(automationId);
+        if (response && response.data) {
+          const formData = apiToFormData(response.data);
+          setInitialData(formData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch automation:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load automation details',
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    fetchAutomation();
+    if (automationId) {
+      fetchAutomation();
+    }
   }, [automationId]);
 
   if (isLoading) {

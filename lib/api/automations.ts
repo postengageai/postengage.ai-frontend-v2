@@ -37,7 +37,7 @@ export interface AutomationTriggerConfig {
   match_keywords?: string[];
   ignore_verified_users?: boolean;
   ignore_business_accounts?: boolean;
-  [key: string]: unknown;
+  [key: string]: string | number | boolean | string[] | undefined;
 }
 
 export interface AutomationTrigger {
@@ -46,6 +46,13 @@ export interface AutomationTrigger {
   trigger_scope?: AutomationTriggerScope;
   content_ids?: string[];
   trigger_config?: AutomationTriggerConfig;
+}
+
+export interface AutomationTriggerResponse extends AutomationTrigger {
+  id: string;
+  status: AutomationStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AutomationActionPayload {
@@ -60,7 +67,13 @@ export interface AutomationActionPayload {
   create_if_missing?: boolean;
   message?: string;
   email?: string;
-  [key: string]: unknown;
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | string[]
+    | { label: string; url: string }[]
+    | undefined;
 }
 
 export interface AutomationAction {
@@ -69,6 +82,12 @@ export interface AutomationAction {
   delay_seconds?: number;
   status?: AutomationActionStatus;
   action_payload: AutomationActionPayload;
+}
+
+export interface AutomationActionResponse extends AutomationAction {
+  id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export type ConditionValue =
@@ -85,7 +104,13 @@ export interface AutomationCondition {
   condition_keyword_mode?: AutomationConditionKeywordMode;
   condition_source?: AutomationConditionSource;
   condition_value: ConditionValue;
-  status?: AutomationStatus; // Using AutomationStatus as base, though usually 'active'|'inactive'
+  status?: AutomationStatus;
+}
+
+export interface AutomationConditionResponse extends AutomationCondition {
+  id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateAutomationRequest {
@@ -103,13 +128,74 @@ export interface CreateAutomationRequest {
   template_tags?: string[];
 }
 
-export interface Automation extends CreateAutomationRequest {
-  _id: string;
+export interface AutomationStatistics {
+  success_rate: number;
+  total_executions: number;
+  estimated_cost_per_execution: number;
+  last_7_days_executions: number;
+  trend: 'active' | 'inactive';
+}
+
+export interface AutomationUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  is_verified: boolean;
+  status: string;
+  timezone?: string;
+  language: string;
+  role: string;
   created_at: string;
   updated_at: string;
-  execution_count?: number;
-  success_count?: number;
-  failure_count?: number;
+}
+
+export interface AutomationSocialAccount {
+  id: string;
+  platform: string;
+  username: string;
+  connection_status: string;
+  connected_at: string;
+  is_active: boolean;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Automation {
+  id: string;
+  name: string;
+  description?: string;
+  platform: AutomationPlatform;
+  status: AutomationStatus;
+  execution_mode: AutomationExecutionMode;
+  paused_reason?: string | null;
+  scheduled_time?: string | null;
+  delayed_minutes?: number | null;
+  execution_count: number;
+  success_count: number;
+  failure_count: number;
+  last_executed_at?: string | null;
+  is_template: boolean;
+  template_category?: string | null;
+  template_tags: string[];
+  statistics: AutomationStatistics;
+  user?: AutomationUser;
+  social_account?: AutomationSocialAccount;
+  trigger: AutomationTriggerResponse;
+  actions: AutomationActionResponse[];
+  conditions: AutomationConditionResponse[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationListParams {
+  status?: string;
+  platform?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export class AutomationsApi {
@@ -141,7 +227,9 @@ export class AutomationsApi {
     return response.data!;
   }
 
-  static async list(params?: any): Promise<SuccessResponse<Automation[]>> {
+  static async list(
+    params?: AutomationListParams
+  ): Promise<SuccessResponse<Automation[]>> {
     const response = await httpClient.get<Automation[]>(AUTOMATIONS_BASE_URL, {
       params,
     });

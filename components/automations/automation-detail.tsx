@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
-interface AutomationData {
+export interface AutomationData {
   id: string;
   name: string;
   description?: string;
