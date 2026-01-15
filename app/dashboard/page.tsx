@@ -5,14 +5,12 @@ import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
 import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
-import { SuggestionsPanel } from '@/components/dashboard/suggestions-panel';
 import { DashboardSkeleton } from '@/components/dashboard/skeleton';
 import { dashboardApi } from '@/lib/api/dashboard';
 import { notificationsApi } from '@/lib/api/notifications';
 import type {
   Automation,
   ConnectedAccount,
-  Suggestion,
   PerformanceMetrics as IPerformanceMetrics,
 } from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
@@ -33,7 +31,6 @@ export default function DashboardPage() {
   const [weeklyGrowth, setWeeklyGrowth] = useState(0);
   const [totalLeads, setTotalLeads] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [performance, setPerformance] = useState<IPerformanceMetrics | null>(
     null
   );
@@ -67,10 +64,6 @@ export default function DashboardPage() {
         setTodayReplies(data.overview.credits_used_today);
         setWeeklyGrowth(data.overview.weekly_growth);
         setTotalLeads(data.overview.total_leads);
-
-        if (data.suggestions) {
-          setSuggestions(data.suggestions as unknown as Suggestion[]);
-        }
 
         if (data.performance) {
           setPerformance(data.performance);
@@ -198,7 +191,6 @@ export default function DashboardPage() {
 
         {/* Automation Summary & Suggestions - Secondary */}
         <div className='lg:col-span-2 space-y-6'>
-          <SuggestionsPanel suggestions={suggestions} />
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}
