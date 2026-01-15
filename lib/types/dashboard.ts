@@ -48,9 +48,24 @@ export interface DashboardState {
 
 export interface Suggestion {
   id: string;
-  type: 'connect' | 'create' | 'upgrade' | 'optimize';
+  type:
+    | 'action'
+    | 'info'
+    | 'warning'
+    | 'connect'
+    | 'create'
+    | 'upgrade'
+    | 'optimize';
   title: string;
   description: string;
-  action: string;
-  priority: 'high' | 'medium' | 'low';
+  action_label?: string;
+  action_url?: string;
+  priority?: 'high' | 'medium' | 'low';
+}
+
+export interface PerformanceMetrics {
+  engagement_rate: number;
+  reply_rate: number;
+  conversion_rate: number;
+  average_response_time: number;
 }

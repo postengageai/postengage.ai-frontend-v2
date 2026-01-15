@@ -4,9 +4,17 @@ import { useState, useEffect } from 'react';
 import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
+import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
+import { SuggestionsPanel } from '@/components/dashboard/suggestions-panel';
+import { DashboardSkeleton } from '@/components/dashboard/skeleton';
 import { dashboardApi } from '@/lib/api/dashboard';
 import { notificationsApi } from '@/lib/api/notifications';
-import type { Automation, ConnectedAccount } from '@/lib/types/dashboard';
+import type {
+  Automation,
+  ConnectedAccount,
+  Suggestion,
+  PerformanceMetrics as IPerformanceMetrics,
+} from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import type { Notification } from '@/lib/types/notifications';
 
@@ -23,7 +31,12 @@ export default function DashboardPage() {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [todayReplies, setTodayReplies] = useState(0);
   const [weeklyGrowth, setWeeklyGrowth] = useState(0);
+  const [totalLeads, setTotalLeads] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [performance, setPerformance] = useState<IPerformanceMetrics | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -53,6 +66,15 @@ export default function DashboardPage() {
 
         setTodayReplies(data.overview.credits_used_today);
         setWeeklyGrowth(data.overview.weekly_growth);
+        setTotalLeads(data.overview.total_leads);
+
+        if (data.suggestions) {
+          setSuggestions(data.suggestions as unknown as Suggestion[]);
+        }
+
+        if (data.performance) {
+          setPerformance(data.performance);
+        }
 
         setAutomations(
           data.automations.map(a => ({
@@ -139,11 +161,7 @@ export default function DashboardPage() {
   };
 
   if (isLoading) {
-    return (
-      <main className='p-6 lg:p-8 flex items-center justify-center min-h-[50vh]'>
-        <div className='text-muted-foreground'>Loading dashboard...</div>
-      </main>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -161,12 +179,16 @@ export default function DashboardPage() {
         credits={credits}
         todayReplies={todayReplies}
         weeklyGrowth={weeklyGrowth}
+        totalLeads={totalLeads}
       />
+
+      {/* Performance Metrics */}
+      {performance && <PerformanceMetrics metrics={performance} />}
 
       {/* Main content grid */}
       <div className='grid gap-6 lg:grid-cols-5'>
         {/* Live Activity Feed - Primary focus (takes more space) */}
-        <div className='lg:col-span-3'>
+        <div className='lg:col-span-3 space-y-6'>
           <RecentActivity
             notifications={notifications}
             onMarkAsRead={handleMarkAsRead}
@@ -174,8 +196,9 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Automation Summary - Secondary */}
-        <div className='lg:col-span-2'>
+        {/* Automation Summary & Suggestions - Secondary */}
+        <div className='lg:col-span-2 space-y-6'>
+          <SuggestionsPanel suggestions={suggestions} />
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}

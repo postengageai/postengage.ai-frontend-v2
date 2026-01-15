@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Zap, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react';
+import { Zap, TrendingUp, AlertCircle, ArrowRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickInsightsProps {
@@ -13,18 +13,20 @@ interface QuickInsightsProps {
   };
   todayReplies: number;
   weeklyGrowth: number;
+  totalLeads: number;
 }
 
 export function QuickInsights({
   credits,
   todayReplies,
   weeklyGrowth,
+  totalLeads,
 }: QuickInsightsProps) {
   const creditsPercent = (credits.remaining / credits.total) * 100;
   const isLowCredits = creditsPercent <= 20;
 
   return (
-    <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
       {/* Credits Card */}
       <Card
         className={cn('overflow-hidden', isLowCredits && 'border-warning/50')}
@@ -106,6 +108,24 @@ export function QuickInsights({
             </div>
             <div className='p-2 rounded-md bg-primary/10'>
               <TrendingUp className='h-4 w-4 text-primary' />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Total Leads */}
+      <Card>
+        <CardContent className='p-4'>
+          <div className='flex items-start justify-between'>
+            <div>
+              <p className='text-sm text-muted-foreground'>Total Leads</p>
+              <p className='text-2xl font-bold mt-1'>{totalLeads}</p>
+              <p className='text-xs text-muted-foreground mt-1'>
+                Captured leads
+              </p>
+            </div>
+            <div className='p-2 rounded-md bg-blue-500/10'>
+              <Users className='h-4 w-4 text-blue-500' />
             </div>
           </div>
         </CardContent>

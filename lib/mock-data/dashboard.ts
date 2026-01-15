@@ -1,10 +1,6 @@
 // Mock data for the PostEngageAI Dashboard
 
-import type {
-  DashboardState,
-  Automation,
-  Suggestion,
-} from '@/lib/types/dashboard';
+import type { DashboardState, Automation } from '@/lib/types/dashboard';
 import { Notification } from '@/lib/types/notifications';
 
 export const mockUser = {
@@ -105,41 +101,3 @@ export const mockEmptyDashboardState: DashboardState = {
   notifications: [],
   isLoading: false,
 };
-
-export const mockSuggestions: Suggestion[] = [
-  {
-    id: 'sug_1',
-    type: 'optimize',
-    title: 'Engagement spike detected',
-    description: 'Your last post is getting 3x more comments than usual.',
-    action: 'Create automation for this post',
-    priority: 'high',
-  },
-  {
-    id: 'sug_2',
-    type: 'create',
-    title: 'DMs are piling up',
-    description: '12 unread DMs contain product questions.',
-    action: 'Set up DM auto-responder',
-    priority: 'medium',
-  },
-  {
-    id: 'sug_3',
-    type: 'upgrade',
-    title: 'Running low on credits',
-    description: 'At current pace, credits will last ~3 days.',
-    action: 'View plans',
-    priority: 'low',
-  },
-];
-
-export const mockEmptySuggestions: Suggestion[] = [
-  {
-    id: 'sug_empty_1',
-    type: 'connect',
-    title: 'Connect your Instagram',
-    description: 'Link your account to start automating replies.',
-    action: 'Connect Instagram',
-    priority: 'high',
-  },
-];
