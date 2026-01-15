@@ -39,6 +39,7 @@ import type {
   NotificationStatusType,
 } from '@/lib/types/notifications';
 import { notificationsApi } from '@/lib/api/notifications';
+import { socketService } from '@/lib/socket/socket.service';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,6 +85,29 @@ export default function ActivityPage() {
     };
 
     fetchNotifications();
+  }, []);
+
+  // Subscribe to real-time notification updates
+  useEffect(() => {
+    const handleNewNotification = (newNotification: Notification) => {
+      // Add new notification to the top of the list
+      setNotifications(prev => [newNotification, ...prev]);
+
+      // Flash UI indicator or show toast (optional)
+      console.log('New notification received:', newNotification);
+    };
+
+    // Connect to socket and subscribe to notification updates
+    const socket = socketService.connect();
+    if (socket) {
+      socketService.subscribeToNotifications(handleNewNotification);
+    }
+
+    return () => {
+      if (socket) {
+        socketService.unsubscribeFromNotifications(handleNewNotification);
+      }
+    };
   }, []);
 
   const filteredNotifications = useMemo(() => {

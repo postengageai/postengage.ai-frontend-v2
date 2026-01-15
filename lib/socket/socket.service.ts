@@ -67,7 +67,7 @@ class SocketService {
       return;
     }
 
-    this.socket.on('notification:new', callback);
+    this.socket.on('notification', callback);
   }
 
   unsubscribeFromNotifications(
@@ -77,7 +77,7 @@ class SocketService {
       return;
     }
 
-    this.socket.off('notification:new', callback);
+    this.socket.off('notification', callback);
   }
 
   // Join user-specific rooms
