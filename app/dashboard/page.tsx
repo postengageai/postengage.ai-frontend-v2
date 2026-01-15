@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
-import { LiveActivityFeed } from '@/components/dashboard/live-activity-feed';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
 import { dashboardApi } from '@/lib/api/dashboard';
-import type {
-  Automation,
-  Activity,
-  ConnectedAccount,
-} from '@/lib/types/dashboard';
+import { notificationsApi } from '@/lib/api/notifications';
+import type { Automation, ConnectedAccount } from '@/lib/types/dashboard';
+import { RecentActivity } from '@/components/dashboard/recent-activity';
+import type { Notification } from '@/lib/types/notifications';
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -23,15 +21,18 @@ export default function DashboardPage() {
     estimatedReplies: 0,
   });
   const [automations, setAutomations] = useState<Automation[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [todayReplies, setTodayReplies] = useState(0);
   const [weeklyGrowth, setWeeklyGrowth] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await dashboardApi.getStats();
-        const data = response.data;
+        const dashboardResponse = await dashboardApi.getStats();
+        const data = dashboardResponse.data;
+
+        // Cast recent_activity to Notification[] since the backend now returns notifications
+        setNotifications(data.recent_activity as unknown as Notification[]);
 
         if (data.connected_account) {
           setConnectedAccount({
@@ -68,23 +69,6 @@ export default function DashboardPage() {
             createdAt: new Date(a.created_at),
           }))
         );
-
-        setActivities(
-          data.recent_activity.map(a => ({
-            id: a.id,
-            type:
-              a.status === 'failed'
-                ? 'error'
-                : a.status === 'skipped'
-                  ? 'skipped'
-                  : 'reply_sent',
-            automationName: a.automation_name,
-            description: a.description,
-            creditCost: a.credits_used,
-            timestamp: new Date(a.timestamp),
-            metadata: a.metadata,
-          }))
-        );
       } catch (error) {
         console.error('Failed to fetch dashboard stats:', error);
       } finally {
@@ -95,10 +79,50 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationsApi.markAsRead({ notification_ids: [id] });
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === id
+            ? {
+                ...n,
+                status: 'read' as const,
+                read_at: new Date().toISOString(),
+              }
+            : n
+        )
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(prev =>
+        prev.map(n =>
+          n.status === 'unread'
+            ? {
+                ...n,
+                status: 'read' as const,
+                read_at: new Date().toISOString(),
+              }
+            : n
+        )
+      );
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
   const activeAutomationCount = automations.filter(
     a => a.status === 'running'
   ).length;
-  const lastActivity = activities[0]?.timestamp;
+  const lastActivity = notifications[0]?.created_at
+    ? new Date(notifications[0].created_at)
+    : undefined;
 
   const handleToggleAutomation = async (id: string) => {
     // TODO: Implement toggle API call
@@ -143,10 +167,10 @@ export default function DashboardPage() {
       <div className='grid gap-6 lg:grid-cols-5'>
         {/* Live Activity Feed - Primary focus (takes more space) */}
         <div className='lg:col-span-3'>
-          <LiveActivityFeed
-            activities={activities}
-            maxItems={8}
-            hasAutomations={automations.length > 0}
+          <RecentActivity
+            notifications={notifications}
+            onMarkAsRead={handleMarkAsRead}
+            onMarkAllAsRead={handleMarkAllAsRead}
           />
         </div>
 

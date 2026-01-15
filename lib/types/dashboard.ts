@@ -1,5 +1,7 @@
 // Types for the PostEngageAI Dashboard
 
+import { Notification } from './notifications';
+
 export interface User {
   id: string;
   name: string;
@@ -31,20 +33,6 @@ export interface Automation {
   createdAt: Date;
 }
 
-export interface Activity {
-  id: string;
-  type: 'reply_sent' | 'dm_sent' | 'automation_paused' | 'error' | 'skipped';
-  automationName: string;
-  description: string;
-  creditCost: number;
-  timestamp: Date;
-  metadata?: {
-    username?: string;
-    postId?: string;
-    reason?: string;
-  };
-}
-
 export interface DashboardState {
   user: User;
   connectedAccount: ConnectedAccount | null;
@@ -54,7 +42,7 @@ export interface DashboardState {
     estimatedReplies: number;
   };
   automations: Automation[];
-  activities: Activity[];
+  notifications: Notification[];
   isLoading: boolean;
 }
 

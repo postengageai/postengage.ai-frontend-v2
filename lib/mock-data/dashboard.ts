@@ -2,10 +2,10 @@
 
 import type {
   DashboardState,
-  Activity,
   Automation,
   Suggestion,
 } from '@/lib/types/dashboard';
+import { Notification } from '@/lib/types/notifications';
 
 export const mockUser = {
   id: 'user_1',
@@ -60,51 +60,22 @@ export const mockAutomations: Automation[] = [
   },
 ];
 
-export const mockActivities: Activity[] = [
+export const mockNotifications: Notification[] = [
   {
-    id: 'act_1',
-    type: 'reply_sent',
-    automationName: 'Welcome New Commenters',
-    description: 'Replied to @sarah_designs on "New collection drop"',
-    creditCost: 1,
-    timestamp: new Date(Date.now() - 2 * 60 * 1000),
-    metadata: { username: 'sarah_designs' },
-  },
-  {
-    id: 'act_2',
-    type: 'dm_sent',
-    automationName: 'Price Question Auto-DM',
-    description: 'Sent pricing info to @mark_buyer',
-    creditCost: 2,
-    timestamp: new Date(Date.now() - 8 * 60 * 1000),
-    metadata: { username: 'mark_buyer' },
-  },
-  {
-    id: 'act_3',
-    type: 'reply_sent',
-    automationName: 'Welcome New Commenters',
-    description: 'Replied to @creative.jane on "Behind the scenes"',
-    creditCost: 1,
-    timestamp: new Date(Date.now() - 15 * 60 * 1000),
-    metadata: { username: 'creative.jane' },
-  },
-  {
-    id: 'act_4',
-    type: 'skipped',
-    automationName: 'Welcome New Commenters',
-    description: 'Skipped spam comment from @bot_account',
-    creditCost: 0,
-    timestamp: new Date(Date.now() - 22 * 60 * 1000),
-    metadata: { username: 'bot_account', reason: 'spam_detected' },
-  },
-  {
-    id: 'act_5',
-    type: 'reply_sent',
-    automationName: 'Welcome New Commenters',
-    description: 'Replied to @photography.mike on "Studio setup"',
-    creditCost: 1,
-    timestamp: new Date(Date.now() - 35 * 60 * 1000),
-    metadata: { username: 'photography.mike' },
+    id: 'notif_1',
+    user_id: 'user_1',
+    type: 'social',
+    title: 'New Instagram Message',
+    message: 'Replied to @sarah_designs on "New collection drop"',
+    status: 'unread',
+    priority: 'medium',
+    created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    tags: [],
+    dismissible: true,
+    click_count: 0,
+    is_broadcast: false,
+    target_channels: [],
   },
 ];
 
@@ -117,7 +88,7 @@ export const mockDashboardState: DashboardState = {
     estimatedReplies: 127,
   },
   automations: mockAutomations,
-  activities: mockActivities,
+  notifications: mockNotifications,
   isLoading: false,
 };
 
@@ -131,7 +102,7 @@ export const mockEmptyDashboardState: DashboardState = {
     estimatedReplies: 50,
   },
   automations: [],
-  activities: [],
+  notifications: [],
   isLoading: false,
 };
 

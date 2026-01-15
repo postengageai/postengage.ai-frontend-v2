@@ -44,15 +44,22 @@ export interface DashboardSuggestion {
 
 export interface DashboardActivity {
   id: string;
-  type: string;
-  description: string;
-  status: string;
-  automation_name: string;
-  credits_used: number;
-  timestamp: string;
-  metadata?: {
-    username?: string;
-  };
+  user_id: string;
+  type: 'social' | 'system' | 'billing' | 'automation';
+  title: string;
+  message: string;
+  status: 'unread' | 'read' | 'archived';
+  priority: 'high' | 'medium' | 'low';
+  created_at: string;
+  updated_at: string;
+  action_label?: string;
+  action_url?: string;
+  metadata?: Record<string, unknown>;
+  tags?: string[];
+  dismissible?: boolean;
+  click_count?: number;
+  is_broadcast?: boolean;
+  target_channels?: string[];
 }
 
 export interface DashboardPerformance {

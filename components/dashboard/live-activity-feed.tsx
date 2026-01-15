@@ -21,13 +21,11 @@ import type { Activity } from '@/lib/types/dashboard';
 interface LiveActivityFeedProps {
   activities: Activity[];
   maxItems?: number;
-  hasAutomations?: boolean;
 }
 
 export function LiveActivityFeed({
   activities,
   maxItems = 8,
-  hasAutomations = false,
 }: LiveActivityFeedProps) {
   const [isLive, setIsLive] = useState(true);
   const displayedActivities = activities.slice(0, maxItems);
@@ -82,9 +80,6 @@ export function LiveActivityFeed({
   };
 
   if (activities.length === 0) {
-    if (hasAutomations) {
-      return <NoActivityState />;
-    }
     return <EmptyActivityState />;
   }
 
@@ -202,25 +197,6 @@ function EmptyActivityState() {
               Create your first automation
             </Link>
           </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function NoActivityState() {
-  return (
-    <Card className='overflow-hidden border-dashed'>
-      <CardContent className='p-8'>
-        <div className='text-center'>
-          <div className='mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
-            <Clock className='h-6 w-6 text-muted-foreground' />
-          </div>
-          <h3 className='mt-4 font-semibold'>No recent activity</h3>
-          <p className='mt-2 text-sm text-muted-foreground max-w-sm mx-auto'>
-            Your automations are active and waiting for comments. New activity
-            will appear here in real-time.
-          </p>
         </div>
       </CardContent>
     </Card>
