@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ import type {
   NotificationPriorityType,
   NotificationStatusType,
 } from '@/lib/types/notifications';
-import { mockNotifications } from '@/lib/mock-data/notifications';
+import { notificationsApi } from '@/lib/api/notifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,14 +57,34 @@ import {
 type FilterType = 'all' | 'unread' | 'read' | 'archived';
 
 export default function ActivityPage() {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [typeFilter, setTypeFilter] = useState<NotificationTypeType | 'all'>(
     'all'
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await notificationsApi.getNotifications();
+        setNotifications(response.data || []);
+      } catch (err) {
+        setError('Failed to load notifications');
+        console.error('Error fetching notifications:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter(n => {
@@ -95,38 +115,48 @@ export default function ActivityPage() {
     n => n.status === 'archived'
   ).length;
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n =>
-        n._id === id
-          ? {
-              ...n,
-              status: 'read' as NotificationStatusType,
-              read_at: new Date().toISOString(),
-            }
-          : n
-      )
-    );
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === id
+            ? {
+                ...n,
+                status: 'read' as NotificationStatusType,
+                read_at: new Date().toISOString(),
+              }
+            : n
+        )
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n =>
-        n.status === 'unread'
-          ? {
-              ...n,
-              status: 'read' as NotificationStatusType,
-              read_at: new Date().toISOString(),
-            }
-          : n
-      )
-    );
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(prev =>
+        prev.map(n =>
+          n.status === 'unread'
+            ? {
+                ...n,
+                status: 'read' as NotificationStatusType,
+                read_at: new Date().toISOString(),
+              }
+            : n
+        )
+      );
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+    }
   };
 
   const handleArchive = (id: string) => {
     setNotifications(prev =>
       prev.map(n =>
-        n._id === id
+        n.id === id
           ? {
               ...n,
               status: 'archived' as NotificationStatusType,
@@ -138,14 +168,14 @@ export default function ActivityPage() {
   };
 
   const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n._id !== id));
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const handleBulkAction = (action: 'read' | 'archive' | 'delete') => {
     if (action === 'read') {
       setNotifications(prev =>
         prev.map(n =>
-          selectedIds.has(n._id)
+          selectedIds.has(n.id)
             ? {
                 ...n,
                 status: 'read' as NotificationStatusType,
@@ -157,7 +187,7 @@ export default function ActivityPage() {
     } else if (action === 'archive') {
       setNotifications(prev =>
         prev.map(n =>
-          selectedIds.has(n._id)
+          selectedIds.has(n.id)
             ? {
                 ...n,
                 status: 'archived' as NotificationStatusType,
@@ -167,7 +197,7 @@ export default function ActivityPage() {
         )
       );
     } else if (action === 'delete') {
-      setNotifications(prev => prev.filter(n => !selectedIds.has(n._id)));
+      setNotifications(prev => prev.filter(n => !selectedIds.has(n.id)));
     }
     setSelectedIds(new Set());
   };
@@ -186,7 +216,7 @@ export default function ActivityPage() {
     if (selectedIds.size === filteredNotifications.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredNotifications.map(n => n._id)));
+      setSelectedIds(new Set(filteredNotifications.map(n => n.id)));
     }
   };
 
@@ -470,16 +500,51 @@ export default function ActivityPage() {
 
       {/* Notifications List */}
       <div className='px-4 sm:px-6 lg:px-8 py-4'>
-        {filteredNotifications.length === 0 ? (
+        {isLoading ? (
+          <div className='space-y-1'>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className='flex items-start gap-3 p-4 rounded-xl bg-secondary/30 animate-pulse'
+              >
+                <div className='w-4 h-4 bg-muted rounded mt-1' />
+                <div className='w-1.5 h-1.5 bg-muted rounded-full' />
+                <div className='w-10 h-10 bg-muted rounded-lg' />
+                <div className='flex-1 space-y-2'>
+                  <div className='h-4 bg-muted rounded w-1/3' />
+                  <div className='h-3 bg-muted rounded w-2/3' />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className='text-center py-16'>
+            <div className='mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10'>
+              <X className='h-7 w-7 text-destructive' />
+            </div>
+            <h3 className='mt-4 text-lg font-medium text-foreground'>
+              Failed to load notifications
+            </h3>
+            <p className='mt-1 text-sm text-muted-foreground'>{error}</p>
+            <Button
+              variant='outline'
+              size='sm'
+              className='mt-4'
+              onClick={() => window.location.reload()}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : filteredNotifications.length === 0 ? (
           <EmptyState filter={filter} searchQuery={searchQuery} />
         ) : (
           <div className='space-y-1'>
             {filteredNotifications.map(notification => (
               <NotificationRow
-                key={notification._id}
+                key={notification.id}
                 notification={notification}
-                isSelected={selectedIds.has(notification._id)}
-                onToggleSelect={() => toggleSelect(notification._id)}
+                isSelected={selectedIds.has(notification.id)}
+                onToggleSelect={() => toggleSelect(notification.id)}
                 getTypeIcon={getTypeIcon}
                 getTypeColor={getTypeColor}
                 getPriorityBadge={getPriorityBadge}
@@ -611,21 +676,21 @@ function NotificationRow({
               <DropdownMenuContent align='end' className='w-40'>
                 {isUnread && (
                   <DropdownMenuItem
-                    onClick={() => onMarkAsRead(notification._id)}
+                    onClick={() => onMarkAsRead(notification.id)}
                   >
                     <Check className='h-3.5 w-3.5 mr-2' />
                     Mark as read
                   </DropdownMenuItem>
                 )}
                 {!isArchived && (
-                  <DropdownMenuItem onClick={() => onArchive(notification._id)}>
+                  <DropdownMenuItem onClick={() => onArchive(notification.id)}>
                     <Archive className='h-3.5 w-3.5 mr-2' />
                     Archive
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => onDelete(notification._id)}
+                  onClick={() => onDelete(notification.id)}
                   className='text-destructive focus:text-destructive'
                 >
                   <Trash2 className='h-3.5 w-3.5 mr-2' />

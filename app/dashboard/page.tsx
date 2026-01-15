@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      await notificationsApi.markAsRead({ notification_ids: [id] });
+      await notificationsApi.markAsRead(id);
       setNotifications(prev =>
         prev.map(n =>
           n.id === id
