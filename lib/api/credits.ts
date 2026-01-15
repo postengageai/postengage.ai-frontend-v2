@@ -42,8 +42,8 @@ export class CreditsApi {
   // Get credit transactions with pagination
   static async getTransactions(
     query?: PaginationDto
-  ): Promise<SuccessResponse<TransactionsResponse>> {
-    const response = await httpClient.get<TransactionsResponse>(
+  ): Promise<SuccessResponse<CreditTransaction[]>> {
+    const response = await httpClient.get<CreditTransaction[]>(
       `${CREDITS_BASE_URL}/transactions`,
       { params: query }
     );
@@ -64,8 +64,8 @@ export class CreditsApi {
   // Get invoices (if available)
   static async getInvoices(
     query?: PaginationDto
-  ): Promise<SuccessResponse<TransactionsResponse>> {
-    const response = await httpClient.get<TransactionsResponse>(
+  ): Promise<SuccessResponse<CreditTransaction[]>> {
+    const response = await httpClient.get<CreditTransaction[]>(
       `${CREDITS_BASE_URL}/invoices`,
       { params: query }
     );
