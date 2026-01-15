@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,12 +37,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { socketService } from '@/lib/socket/socket.service';
 
 interface RecentActivityProps {
   notifications: Notification[];
   isLoading?: boolean;
   onMarkAsRead?: (id: string) => void;
   onMarkAllAsRead?: () => void;
+  onNewNotification?: (notification: Notification) => void;
 }
 
 type FilterType = 'all' | 'unread';
@@ -52,23 +54,58 @@ export function RecentActivity({
   isLoading = false,
   onMarkAsRead,
   onMarkAllAsRead,
+  onNewNotification,
 }: RecentActivityProps) {
   const [filter, setFilter] = useState<FilterType>('all');
   const [typeFilter, setTypeFilter] = useState<NotificationTypeType | 'all'>(
     'all'
   );
+  const [localNotifications, setLocalNotifications] = useState<Notification[]>(
+    notifications || []
+  );
+
+  // Sync with parent notifications
+  useEffect(() => {
+    setLocalNotifications(notifications || []);
+  }, [notifications]);
+
+  // Subscribe to real-time notification updates
+  useEffect(() => {
+    const handleNewNotification = (newNotification: Notification) => {
+      // Add new notification to the top of the list
+      setLocalNotifications(prev => [newNotification, ...prev]);
+
+      // Call parent callback if provided
+      onNewNotification?.(newNotification);
+
+      // Flash UI indicator or show toast (optional)
+      console.log('New notification received:', newNotification);
+    };
+
+    // Connect to socket and subscribe to notification updates
+    const socket = socketService.connect();
+    if (socket) {
+      socketService.subscribeToNotifications(handleNewNotification);
+    }
+
+    return () => {
+      if (socket) {
+        socketService.unsubscribeFromNotifications(handleNewNotification);
+      }
+    };
+  }, [onNewNotification]);
 
   const filteredNotifications = useMemo(() => {
-    if (!notifications) return [];
-    return notifications.filter(n => {
+    if (!localNotifications) return [];
+    return localNotifications.filter(n => {
       if (filter === 'unread' && n.status !== 'unread') return false;
       if (typeFilter !== 'all' && n.type !== typeFilter) return false;
       return true;
     });
-  }, [notifications, filter, typeFilter]);
+  }, [localNotifications, filter, typeFilter]);
 
-  const unreadCount = notifications
-    ? notifications.filter(n => n.status === 'unread').length
+  const unreadCount = localNotifications
+    ? localNotifications.filter(n => n.status === 'unread').length
     : 0;
 
   const getTypeIcon = (type: NotificationTypeType) => {
@@ -445,6 +482,7 @@ function RecentActivitySkeleton() {
               <Skeleton className='h-4 w-3/4' />
               <Skeleton className='h-3 w-1/2' />
             </div>
+            <Skeleton className='h-3 w-12' />
             <Skeleton className='h-3 w-12' />
           </div>
         ))}
