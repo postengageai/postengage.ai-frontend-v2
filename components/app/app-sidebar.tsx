@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +46,11 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useUser, useUserActions } from '@/lib/user/store';
+import { CreditsApi } from '@/lib/api/credits';
+import { AuthApi } from '@/lib/api/auth';
+import { useEffect, useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
   {
@@ -88,30 +93,44 @@ const settingsSubItems = [
   },
 ];
 
-// Mock data - in production this would come from context/props
-const mockUser = {
-  name: 'Alex',
-  email: 'alex@example.com',
-  plan: 'pro' as const,
-};
-
-// const mockConnectedAccount = {
-//   username: 'alexcreates',
-//   isConnected: true,
-// };
-
-const mockCredits = {
-  remaining: 127,
-  total: 500,
-};
-
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const user = useUser();
+  const { setUser } = useUserActions();
+  const [credits, setCredits] = useState({ remaining: 0 });
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
   const isCreditsActive = pathname.startsWith('/dashboard/credits');
 
-  const creditPercentage = (mockCredits.remaining / mockCredits.total) * 100;
-  const isLowCredits = creditPercentage < 25;
+  const handleLogout = async () => {
+    try {
+      await AuthApi.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setUser(null);
+      router.push('/login');
+    }
+  };
+
+  useEffect(() => {
+    async function fetchCredits() {
+      try {
+        const response = await CreditsApi.getBalance();
+        if (response && response.data) {
+          setCredits(prev => ({
+            ...prev,
+            remaining: response.data.available_credits,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch credits:', error);
+      }
+    }
+    fetchCredits();
+  }, []);
+
+  const isLowCredits = credits.remaining < 50;
 
   return (
     <Sidebar className='border-r border-border/50'>
@@ -300,20 +319,8 @@ export function AppSidebar() {
           </div>
           <div className='flex items-baseline gap-1'>
             <span className='text-2xl font-bold font-mono'>
-              {mockCredits.remaining}
+              {credits.remaining}
             </span>
-            <span className='text-xs text-muted-foreground'>
-              / {mockCredits.total}
-            </span>
-          </div>
-          <div className='mt-2 h-1.5 rounded-full bg-border overflow-hidden'>
-            <div
-              className={cn(
-                'h-full rounded-full transition-all',
-                isLowCredits ? 'bg-warning' : 'bg-primary'
-              )}
-              style={{ width: `${creditPercentage}%` }}
-            />
           </div>
         </Link>
 
@@ -321,13 +328,19 @@ export function AppSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className='flex w-full items-center gap-3 rounded-xl bg-secondary/30 border border-border/50 p-3 hover:bg-secondary/50 transition-colors text-left'>
-              <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20'>
-                <User className='h-4 w-4 text-primary' />
-              </div>
+              <Avatar className='h-9 w-9 rounded-lg border border-primary/20'>
+                <AvatarImage src={user?.avatar?.url} alt={user?.first_name} />
+                <AvatarFallback className='rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 text-primary'>
+                  {user?.first_name?.[0]}
+                  {user?.last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
               <div className='flex-1 min-w-0'>
-                <p className='text-sm font-medium truncate'>{mockUser.name}</p>
+                <p className='text-sm font-medium truncate'>
+                  {user?.first_name} {user?.last_name}
+                </p>
                 <p className='text-xs text-muted-foreground truncate'>
-                  {mockUser.email}
+                  {user?.email}
                 </p>
               </div>
               <ChevronUp className='h-4 w-4 text-muted-foreground shrink-0' />
@@ -340,7 +353,7 @@ export function AppSidebar() {
           >
             <div className='px-2 py-1.5'>
               <Badge variant='secondary' className='capitalize text-xs'>
-                {mockUser.plan} plan
+                {user?.role || 'Free'} plan
               </Badge>
             </div>
             <DropdownMenuSeparator />
@@ -369,7 +382,10 @@ export function AppSidebar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className='text-destructive focus:text-destructive focus:bg-destructive/10'>
+            <DropdownMenuItem
+              className='text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer'
+              onClick={handleLogout}
+            >
               <LogOut className='h-4 w-4 mr-2' />
               Sign out
             </DropdownMenuItem>

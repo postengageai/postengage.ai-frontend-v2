@@ -37,8 +37,6 @@ export function ReviewStep({
   onComplete,
   isEditMode = false,
 }: ReviewStepProps) {
-  const [name, setName] = useState(formData.name || '');
-  const [description, setDescription] = useState(formData.description || '');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async (isDraft: boolean) => {
@@ -46,9 +44,9 @@ export function ReviewStep({
 
     setIsLoading(true);
     try {
+      // Status is handled by onComplete logic in the wizard,
+      // but we update it here for consistency in formData
       updateFormData({
-        name,
-        description,
         status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
       });
       await onComplete(isDraft);
@@ -85,8 +83,8 @@ export function ReviewStep({
               <Input
                 id='automation-name'
                 placeholder='e.g., Price Inquiry Auto-Responder'
-                value={name}
-                onChange={e => setName(e.target.value)}
+                value={formData.name || ''}
+                onChange={e => updateFormData({ name: e.target.value })}
               />
             </div>
             <div>
@@ -99,8 +97,8 @@ export function ReviewStep({
               <Textarea
                 id='automation-description'
                 placeholder='Brief description of what this automation does...'
-                value={description}
-                onChange={e => setDescription(e.target.value)}
+                value={formData.description || ''}
+                onChange={e => updateFormData({ description: e.target.value })}
                 rows={2}
               />
             </div>
@@ -220,7 +218,7 @@ export function ReviewStep({
           <Button
             variant='outline'
             onClick={() => handleSave(true)}
-            disabled={!name.trim() || isLoading}
+            disabled={!formData.name?.trim() || isLoading}
             className='w-full sm:w-auto'
           >
             {isLoading
@@ -231,7 +229,7 @@ export function ReviewStep({
           </Button>
           <Button
             onClick={() => handleSave(false)}
-            disabled={!name.trim() || isLoading}
+            disabled={!formData.name?.trim() || isLoading}
             className='w-full sm:w-auto'
           >
             {isLoading ? (

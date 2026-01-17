@@ -23,7 +23,6 @@ export default function DashboardPage() {
     useState<ConnectedAccount | null>(null);
   const [credits, setCredits] = useState({
     remaining: 0,
-    total: 500,
     estimatedReplies: 0,
   });
   const [automations, setAutomations] = useState<Automation[]>([]);
@@ -57,7 +56,6 @@ export default function DashboardPage() {
 
         setCredits({
           remaining: data.overview.credits_remaining,
-          total: 500, // Placeholder
           estimatedReplies: data.overview.credits_remaining,
         });
 

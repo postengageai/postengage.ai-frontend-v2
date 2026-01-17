@@ -7,7 +7,15 @@ import {
   AutomationData,
 } from '@/components/automations/automation-detail';
 import { automationsApi } from '@/lib/api/automations';
-import { AutomationStatus } from '@/lib/constants/automations';
+import {
+  AutomationStatus,
+  AutomationTriggerType,
+  AutomationActionType,
+  AutomationPlatform,
+  AutomationTriggerScope,
+  AutomationConditionOperator,
+  AutomationConditionKeywordMode,
+} from '@/lib/constants/automations';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -46,7 +54,10 @@ export default function AutomationDetailPage() {
               : apiData.status === AutomationStatus.DRAFT
                 ? 'draft'
                 : 'paused',
-          platform: 'instagram', // Assuming instagram for now as per API types
+          platform:
+            apiData.platform === AutomationPlatform.FACEBOOK
+              ? 'facebook'
+              : 'instagram',
           social_account: {
             id: apiData.social_account?.id || '',
             username: apiData.social_account?.username || 'Unknown',
@@ -54,19 +65,34 @@ export default function AutomationDetailPage() {
           },
           trigger: {
             type:
-              apiData.trigger.trigger_type === 'new_comment'
+              apiData.trigger.trigger_type === AutomationTriggerType.NEW_COMMENT
                 ? 'new_comment'
-                : 'new_dm', // Simple mapping, might need more robust logic
-            scope: 'all', // Defaulting for now
+                : 'new_dm',
+            scope:
+              apiData.trigger.trigger_scope === AutomationTriggerScope.SPECIFIC
+                ? 'specific'
+                : 'all',
+            content_count: apiData.trigger.content_ids?.length || 0,
           },
-          // Map actions
+          condition: apiData.conditions?.[0]
+            ? {
+                keywords:
+                  (apiData.conditions[0].condition_value as string[]) || [],
+                operator:
+                  apiData.conditions[0].condition_operator ||
+                  AutomationConditionOperator.CONTAINS,
+                mode:
+                  apiData.conditions[0].condition_keyword_mode ||
+                  AutomationConditionKeywordMode.ANY,
+              }
+            : undefined,
           actions: apiData.actions.map(action => ({
             type:
-              action.action_type === 'reply_comment'
+              action.action_type === AutomationActionType.REPLY_COMMENT
                 ? 'reply_comment'
-                : action.action_type === 'send_dm'
+                : action.action_type === AutomationActionType.SEND_DM
                   ? 'send_dm'
-                  : 'private_reply', // Simplified mapping
+                  : 'private_reply',
             text: action.action_payload.text || '',
             delay_seconds: action.delay_seconds || 0,
           })),
@@ -74,7 +100,10 @@ export default function AutomationDetailPage() {
             total_executions: apiData.execution_count || 0,
             successful_executions: apiData.success_count || 0,
             failed_executions: apiData.failure_count || 0,
-            total_credits_used: 0, // Not in API yet
+            total_credits_used: historyData.reduce(
+              (sum, item) => sum + (item.credits_used || 0),
+              0
+            ),
             trend: {
               change: 0, // Not in API yet
               period: 'week',

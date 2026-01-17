@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 interface QuickInsightsProps {
   credits: {
     remaining: number;
-    total: number;
   };
   todayReplies: number;
   weeklyGrowth: number;
@@ -22,8 +21,7 @@ export function QuickInsights({
   weeklyGrowth,
   totalLeads,
 }: QuickInsightsProps) {
-  const creditsPercent = (credits.remaining / credits.total) * 100;
-  const isLowCredits = creditsPercent <= 20;
+  const isLowCredits = credits.remaining < 50;
 
   return (
     <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
@@ -36,9 +34,6 @@ export function QuickInsights({
             <div>
               <p className='text-sm text-muted-foreground'>Credits Left</p>
               <p className='text-2xl font-bold mt-1'>{credits.remaining}</p>
-              <p className='text-xs text-muted-foreground mt-1'>
-                of {credits.total} total
-              </p>
             </div>
             <div
               className={cn(
@@ -52,16 +47,6 @@ export function QuickInsights({
                 <Zap className='h-4 w-4 text-primary' />
               )}
             </div>
-          </div>
-          {/* Progress bar */}
-          <div className='mt-3 h-1.5 rounded-full bg-secondary overflow-hidden'>
-            <div
-              className={cn(
-                'h-full rounded-full transition-all',
-                isLowCredits ? 'bg-warning' : 'bg-primary'
-              )}
-              style={{ width: `${creditsPercent}%` }}
-            />
           </div>
           {isLowCredits && (
             <Button

@@ -10,7 +10,6 @@ interface StatusCardsProps {
   connectedAccount: ConnectedAccount | null;
   credits: {
     remaining: number;
-    total: number;
     estimatedReplies: number;
   };
   activeAutomationCount: number;
@@ -23,9 +22,8 @@ export function StatusCards({
   activeAutomationCount,
   totalAutomationCount,
 }: StatusCardsProps) {
-  const creditPercentage = (credits.remaining / credits.total) * 100;
-  const isLowCredits = creditPercentage < 25;
-  const isCriticalCredits = creditPercentage < 10;
+  const isLowCredits = credits.remaining < 50;
+  const isCriticalCredits = credits.remaining < 10;
 
   // Format last sync time
   const formatLastSync = (date?: Date) => {
@@ -123,18 +121,6 @@ export function StatusCards({
 
           {/* Progress bar */}
           <div className='mt-4'>
-            <div className='h-1.5 w-full rounded-full bg-secondary overflow-hidden'>
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  isCriticalCredits
-                    ? 'bg-destructive'
-                    : isLowCredits
-                      ? 'bg-warning'
-                      : 'bg-primary'
-                }`}
-                style={{ width: `${creditPercentage}%` }}
-              />
-            </div>
             <p className='mt-2 text-xs text-muted-foreground'>
               ~{credits.estimatedReplies} replies remaining
               {isLowCredits && (
