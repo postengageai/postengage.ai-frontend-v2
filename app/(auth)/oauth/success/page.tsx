@@ -25,7 +25,7 @@ function OAuthSuccessContent() {
   const platform = searchParams.get('platform') || 'instagram';
   const username = searchParams.get('username') || '';
   // We might not have avatar URL from params, so use placeholder
-  const avatarUrl = searchParams.get('avatar_url');
+  const avatarUrl = searchParams.get('avatar');
 
   useEffect(() => {
     // Redirect if missing critical data
