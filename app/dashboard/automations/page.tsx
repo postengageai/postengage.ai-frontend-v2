@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Plus,
@@ -9,8 +9,6 @@ import {
   MoreHorizontal,
   Instagram,
   MessageCircle,
-  TrendingUp,
-  TrendingDown,
   ArrowUpDown,
   Zap,
 } from 'lucide-react';
@@ -34,93 +32,138 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import {
-  mockAutomation,
-  getTriggerTypeLabel,
-  getActionTypeLabel,
-} from '@/lib/mock/automation-builder-data';
-import type { AutomationBuilder } from '@/lib/types/automation-builder';
-
-// Mock list of automations
-const mockAutomations: AutomationBuilder[] = [
-  mockAutomation,
-  {
-    ...mockAutomation,
-    id: 'auto_def456',
-    name: 'DM Price Inquiries',
-    status: 'active',
-    trigger: { ...mockAutomation.trigger, type: 'keyword_mention' },
-    actions: [{ ...mockAutomation.actions[1], id: 'act_3' }],
-    statistics: {
-      ...mockAutomation.statistics,
-      totalExecutions: 523,
-      successfulExecutions: 498,
-      failedExecutions: 25,
-      trend: { executionsChange: -5.2, period: 'week' },
-    },
-  },
-  {
-    ...mockAutomation,
-    id: 'auto_ghi789',
-    name: 'Welcome New Followers',
-    status: 'paused',
-    pausedReason: 'Low credit balance',
-    trigger: { ...mockAutomation.trigger, type: 'new_follower' },
-    actions: [{ ...mockAutomation.actions[1], id: 'act_4' }],
-    statistics: {
-      ...mockAutomation.statistics,
-      totalExecutions: 89,
-      successfulExecutions: 87,
-      failedExecutions: 2,
-      trend: { executionsChange: 0, period: 'week' },
-    },
-  },
-];
+  automationsApi,
+  Automation,
+  AutomationListParams,
+} from '@/lib/api/automations';
+import {
+  AutomationStatus,
+  AutomationTriggerType,
+  AutomationActionType,
+} from '@/lib/constants/automations';
+import { useDebounce } from '@/hooks/use-debounce';
+import { toast } from '@/hooks/use-toast';
 
 export default function AutomationsPage() {
-  const [automations, setAutomations] = useState(mockAutomations);
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
 
-  const filteredAutomations = automations
-    .filter(a => {
-      const matchesSearch = a.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'recent')
-        return (
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-      if (sortBy === 'executions')
-        return b.statistics.totalExecutions - a.statistics.totalExecutions;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return 0;
-    });
+  useEffect(() => {
+    fetchAutomations();
+  }, [debouncedSearchQuery, statusFilter]);
 
-  const toggleStatus = (id: string) => {
-    setAutomations(
-      automations.map(a =>
-        a.id === id
-          ? {
-              ...a,
-              status: a.status === 'active' ? 'paused' : 'active',
-              pausedReason:
-                a.status === 'active' ? 'Paused by user' : undefined,
-            }
-          : a
-      )
-    );
+  const fetchAutomations = async () => {
+    setIsLoading(true);
+    try {
+      const params: AutomationListParams = {};
+      if (debouncedSearchQuery) params.search = debouncedSearchQuery;
+      if (statusFilter !== 'all') params.status = statusFilter;
+
+      const response = await automationsApi.list(params);
+
+      if (response && response.data) {
+        setAutomations(response.data);
+      }
+    } catch (_error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load automations',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const activeCount = automations.filter(a => a.status === 'active').length;
+  // Client-side sorting only since backend might not support all sort options yet
+  // or we want to sort the current page results
+  const filteredAutomations = (automations ?? []).sort((a, b) => {
+    if (sortBy === 'recent')
+      return (
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    if (sortBy === 'executions')
+      return (b.execution_count || 0) - (a.execution_count || 0);
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    return 0;
+  });
+
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus =
+      currentStatus === AutomationStatus.ACTIVE
+        ? AutomationStatus.INACTIVE
+        : AutomationStatus.ACTIVE;
+
+    // Optimistic update
+    setAutomations(prev =>
+      prev.map(a =>
+        a.id === id ? { ...a, status: newStatus as Automation['status'] } : a
+      )
+    );
+
+    try {
+      await automationsApi.update(id, { status: newStatus });
+      toast({
+        title: 'Status updated',
+        description: `Automation ${newStatus === AutomationStatus.ACTIVE ? 'activated' : 'deactivated'}`,
+      });
+    } catch {
+      // Revert on failure
+      setAutomations(prev =>
+        prev.map(a =>
+          a.id === id
+            ? { ...a, status: currentStatus as Automation['status'] }
+            : a
+        )
+      );
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update automation status',
+      });
+    }
+  };
+
+  const activeCount = automations.filter(
+    a => a.status === AutomationStatus.ACTIVE
+  ).length;
   const totalExecutions = automations.reduce(
-    (sum, a) => sum + a.statistics.totalExecutions,
+    (sum, a) => sum + (a.execution_count || 0),
     0
   );
+
+  function getTriggerTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      [AutomationTriggerType.NEW_COMMENT]: 'New Comment',
+      [AutomationTriggerType.MENTION]: 'Mention',
+      [AutomationTriggerType.NEW_FOLLOWER]: 'New Follower',
+      [AutomationTriggerType.DM_RECEIVED]: 'Direct Message',
+      [AutomationTriggerType.STORY_REPLY]: 'Story Reply',
+    };
+    return (
+      labels[type] ||
+      type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    );
+  }
+
+  function getActionTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      [AutomationActionType.REPLY_COMMENT]: 'Reply',
+      [AutomationActionType.SEND_DM]: 'Send DM',
+      [AutomationActionType.LIKE_CONTENT]: 'Like Comment',
+      [AutomationActionType.ADD_TAG]: 'Add Tag',
+      [AutomationActionType.PRIVATE_REPLY]: 'Private Reply',
+      [AutomationActionType.NOTIFY_ADMIN]: 'Notify Admin',
+    };
+    return (
+      labels[type] ||
+      type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    );
+  }
 
   return (
     <div className='flex flex-col h-full'>
@@ -216,9 +259,11 @@ export default function AutomationsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>All Status</SelectItem>
-              <SelectItem value='active'>Active</SelectItem>
-              <SelectItem value='paused'>Paused</SelectItem>
-              <SelectItem value='draft'>Draft</SelectItem>
+              <SelectItem value={AutomationStatus.ACTIVE}>Active</SelectItem>
+              <SelectItem value={AutomationStatus.INACTIVE}>
+                Inactive
+              </SelectItem>
+              <SelectItem value={AutomationStatus.DRAFT}>Draft</SelectItem>
             </SelectContent>
           </Select>
 
@@ -238,17 +283,19 @@ export default function AutomationsPage() {
 
       {/* Automations List */}
       <div className='flex-1 overflow-y-auto p-6'>
-        {filteredAutomations.length > 0 ? (
+        {isLoading ? (
+          <div className='flex justify-center items-center h-40'>
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+          </div>
+        ) : filteredAutomations.length > 0 ? (
           <div className='space-y-3'>
             {filteredAutomations.map(automation => {
-              const isActive = automation.status === 'active';
-              const trendIsPositive =
-                automation.statistics.trend.executionsChange >= 0;
+              const isActive = automation.status === AutomationStatus.ACTIVE;
               const successRate =
-                automation.statistics.totalExecutions > 0
+                (automation.execution_count || 0) > 0
                   ? Math.round(
-                      (automation.statistics.successfulExecutions /
-                        automation.statistics.totalExecutions) *
+                      ((automation.success_count || 0) /
+                        (automation.execution_count || 0)) *
                         100
                     )
                   : 0;
@@ -266,7 +313,12 @@ export default function AutomationsPage() {
                       {/* Status toggle */}
                       <Switch
                         checked={isActive}
-                        onCheckedChange={() => toggleStatus(automation.id)}
+                        onCheckedChange={() =>
+                          toggleStatus(
+                            automation.id,
+                            automation.status || AutomationStatus.DRAFT
+                          )
+                        }
                         className='data-[state=checked]:bg-emerald-500'
                       />
 
@@ -285,24 +337,30 @@ export default function AutomationsPage() {
                               'shrink-0',
                               isActive
                                 ? 'bg-emerald-500/10 text-emerald-500'
-                                : automation.status === 'draft'
+                                : automation.status === AutomationStatus.DRAFT
                                   ? 'bg-muted text-muted-foreground'
                                   : 'bg-amber-500/10 text-amber-500'
                             )}
                           >
-                            {automation.status}
+                            {automation.status === AutomationStatus.ACTIVE
+                              ? 'Active'
+                              : automation.status === AutomationStatus.DRAFT
+                                ? 'Draft'
+                                : 'Paused'}
                           </Badge>
                         </div>
 
                         {/* Flow summary */}
                         <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                           <div className='flex items-center gap-1'>
-                            <div className='w-5 h-5 rounded bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
+                            <div className='w-5 h-5 rounded bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
                               <Instagram className='h-3 w-3 text-white' />
                             </div>
                           </div>
                           <span>
-                            {getTriggerTypeLabel(automation.trigger.type)}
+                            {getTriggerTypeLabel(
+                              automation.trigger.trigger_type
+                            )}
                           </span>
                           <span className='text-muted-foreground/50'>→</span>
                           <div className='flex items-center gap-1'>
@@ -312,7 +370,7 @@ export default function AutomationsPage() {
                                 variant='outline'
                                 className='text-xs'
                               >
-                                {getActionTypeLabel(action.type)}
+                                {getActionTypeLabel(action.action_type)}
                               </Badge>
                             ))}
                             {automation.actions.length > 2 && (
@@ -328,28 +386,13 @@ export default function AutomationsPage() {
                       <div className='flex items-center gap-6 shrink-0'>
                         <div className='text-right'>
                           <p className='text-sm font-semibold'>
-                            {automation.statistics.totalExecutions.toLocaleString()}
+                            {(automation.execution_count || 0).toLocaleString()}
                           </p>
-                          <div className='flex items-center gap-1 justify-end'>
-                            {trendIsPositive ? (
-                              <TrendingUp className='h-3 w-3 text-emerald-500' />
-                            ) : (
-                              <TrendingDown className='h-3 w-3 text-red-500' />
-                            )}
-                            <span
-                              className={cn(
-                                'text-xs',
-                                trendIsPositive
-                                  ? 'text-emerald-500'
-                                  : 'text-red-500'
-                              )}
-                            >
-                              {Math.abs(
-                                automation.statistics.trend.executionsChange
-                              )}
-                              %
-                            </span>
-                          </div>
+                          {/* Trend is missing in backend for now, hiding it or using placeholder if needed. 
+                              User didn't ask for trend, so keeping it simple. */}
+                          <p className='text-xs text-muted-foreground'>
+                            executions
+                          </p>
                         </div>
 
                         <div className='text-right'>
@@ -397,13 +440,6 @@ export default function AutomationsPage() {
                         </DropdownMenu>
                       </div>
                     </div>
-
-                    {/* Paused reason */}
-                    {automation.pausedReason && !isActive && (
-                      <p className='text-xs text-amber-500 mt-2 pl-14'>
-                        {automation.pausedReason}
-                      </p>
-                    )}
                   </CardContent>
                 </Card>
               );

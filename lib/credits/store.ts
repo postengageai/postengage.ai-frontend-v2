@@ -74,8 +74,8 @@ export const useCreditsStore = create<CreditsState>(set => ({
         const page = Math.floor(skip / limit) + 1;
         const response = await CreditsApi.getTransactions({ limit, page });
         set({
-          transactions: response.data.transactions,
-          transactionsTotal: response.data.meta.total,
+          transactions: response.data,
+          transactionsTotal: response.pagination?.total ?? 0,
           isTransactionsLoading: false,
         });
       } catch (error: unknown) {
@@ -111,8 +111,8 @@ export const useCreditsStore = create<CreditsState>(set => ({
         const page = Math.floor(skip / limit) + 1;
         const response = await CreditsApi.getInvoices({ limit, page });
         set({
-          invoices: response.data.transactions,
-          invoicesTotal: response.data.meta.total,
+          invoices: response.data,
+          invoicesTotal: response.pagination?.total ?? 0,
           isLoading: false,
         });
       } catch (error: unknown) {

@@ -8,7 +8,7 @@ export interface CreditTransaction {
   credit_package_id: string | null;
   order_id: string | null;
   automation_id: string | null;
-  transaction_type: 'consumption' | 'purchase' | 'adjustment';
+  transaction_type: 'consumption' | 'purchase' | 'adjustment' | 'bonus';
   status: 'completed' | 'cancelled' | 'pending';
   credit_amount: number;
   balance_before: number;

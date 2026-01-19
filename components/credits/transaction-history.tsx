@@ -30,6 +30,7 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Gift,
 } from 'lucide-react';
 
 interface TransactionHistoryProps {
@@ -93,6 +94,8 @@ export function TransactionHistory({
         return <ArrowUpCircle className='h-4 w-4 text-success' />;
       case 'adjustment':
         return <RefreshCw className='h-4 w-4 text-muted-foreground' />;
+      case 'bonus':
+        return <Gift className='h-4 w-4 text-primary' />;
     }
   };
 
@@ -132,11 +135,11 @@ export function TransactionHistory({
     transaction: CreditTransaction,
     large?: boolean
   ) => {
-    const sign = transaction.transaction_type === 'purchase' ? '+' : '-';
-    const color =
-      transaction.transaction_type === 'purchase'
-        ? 'text-success'
-        : 'text-foreground';
+    const isPositive =
+      transaction.transaction_type === 'purchase' ||
+      transaction.transaction_type === 'bonus';
+    const sign = isPositive ? '+' : '-';
+    const color = isPositive ? 'text-success' : 'text-foreground';
     const size = large ? 'text-2xl' : 'text-sm';
 
     if (transaction.status === 'cancelled') {
@@ -292,7 +295,8 @@ export function TransactionHistory({
                 <div className='flex items-start justify-between'>
                   <div className='space-y-1'>
                     <p className='text-xs font-medium uppercase tracking-wider text-muted-foreground'>
-                      {selectedTransaction.transaction_type === 'purchase'
+                      {selectedTransaction.transaction_type === 'purchase' ||
+                      selectedTransaction.transaction_type === 'bonus'
                         ? 'Credits Added'
                         : 'Credits Used'}
                     </p>

@@ -1,5 +1,7 @@
 // Types for the PostEngageAI Dashboard
 
+import { Notification } from './notifications';
+
 export interface User {
   id: string;
   name: string;
@@ -22,25 +24,13 @@ export interface Automation {
   name: string;
   trigger: 'comment' | 'keyword' | 'dm' | 'mention';
   action: 'reply' | 'dm' | 'like';
+  triggers?: string[];
+  actions?: string[];
   status: 'running' | 'paused';
   creditCost: number;
   handledCount: number;
   lastRun?: Date;
   createdAt: Date;
-}
-
-export interface Activity {
-  id: string;
-  type: 'reply_sent' | 'dm_sent' | 'automation_paused' | 'error' | 'skipped';
-  automationName: string;
-  description: string;
-  creditCost: number;
-  timestamp: Date;
-  metadata?: {
-    username?: string;
-    postId?: string;
-    reason?: string;
-  };
 }
 
 export interface DashboardState {
@@ -52,15 +42,30 @@ export interface DashboardState {
     estimatedReplies: number;
   };
   automations: Automation[];
-  activities: Activity[];
+  notifications: Notification[];
   isLoading: boolean;
 }
 
 export interface Suggestion {
   id: string;
-  type: 'connect' | 'create' | 'upgrade' | 'optimize';
+  type:
+    | 'action'
+    | 'info'
+    | 'warning'
+    | 'connect'
+    | 'create'
+    | 'upgrade'
+    | 'optimize';
   title: string;
   description: string;
-  action: string;
-  priority: 'high' | 'medium' | 'low';
+  action_label?: string;
+  action_url?: string;
+  priority?: 'high' | 'medium' | 'low';
+}
+
+export interface PerformanceMetrics {
+  engagement_rate: number;
+  reply_rate: number;
+  conversion_rate: number;
+  average_response_time: number;
 }
