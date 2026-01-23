@@ -14,9 +14,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Upload, X } from 'lucide-react';
+import {
+  Plus,
+  Upload,
+  X,
+  FileText,
+  Music,
+  Video as VideoIcon,
+  File,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaApi } from '@/lib/api/media';
+
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'video/mp4',
+  'video/quicktime',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/wav',
+  'application/pdf',
+];
 
 interface MediaUploadDialogProps {
   onUploadSuccess: () => void;
@@ -32,11 +53,38 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
+  const validateFile = (file: File) => {
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid file type',
+        description:
+          'Please upload a supported file type (Image, Video, Audio, or PDF).',
+      });
+      return false;
+    }
+    // 50MB limit matching backend
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'File too large',
+        description: 'File size must be less than 50MB.',
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      setFile(selectedFile);
-      setName(selectedFile.name.split('.')[0]); // Default name to filename
+      if (validateFile(selectedFile)) {
+        setFile(selectedFile);
+        setName(selectedFile.name.split('.')[0]); // Default name to filename
+      } else {
+        // Reset input
+        e.target.value = '';
+      }
     }
   };
 
@@ -44,8 +92,10 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const selectedFile = e.dataTransfer.files[0];
-      setFile(selectedFile);
-      setName(selectedFile.name.split('.')[0]);
+      if (validateFile(selectedFile)) {
+        setFile(selectedFile);
+        setName(selectedFile.name.split('.')[0]);
+      }
     }
   };
 
@@ -74,15 +124,38 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
       setAltText('');
       setTags('');
       onUploadSuccess();
-    } catch {
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to upload media',
+        description: error.response?.data?.message || 'Failed to upload media',
       });
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const renderFilePreview = (file: File) => {
+    if (file.type.startsWith('image/')) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={URL.createObjectURL(file)}
+          alt='Preview'
+          className='h-full w-full object-cover rounded'
+        />
+      );
+    }
+    if (file.type.startsWith('video/')) {
+      return <VideoIcon className='h-5 w-5 text-muted-foreground' />;
+    }
+    if (file.type.startsWith('audio/')) {
+      return <Music className='h-5 w-5 text-muted-foreground' />;
+    }
+    if (file.type === 'application/pdf') {
+      return <FileText className='h-5 w-5 text-muted-foreground' />;
+    }
+    return <File className='h-5 w-5 text-muted-foreground' />;
   };
 
   return (
@@ -111,11 +184,14 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
                 <p className='text-sm text-muted-foreground'>
                   Drag and drop your file here, or click to select
                 </p>
+                <p className='text-xs text-muted-foreground mt-2'>
+                  Supported: Images, Video, Audio, PDF (Max 50MB)
+                </p>
                 <Input
                   id='file-upload'
                   type='file'
                   className='hidden'
-                  accept='image/*,video/*'
+                  accept={ALLOWED_MIME_TYPES.join(',')}
                   onChange={handleFileChange}
                 />
               </div>
@@ -124,16 +200,7 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
                 <div className='flex items-center justify-between p-4 border rounded-lg'>
                   <div className='flex items-center space-x-4 overflow-hidden'>
                     <div className='h-10 w-10 bg-muted rounded flex items-center justify-center shrink-0'>
-                      {file.type.startsWith('image/') ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt='Preview'
-                          className='h-full w-full object-cover rounded'
-                        />
-                      ) : (
-                        <Upload className='h-5 w-5 text-muted-foreground' />
-                      )}
+                      {renderFilePreview(file)}
                     </div>
                     <div className='truncate'>
                       <p className='text-sm font-medium truncate'>

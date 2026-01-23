@@ -3,7 +3,15 @@
 import { useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileImage, Film, MoreHorizontal, Trash, Edit } from 'lucide-react';
+import {
+  FileImage,
+  Film,
+  MoreHorizontal,
+  Trash,
+  Edit,
+  Music,
+  FileText,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,6 +95,14 @@ export function MediaGallery({
           : instaItem.media_type === 'VIDEO' ||
             instaItem.media_type === 'REELS';
 
+        const isAudio = isUpload
+          ? uploadItem.mime_type.startsWith('audio/')
+          : false;
+
+        const isPdf = isUpload
+          ? uploadItem.mime_type === 'application/pdf'
+          : false;
+
         return (
           <Card
             key={id}
@@ -111,6 +127,14 @@ export function MediaGallery({
                   preload='metadata'
                 />
               )
+            ) : isAudio ? (
+              <div className='flex h-full w-full items-center justify-center bg-muted'>
+                <Music className='h-10 w-10 text-muted-foreground' />
+              </div>
+            ) : isPdf ? (
+              <div className='flex h-full w-full items-center justify-center bg-muted'>
+                <FileText className='h-10 w-10 text-muted-foreground' />
+              </div>
             ) : mediaUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
