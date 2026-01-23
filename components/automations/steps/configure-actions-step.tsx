@@ -14,6 +14,9 @@ import {
   MessageSquare,
   Mail,
   Send,
+  Image as ImageIcon,
+  FileText,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import type { AutomationFormData } from '../automation-wizard';
@@ -21,6 +24,7 @@ import {
   AutomationActionType,
   type AutomationActionTypeType,
 } from '@/lib/constants/automations';
+import { MediaPickerDialog } from '@/components/media/media-picker-dialog';
 
 interface ConfigureActionsStepProps {
   formData: AutomationFormData;
@@ -36,6 +40,10 @@ export function ConfigureActionsStep({
   prevStep,
 }: ConfigureActionsStepProps) {
   const [actions, setActions] = useState(formData.actions || []);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeActionIndex, setActiveActionIndex] = useState<number | null>(
+    null
+  );
 
   const getAvailableActions = (): {
     type: AutomationActionTypeType;
@@ -225,55 +233,82 @@ export function ConfigureActionsStep({
                     </Label>
 
                     <div className='grid gap-4 sm:grid-cols-3'>
-                      <div className='sm:col-span-1'>
-                        <Label
-                          htmlFor={`action-att-type-${index}`}
-                          className='mb-1.5 block text-xs text-muted-foreground'
-                        >
-                          Type
-                        </Label>
-                        <select
-                          id={`action-att-type-${index}`}
-                          className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                          value={action.action_payload.attachment_type || ''}
-                          onChange={e =>
-                            updateAction(index, {
-                              action_payload: {
-                                ...action.action_payload,
-                                attachment_type: e.target.value || undefined,
-                              },
-                            })
-                          }
-                        >
-                          <option value=''>None</option>
-                          <option value='image'>Image</option>
-                          <option value='video'>Video</option>
-                          <option value='file'>File</option>
-                        </select>
-                      </div>
+                      <div className='sm:col-span-3'>
+                        {action.action_payload.attachment_url ? (
+                          <div className='relative mt-2 overflow-hidden rounded-md border border-border bg-background'>
+                            {action.action_payload.attachment_type ===
+                              'image' && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={action.action_payload.attachment_url}
+                                alt='Attachment preview'
+                                className='h-48 w-full object-cover'
+                              />
+                            )}
+                            {action.action_payload.attachment_type ===
+                              'video' && (
+                              <video
+                                src={action.action_payload.attachment_url}
+                                className='h-48 w-full bg-black'
+                                controls
+                              />
+                            )}
+                            {(!action.action_payload.attachment_type ||
+                              action.action_payload.attachment_type ===
+                                'file') && (
+                              <div className='flex h-48 flex-col items-center justify-center gap-3 bg-muted/30 p-4 transition-colors hover:bg-muted/50'>
+                                <div className='rounded-full bg-primary/10 p-4'>
+                                  <FileText className='h-8 w-8 text-primary' />
+                                </div>
+                                <div className='px-4 text-center'>
+                                  <p className='line-clamp-2 text-sm font-medium'>
+                                    {action.action_payload.attachment_name ||
+                                      'Attached File'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
-                      <div className='sm:col-span-2'>
-                        <Label
-                          htmlFor={`action-att-url-${index}`}
-                          className='mb-1.5 block text-xs text-muted-foreground'
-                        >
-                          URL
-                        </Label>
-                        <input
-                          id={`action-att-url-${index}`}
-                          type='url'
-                          placeholder='https://...'
-                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-                          value={action.action_payload.attachment_url || ''}
-                          onChange={e =>
-                            updateAction(index, {
-                              action_payload: {
-                                ...action.action_payload,
-                                attachment_url: e.target.value,
-                              },
-                            })
-                          }
-                        />
+                            <button
+                              onClick={() =>
+                                updateAction(index, {
+                                  action_payload: {
+                                    ...action.action_payload,
+                                    attachment_url: undefined,
+                                    attachment_type: undefined,
+                                    attachment_name: undefined,
+                                  },
+                                })
+                              }
+                              className='absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70'
+                              title='Remove attachment'
+                            >
+                              <X className='h-4 w-4' />
+                            </button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant='outline'
+                            type='button'
+                            className='mt-2 h-auto w-full flex-col gap-2 border-dashed py-8 hover:border-primary hover:bg-primary/5'
+                            onClick={() => {
+                              setActiveActionIndex(index);
+                              setPickerOpen(true);
+                            }}
+                          >
+                            <div className='rounded-full bg-muted p-3 group-hover:bg-primary/10'>
+                              <ImageIcon className='h-6 w-6 text-muted-foreground group-hover:text-primary' />
+                            </div>
+                            <div className='flex flex-col gap-0.5'>
+                              <span className='text-sm font-medium'>
+                                Select Attachment
+                              </span>
+                              <span className='text-xs text-muted-foreground'>
+                                Image or Video
+                              </span>
+                            </div>
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -335,6 +370,28 @@ export function ConfigureActionsStep({
           Continue
         </Button>
       </div>
+
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={media => {
+          if (activeActionIndex !== null) {
+            // Determine type based on mime_type
+            let type = 'file';
+            if (media.mime_type.startsWith('image/')) type = 'image';
+            else if (media.mime_type.startsWith('video/')) type = 'video';
+
+            updateAction(activeActionIndex, {
+              action_payload: {
+                ...actions[activeActionIndex].action_payload,
+                attachment_url: media.url,
+                attachment_type: type,
+                attachment_name: media.name,
+              },
+            });
+          }
+        }}
+      />
     </div>
   );
 }

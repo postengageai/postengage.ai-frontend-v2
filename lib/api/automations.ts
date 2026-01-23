@@ -61,6 +61,7 @@ export interface AutomationActionPayload {
   hide_comment?: boolean;
   attachment_url?: string;
   attachment_id?: string;
+  attachment_name?: string;
   attachment_type?: 'image' | 'video' | 'file';
   cta_buttons?: { label: string; url: string }[];
   tag_name?: string;
