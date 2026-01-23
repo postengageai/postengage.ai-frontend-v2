@@ -33,6 +33,7 @@ export function MediaPickerDialog({
   const debouncedSearch = useDebounce(search, 500);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({});
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -41,7 +42,7 @@ export function MediaPickerDialog({
   const { toast } = useToast();
 
   const fetchMedia = useCallback(
-    async (isLoadMore = false) => {
+    async (isLoadMore = false, currentPage = 1) => {
       if (!open) return;
 
       if (!isLoadMore) {
@@ -52,18 +53,21 @@ export function MediaPickerDialog({
       }
 
       try {
+        const nextPage = isLoadMore ? currentPage + 1 : 1;
         const response = await MediaApi.list({
-          page: isLoadMore ? page + 1 : 1,
+          page: nextPage,
           limit: 20,
           search: debouncedSearch,
           sort_by: sortBy,
           sort_order: sortOrder,
+          start_date: dateRange.start?.toISOString(),
+          end_date: dateRange.end?.toISOString(),
         });
 
         const newItems = response.data || [];
         setItems(prev => (isLoadMore ? [...prev, ...newItems] : newItems));
         setHasMore(newItems.length === 20);
-        if (isLoadMore) setPage(p => p + 1);
+        if (isLoadMore) setPage(nextPage);
       } catch {
         toast({
           variant: 'destructive',
@@ -74,7 +78,7 @@ export function MediaPickerDialog({
         setIsLoading(false);
       }
     },
-    [open, page, debouncedSearch, sortBy, sortOrder, toast]
+    [open, debouncedSearch, sortBy, sortOrder, dateRange, toast]
   );
 
   // Initial fetch and filter changes
@@ -103,7 +107,7 @@ export function MediaPickerDialog({
               setSortBy(by);
               setSortOrder(order);
             }}
-            onDateRangeChange={() => {}} // Not implementing date range for picker to keep it simple
+            onDateRangeChange={(start, end) => setDateRange({ start, end })}
           />
 
           <div className='flex-1 overflow-y-auto min-h-[300px]'>
@@ -111,7 +115,7 @@ export function MediaPickerDialog({
               items={items}
               isLoading={isLoading}
               hasMore={hasMore}
-              onLoadMore={() => fetchMedia(true)}
+              onLoadMore={() => fetchMedia(true, page)}
               onView={media => {
                 onSelect(media);
                 onOpenChange(false);
