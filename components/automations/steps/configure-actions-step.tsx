@@ -26,6 +26,7 @@ import {
   type AutomationActionTypeType,
 } from '@/lib/constants/automations';
 import { MediaPickerDialog } from '@/components/media/media-picker-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface ConfigureActionsStepProps {
   formData: AutomationFormData;
@@ -40,6 +41,7 @@ export function ConfigureActionsStep({
   nextStep,
   prevStep,
 }: ConfigureActionsStepProps) {
+  const { toast } = useToast();
   const [actions, setActions] = useState(formData.actions || []);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeActionIndex, setActiveActionIndex] = useState<number | null>(
@@ -217,6 +219,9 @@ export function ConfigureActionsStep({
                         updateAction(index, {
                           action_payload: {
                             ...action.action_payload,
+                            attachment_url: undefined,
+                            attachment_type: undefined,
+                            attachment_name: undefined,
                             message: {
                               type: 'text',
                               text: action.action_payload.text || '',
@@ -224,21 +229,12 @@ export function ConfigureActionsStep({
                           },
                         });
                       } else {
-                        // Switch to media
-                        // Try to restore previous media if available
                         const type: 'image' | 'video' | 'file' =
                           action.action_payload.attachment_type || 'image';
-                        if (
-                          action.action_payload.attachment_url &&
-                          !action.action_payload.attachment_type
-                        ) {
-                          // Infer type if missing but url exists
-                          // This is a fallback; usually attachment_type is set
-                        }
-
                         updateAction(index, {
                           action_payload: {
                             ...action.action_payload,
+                            text: undefined,
                             message: {
                               type: type,
                               payload: {
@@ -479,6 +475,23 @@ export function ConfigureActionsStep({
         onOpenChange={setPickerOpen}
         onSelect={media => {
           if (activeActionIndex !== null) {
+            // Validate size
+            let limit = 25 * 1024 * 1024;
+            let limitLabel = '25MB';
+            if (media.mime_type.startsWith('image/')) {
+              limit = 8 * 1024 * 1024;
+              limitLabel = '8MB';
+            }
+
+            if (media.size && media.size > limit) {
+              toast({
+                variant: 'destructive',
+                title: 'Media too large',
+                description: `Selected media exceeds Instagram limit of ${limitLabel}.`,
+              });
+              return;
+            }
+
             // Determine type based on mime_type
             let type: 'image' | 'video' | 'file' = 'file';
             if (media.mime_type.startsWith('image/')) type = 'image';

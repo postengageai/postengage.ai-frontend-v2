@@ -12,18 +12,27 @@ import {
   ArrowRight,
   Zap,
   TrendingUp,
+  MoreHorizontal,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { Automation } from '@/lib/types/dashboard';
 
 interface AutomationSummaryProps {
   automations: Automation[];
   onToggle?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function AutomationSummary({
   automations,
   onToggle,
+  onDelete,
 }: AutomationSummaryProps) {
   const activeCount = automations.filter(a => a.status === 'running').length;
   const totalHandled = automations.reduce((acc, a) => acc + a.handledCount, 0);
@@ -73,6 +82,7 @@ export function AutomationSummary({
               key={automation.id}
               automation={automation}
               onToggle={onToggle}
+              onDelete={onDelete}
             />
           ))}
         </div>
@@ -97,9 +107,14 @@ export function AutomationSummary({
 interface AutomationCardProps {
   automation: Automation;
   onToggle?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-function AutomationCard({ automation, onToggle }: AutomationCardProps) {
+function AutomationCard({
+  automation,
+  onToggle,
+  onDelete,
+}: AutomationCardProps) {
   const isActive = automation.status === 'running';
 
   const getActionIcon = () => {
@@ -168,6 +183,24 @@ function AutomationCard({ automation, onToggle }: AutomationCardProps) {
           checked={isActive}
           onCheckedChange={() => onToggle?.(automation.id)}
         />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant='ghost' size='icon' className='h-8 w-8 -mr-2'>
+              <MoreHorizontal className='h-4 w-4' />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end'>
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/automations/${automation.id}`}>Edit</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className='text-destructive focus:text-destructive'
+              onClick={() => onDelete?.(automation.id)}
+            >
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

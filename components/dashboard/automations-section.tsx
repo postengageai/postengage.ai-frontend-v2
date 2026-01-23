@@ -9,11 +9,13 @@ import type { Automation } from '@/lib/types/dashboard';
 interface AutomationsSectionProps {
   automations: Automation[];
   onToggleAutomation: (id: string) => void;
+  onDeleteAutomation?: (id: string) => void;
 }
 
 export function AutomationsSection({
   automations,
   onToggleAutomation,
+  onDeleteAutomation,
 }: AutomationsSectionProps) {
   const hasAutomations = automations.length > 0;
 
@@ -39,12 +41,13 @@ export function AutomationsSection({
       </div>
 
       {hasAutomations ? (
-        <div className='space-y-3'>
+        <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
           {automations.map(automation => (
             <AutomationCard
               key={automation.id}
               automation={automation}
               onToggle={onToggleAutomation}
+              onDelete={onDeleteAutomation}
             />
           ))}
         </div>

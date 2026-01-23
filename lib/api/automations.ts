@@ -256,6 +256,10 @@ export class AutomationsApi {
     return response.data!;
   }
 
+  static async delete(id: string): Promise<void> {
+    await httpClient.delete(`${AUTOMATIONS_BASE_URL}/${id}`);
+  }
+
   static async get(id: string): Promise<SuccessResponse<Automation>> {
     const response = await httpClient.get<Automation>(
       `${AUTOMATIONS_BASE_URL}/${id}`
@@ -290,6 +294,7 @@ export class AutomationsApi {
 export const automationsApi = {
   create: AutomationsApi.create,
   update: AutomationsApi.update,
+  delete: AutomationsApi.delete,
   get: AutomationsApi.get,
   list: AutomationsApi.list,
   getHistory: AutomationsApi.getHistory,

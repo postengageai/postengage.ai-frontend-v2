@@ -8,6 +8,8 @@ import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
 import { DashboardSkeleton } from '@/components/dashboard/skeleton';
 import { dashboardApi } from '@/lib/api/dashboard';
 import { notificationsApi } from '@/lib/api/notifications';
+import { automationsApi } from '@/lib/api/automations';
+import { useToast } from '@/components/ui/use-toast';
 import type {
   Automation,
   ConnectedAccount,
@@ -17,6 +19,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import type { Notification } from '@/lib/types/notifications';
 
 export default function DashboardPage() {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
 
   const [connectedAccount, setConnectedAccount] =
@@ -151,6 +154,24 @@ export default function DashboardPage() {
     );
   };
 
+  const handleDeleteAutomation = async (id: string) => {
+    try {
+      await automationsApi.delete(id);
+      setAutomations(prev => prev.filter(a => a.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Automation deleted successfully',
+      });
+    } catch (error) {
+      console.error('Failed to delete automation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete automation',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -192,6 +213,7 @@ export default function DashboardPage() {
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}
+            onDelete={handleDeleteAutomation}
           />
         </div>
       </div>

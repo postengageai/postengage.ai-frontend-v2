@@ -78,12 +78,25 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
       });
       return false;
     }
-    // 50MB limit matching backend
-    if (file.size > 50 * 1024 * 1024) {
+
+    // Instagram Limits:
+    // Image: 8MB
+    // Video: 25MB
+    // Audio: 25MB
+    // PDF: 25MB
+    let limit = 25 * 1024 * 1024; // Default 25MB
+    let limitLabel = '25MB';
+
+    if (file.type.startsWith('image/')) {
+      limit = 8 * 1024 * 1024;
+      limitLabel = '8MB';
+    }
+
+    if (file.size > limit) {
       toast({
         variant: 'destructive',
         title: 'File too large',
-        description: 'File size must be less than 50MB.',
+        description: `File size must be less than ${limitLabel} for ${file.type.split('/')[0]}s (Instagram limit).`,
       });
       return false;
     }
