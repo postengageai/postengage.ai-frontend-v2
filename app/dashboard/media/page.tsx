@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -20,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/use-debounce';
 
 export default function MediaPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'uploads' | 'instagram'>(
     'uploads'
   );
@@ -185,6 +187,10 @@ export default function MediaPage() {
     setEditingMedia(media);
   };
 
+  const handleView = (media: Media) => {
+    router.push(`/dashboard/media/view/${media.id}`);
+  };
+
   const handleUpdate = (updatedMedia: Media) => {
     setItems(prev =>
       prev.map(item =>
@@ -247,6 +253,7 @@ export default function MediaPage() {
             onLoadMore={() => fetchMedia(true)}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onView={handleView}
             type='uploads'
           />
         </TabsContent>

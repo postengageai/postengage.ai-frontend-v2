@@ -30,6 +30,7 @@ interface MediaGalleryProps {
   onLoadMore: () => void;
   onDelete?: (id: string) => void;
   onEdit?: (media: Media) => void;
+  onView?: (media: Media) => void;
   type: 'uploads' | 'instagram';
 }
 
@@ -40,6 +41,7 @@ export function MediaGallery({
   onLoadMore,
   onDelete,
   onEdit,
+  onView,
   type,
 }: MediaGalleryProps) {
   const observer = useRef<IntersectionObserver | null>(null);
@@ -108,7 +110,7 @@ export function MediaGallery({
             key={id}
             ref={index === items.length - 1 ? lastElementRef : undefined}
             className='group relative overflow-hidden aspect-square border-0 bg-muted/20 cursor-pointer'
-            onClick={() => isUpload && onEdit?.(uploadItem)}
+            onClick={() => isUpload && onView?.(uploadItem)}
           >
             {isVideo ? (
               thumbnailUrl ? (
