@@ -19,6 +19,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { AutomationFormData } from '../automation-wizard';
 import {
   AutomationActionType,
@@ -86,6 +87,10 @@ export function ConfigureActionsStep({
       status: 'active' as const,
       action_payload: {
         text: '',
+        message: {
+          type: 'text' as const,
+          text: '',
+        },
       },
     };
     setActions([...actions, newAction]);
@@ -199,118 +204,216 @@ export function ConfigureActionsStep({
               </div>
 
               <div className='space-y-4'>
-                <div>
-                  <Label
-                    htmlFor={`action-text-${index}`}
-                    className='mb-2 block text-sm font-medium'
-                  >
-                    Message
-                  </Label>
-                  <Textarea
-                    id={`action-text-${index}`}
-                    placeholder={`Enter ${action.action_type === AutomationActionType.REPLY_COMMENT ? 'reply' : 'DM'} message...`}
-                    value={action.action_payload.text}
-                    onChange={e =>
-                      updateAction(index, {
-                        action_payload: {
-                          ...action.action_payload,
-                          text: e.target.value,
-                        },
-                      })
+                {action.action_type === AutomationActionType.SEND_DM ? (
+                  <Tabs
+                    value={
+                      action.action_payload.message?.type === 'text' ||
+                      !action.action_payload.message
+                        ? 'text'
+                        : 'media'
                     }
-                    rows={3}
-                  />
-                  <p className='mt-1 text-xs text-muted-foreground'>
-                    Variables: {'{{commenter_name}}'}, {'{{comment_text}}'},{' '}
-                    {'{{post_content}}'}
-                  </p>
-                </div>
+                    onValueChange={val => {
+                      if (val === 'text') {
+                        updateAction(index, {
+                          action_payload: {
+                            ...action.action_payload,
+                            message: {
+                              type: 'text',
+                              text: action.action_payload.text || '',
+                            },
+                          },
+                        });
+                      } else {
+                        // Switch to media
+                        // Try to restore previous media if available
+                        const type: 'image' | 'video' | 'file' =
+                          action.action_payload.attachment_type || 'image';
+                        if (
+                          action.action_payload.attachment_url &&
+                          !action.action_payload.attachment_type
+                        ) {
+                          // Infer type if missing but url exists
+                          // This is a fallback; usually attachment_type is set
+                        }
 
-                {action.action_type === AutomationActionType.SEND_DM && (
-                  <div className='space-y-4 rounded-md border border-border bg-muted/30 p-4'>
-                    <Label className='block text-sm font-medium'>
-                      Attachment (Optional)
-                    </Label>
-
-                    <div className='grid gap-4 sm:grid-cols-3'>
-                      <div className='sm:col-span-3'>
-                        {action.action_payload.attachment_url ? (
-                          <div className='relative mt-2 overflow-hidden rounded-md border border-border bg-background'>
-                            {action.action_payload.attachment_type ===
-                              'image' && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={action.action_payload.attachment_url}
-                                alt='Attachment preview'
-                                className='h-48 w-full object-cover'
-                              />
-                            )}
-                            {action.action_payload.attachment_type ===
-                              'video' && (
-                              <video
-                                src={action.action_payload.attachment_url}
-                                className='h-48 w-full bg-black'
-                                controls
-                              />
-                            )}
-                            {(!action.action_payload.attachment_type ||
-                              action.action_payload.attachment_type ===
-                                'file') && (
-                              <div className='flex h-48 flex-col items-center justify-center gap-3 bg-muted/30 p-4 transition-colors hover:bg-muted/50'>
-                                <div className='rounded-full bg-primary/10 p-4'>
-                                  <FileText className='h-8 w-8 text-primary' />
-                                </div>
-                                <div className='px-4 text-center'>
-                                  <p className='line-clamp-2 text-sm font-medium'>
-                                    {action.action_payload.attachment_name ||
-                                      'Attached File'}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-
-                            <button
-                              onClick={() =>
-                                updateAction(index, {
-                                  action_payload: {
-                                    ...action.action_payload,
-                                    attachment_url: undefined,
-                                    attachment_type: undefined,
-                                    attachment_name: undefined,
-                                  },
-                                })
-                              }
-                              className='absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70'
-                              title='Remove attachment'
-                            >
-                              <X className='h-4 w-4' />
-                            </button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant='outline'
-                            type='button'
-                            className='mt-2 h-auto w-full flex-col gap-2 border-dashed py-8 hover:border-primary hover:bg-primary/5'
-                            onClick={() => {
-                              setActiveActionIndex(index);
-                              setPickerOpen(true);
-                            }}
-                          >
-                            <div className='rounded-full bg-muted p-3 group-hover:bg-primary/10'>
-                              <ImageIcon className='h-6 w-6 text-muted-foreground group-hover:text-primary' />
-                            </div>
-                            <div className='flex flex-col gap-0.5'>
-                              <span className='text-sm font-medium'>
-                                Select Attachment
-                              </span>
-                              <span className='text-xs text-muted-foreground'>
-                                Image or Video
-                              </span>
-                            </div>
-                          </Button>
-                        )}
+                        updateAction(index, {
+                          action_payload: {
+                            ...action.action_payload,
+                            message: {
+                              type: type,
+                              payload: {
+                                url: action.action_payload.attachment_url || '',
+                                is_reusable: true,
+                              },
+                            },
+                          },
+                        });
+                      }
+                    }}
+                    className='w-full'
+                  >
+                    <TabsList className='grid w-full grid-cols-2 mb-4'>
+                      <TabsTrigger value='text'>Text Message</TabsTrigger>
+                      <TabsTrigger value='media'>Media Message</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value='text' className='mt-0'>
+                      <div>
+                        <Label
+                          htmlFor={`action-text-${index}`}
+                          className='mb-2 block text-sm font-medium'
+                        >
+                          Message
+                        </Label>
+                        <Textarea
+                          id={`action-text-${index}`}
+                          placeholder='Enter DM message...'
+                          value={action.action_payload.text}
+                          onChange={e =>
+                            updateAction(index, {
+                              action_payload: {
+                                ...action.action_payload,
+                                text: e.target.value,
+                                message: {
+                                  type: 'text',
+                                  text: e.target.value,
+                                },
+                              },
+                            })
+                          }
+                          rows={3}
+                        />
+                        <p className='mt-1 text-xs text-muted-foreground'>
+                          Variables: {'{{commenter_name}}'},{' '}
+                          {'{{comment_text}}'}, {'{{post_content}}'}
+                        </p>
                       </div>
-                    </div>
+                    </TabsContent>
+                    <TabsContent value='media' className='mt-0'>
+                      <div className='space-y-4 rounded-md border border-border bg-muted/30 p-4'>
+                        <Label className='block text-sm font-medium'>
+                          Attachment
+                        </Label>
+                        <div className='grid gap-4 sm:grid-cols-3'>
+                          <div className='sm:col-span-3'>
+                            {action.action_payload.attachment_url ? (
+                              <div className='relative mt-2 overflow-hidden rounded-md border border-border bg-background'>
+                                {action.action_payload.attachment_type ===
+                                  'image' && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={action.action_payload.attachment_url}
+                                    alt='Attachment preview'
+                                    className='h-48 w-full object-cover'
+                                  />
+                                )}
+                                {action.action_payload.attachment_type ===
+                                  'video' && (
+                                  <video
+                                    src={action.action_payload.attachment_url}
+                                    className='h-48 w-full bg-black'
+                                    controls
+                                  />
+                                )}
+                                {(!action.action_payload.attachment_type ||
+                                  action.action_payload.attachment_type ===
+                                    'file') && (
+                                  <div className='flex h-48 flex-col items-center justify-center gap-3 bg-muted/30 p-4 transition-colors hover:bg-muted/50'>
+                                    <div className='rounded-full bg-primary/10 p-4'>
+                                      <FileText className='h-8 w-8 text-primary' />
+                                    </div>
+                                    <div className='px-4 text-center'>
+                                      <p className='line-clamp-2 text-sm font-medium'>
+                                        {action.action_payload
+                                          .attachment_name || 'Attached File'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                <button
+                                  onClick={() =>
+                                    updateAction(index, {
+                                      action_payload: {
+                                        ...action.action_payload,
+                                        attachment_url: undefined,
+                                        attachment_type: undefined,
+                                        attachment_name: undefined,
+                                        // When removing media, we stay in media mode but empty?
+                                        // Or should we allow clearing it?
+                                        // Let's just clear the payload but keep message type media (waiting for selection)
+                                        message: {
+                                          type: 'image', // default
+                                          payload: {
+                                            url: '',
+                                            is_reusable: true,
+                                          },
+                                        },
+                                      },
+                                    })
+                                  }
+                                  className='absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70'
+                                  title='Remove attachment'
+                                >
+                                  <X className='h-4 w-4' />
+                                </button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant='outline'
+                                type='button'
+                                className='mt-2 h-auto w-full flex-col gap-2 border-dashed py-8 hover:border-primary hover:bg-primary/5'
+                                onClick={() => {
+                                  setActiveActionIndex(index);
+                                  setPickerOpen(true);
+                                }}
+                              >
+                                <div className='rounded-full bg-muted p-3 group-hover:bg-primary/10'>
+                                  <ImageIcon className='h-6 w-6 text-muted-foreground group-hover:text-primary' />
+                                </div>
+                                <div className='flex flex-col gap-0.5'>
+                                  <span className='text-sm font-medium'>
+                                    Select Attachment
+                                  </span>
+                                  <span className='text-xs text-muted-foreground'>
+                                    Image or Video
+                                  </span>
+                                </div>
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <div>
+                    <Label
+                      htmlFor={`action-text-${index}`}
+                      className='mb-2 block text-sm font-medium'
+                    >
+                      Message
+                    </Label>
+                    <Textarea
+                      id={`action-text-${index}`}
+                      placeholder={`Enter ${action.action_type === AutomationActionType.REPLY_COMMENT ? 'reply' : 'DM'} message...`}
+                      value={action.action_payload.text}
+                      onChange={e =>
+                        updateAction(index, {
+                          action_payload: {
+                            ...action.action_payload,
+                            text: e.target.value,
+                            message: {
+                              type: 'text',
+                              text: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      rows={3}
+                    />
+                    <p className='mt-1 text-xs text-muted-foreground'>
+                      Variables: {'{{commenter_name}}'}, {'{{comment_text}}'},{' '}
+                      {'{{post_content}}'}
+                    </p>
                   </div>
                 )}
 
@@ -377,9 +480,17 @@ export function ConfigureActionsStep({
         onSelect={media => {
           if (activeActionIndex !== null) {
             // Determine type based on mime_type
-            let type = 'file';
+            let type: 'image' | 'video' | 'file' = 'file';
             if (media.mime_type.startsWith('image/')) type = 'image';
             else if (media.mime_type.startsWith('video/')) type = 'video';
+
+            const newMessage = {
+              type: type as 'image' | 'video' | 'file',
+              payload: {
+                url: media.url,
+                is_reusable: true,
+              },
+            };
 
             updateAction(activeActionIndex, {
               action_payload: {
@@ -387,6 +498,7 @@ export function ConfigureActionsStep({
                 attachment_url: media.url,
                 attachment_type: type,
                 attachment_name: media.name,
+                message: newMessage,
               },
             });
           }

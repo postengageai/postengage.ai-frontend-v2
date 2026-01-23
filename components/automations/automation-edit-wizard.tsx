@@ -110,6 +110,10 @@ function apiToFormData(apiData: Automation): AutomationFormData {
         action_payload: {
           ...(action.action_payload || {}),
           text: action.action_payload?.text || '',
+          message: action.action_payload?.message || {
+            type: 'text',
+            text: action.action_payload?.text || '',
+          },
         },
       })) || [],
     name: apiData.name,

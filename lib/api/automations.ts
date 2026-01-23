@@ -56,6 +56,18 @@ export interface AutomationTriggerResponse extends AutomationTrigger {
 }
 
 export interface AutomationActionPayload {
+  message?:
+    | {
+        type: 'text';
+        text: string;
+      }
+    | {
+        type: 'image' | 'video' | 'audio' | 'file';
+        payload: {
+          url: string;
+          is_reusable?: boolean;
+        };
+      };
   text?: string;
   variations?: string[];
   hide_comment?: boolean;
@@ -66,7 +78,6 @@ export interface AutomationActionPayload {
   cta_buttons?: { label: string; url: string }[];
   tag_name?: string;
   create_if_missing?: boolean;
-  message?: string;
   email?: string;
   [key: string]:
     | string
@@ -74,6 +85,11 @@ export interface AutomationActionPayload {
     | boolean
     | string[]
     | { label: string; url: string }[]
+    | {
+        type: string;
+        text?: string;
+        payload?: { url: string; is_reusable?: boolean };
+      }
     | undefined;
 }
 
