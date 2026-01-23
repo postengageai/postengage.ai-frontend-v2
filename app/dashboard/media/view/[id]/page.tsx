@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MediaApi, Media } from '@/lib/api/media';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, FileText, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, Download, FileText, Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 
 export default function MediaViewPage() {
   const params = useParams();
@@ -13,6 +15,21 @@ export default function MediaViewPage() {
   const { toast } = useToast();
   const [media, setMedia] = useState<Media | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDownloading) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDownloading]);
 
   useEffect(() => {
     const fetchMedia = async () => {
@@ -46,6 +63,61 @@ export default function MediaViewPage() {
     );
   }
 
+  const handleDownload = async () => {
+    if (!media) return;
+
+    setIsDownloading(true);
+    setDownloadProgress(0);
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    try {
+      const response = await axios.get(media.url, {
+        responseType: 'blob',
+        onDownloadProgress: progressEvent => {
+          if (progressEvent.total) {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setDownloadProgress(progress);
+          }
+        },
+        signal: abortController.signal,
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', media.name);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+        toast({
+          title: 'Cancelled',
+          description: 'Download cancelled',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to download file',
+        });
+      }
+    } finally {
+      setIsDownloading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelDownload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
   if (!media) {
     return null;
   }
@@ -70,13 +142,27 @@ export default function MediaViewPage() {
             </p>
           </div>
         </div>
-        <Button
-          variant='outline'
-          onClick={() => window.open(media.url, '_blank')}
-        >
-          <Download className='mr-2 h-4 w-4' />
-          Download
-        </Button>
+        {isDownloading ? (
+          <div className='flex flex-col gap-2 w-48'>
+            <div className='flex items-center justify-between text-xs'>
+              <span>Downloading... {downloadProgress}%</span>
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={handleCancelDownload}
+                className='h-4 w-4 text-muted-foreground hover:text-foreground'
+              >
+                <X className='h-3 w-3' />
+              </Button>
+            </div>
+            <Progress value={downloadProgress} className='h-2' />
+          </div>
+        ) : (
+          <Button variant='outline' onClick={handleDownload}>
+            <Download className='mr-2 h-4 w-4' />
+            Download
+          </Button>
+        )}
       </div>
 
       <div className='flex-1 bg-muted/10 rounded-lg overflow-hidden border'>

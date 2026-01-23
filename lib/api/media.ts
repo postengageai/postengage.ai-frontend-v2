@@ -53,7 +53,9 @@ export class MediaApi {
       alt_text?: string;
       tags?: string[];
       category?: string;
-    }
+    },
+    onProgress?: (progress: number) => void,
+    signal?: AbortSignal
   ): Promise<SuccessResponse<Media>> {
     const formData = new FormData();
     formData.append('file', file);
@@ -74,6 +76,15 @@ export class MediaApi {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: progressEvent => {
+          if (onProgress && progressEvent.total) {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onProgress(progress);
+          }
+        },
+        signal,
       }
     );
     return response.data!;

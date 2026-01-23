@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import {
   Plus,
   Upload,
@@ -51,7 +52,21 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
   const [altText, setAltText] = useState('');
   const [tags, setTags] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isUploading) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isUploading]);
 
   const validateFile = (file: File) => {
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
@@ -103,16 +118,25 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     try {
-      await MediaApi.upload(file, {
-        name,
-        description,
-        alt_text: altText,
-        tags: tags
-          .split(',')
-          .map(t => t.trim())
-          .filter(Boolean),
-      });
+      await MediaApi.upload(
+        file,
+        {
+          name,
+          description,
+          alt_text: altText,
+          tags: tags
+            .split(',')
+            .map(t => t.trim())
+            .filter(Boolean),
+        },
+        progress => setUploadProgress(progress),
+        abortController.signal
+      );
       toast({
         title: 'Success',
         description: 'Media uploaded successfully',
@@ -123,15 +147,31 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
       setDescription('');
       setAltText('');
       setTags('');
+      setUploadProgress(0);
       onUploadSuccess();
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to upload media',
-      });
+      if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+        toast({
+          title: 'Cancelled',
+          description: 'Upload cancelled',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description:
+            error.response?.data?.message || 'Failed to upload media',
+        });
+      }
     } finally {
       setIsUploading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelUpload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -263,12 +303,31 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
         </ScrollArea>
 
         <DialogFooter>
-          <Button variant='outline' onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleUpload} disabled={!file || isUploading}>
-            {isUploading ? 'Uploading...' : 'Upload'}
-          </Button>
+          {isUploading ? (
+            <div className='w-full flex flex-col gap-2'>
+              <div className='flex items-center justify-between text-sm'>
+                <span>Uploading... {uploadProgress}%</span>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={handleCancelUpload}
+                  className='h-auto p-0 text-muted-foreground hover:text-foreground'
+                >
+                  Cancel
+                </Button>
+              </div>
+              <Progress value={uploadProgress} className='h-2' />
+            </div>
+          ) : (
+            <>
+              <Button variant='outline' onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpload} disabled={!file || isUploading}>
+                Upload
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
