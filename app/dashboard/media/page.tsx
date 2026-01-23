@@ -12,6 +12,7 @@ import {
 import { MediaFilters } from '@/components/media/media-filters';
 import { MediaGallery } from '@/components/media/media-gallery';
 import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
+import { MediaEditDialog } from '@/components/media/media-edit-dialog';
 import { MediaApi, Media } from '@/lib/api/media';
 import { InstagramMediaApi, GetMediaResponse } from '@/lib/api/instagram/media';
 import { socialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
@@ -26,6 +27,7 @@ export default function MediaPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [editingMedia, setEditingMedia] = useState<Media | null>(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -179,6 +181,18 @@ export default function MediaPage() {
     }
   };
 
+  const handleEdit = (media: Media) => {
+    setEditingMedia(media);
+  };
+
+  const handleUpdate = (updatedMedia: Media) => {
+    setItems(prev =>
+      prev.map(item =>
+        (item as Media).id === updatedMedia.id ? updatedMedia : item
+      )
+    );
+  };
+
   return (
     <div className='container mx-auto py-6 space-y-6'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
@@ -232,6 +246,7 @@ export default function MediaPage() {
             hasMore={hasMore}
             onLoadMore={() => fetchMedia(true)}
             onDelete={handleDelete}
+            onEdit={handleEdit}
             type='uploads'
           />
         </TabsContent>
@@ -257,6 +272,13 @@ export default function MediaPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <MediaEditDialog
+        media={editingMedia}
+        open={!!editingMedia}
+        onOpenChange={open => !open && setEditingMedia(null)}
+        onUpdate={handleUpdate}
+      />
     </div>
   );
 }

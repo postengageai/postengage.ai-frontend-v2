@@ -85,6 +85,24 @@ export class MediaApi {
     return response.data!;
   }
 
+  // Update media
+  static async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      alt_text?: string;
+      tags?: string[];
+      category?: string;
+    }
+  ): Promise<SuccessResponse<Media>> {
+    const response = await httpClient.put<Media>(
+      `${MEDIA_BASE_URL}/${id}`,
+      data
+    );
+    return response.data!;
+  }
+
   // Delete media
   static async delete(id: string): Promise<void> {
     await httpClient.delete<void>(`${MEDIA_BASE_URL}/${id}`);

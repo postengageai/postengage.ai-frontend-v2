@@ -3,7 +3,7 @@
 import { useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileImage, Film, MoreHorizontal, Trash } from 'lucide-react';
+import { FileImage, Film, MoreHorizontal, Trash, Edit } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ interface MediaGalleryProps {
   hasMore: boolean;
   onLoadMore: () => void;
   onDelete?: (id: string) => void;
+  onEdit?: (media: Media) => void;
   type: 'uploads' | 'instagram';
 }
 
@@ -30,6 +31,7 @@ export function MediaGallery({
   hasMore,
   onLoadMore,
   onDelete,
+  onEdit,
   type,
 }: MediaGalleryProps) {
   const observer = useRef<IntersectionObserver | null>(null);
@@ -70,12 +72,15 @@ export function MediaGallery({
         const instaItem = item as GetMediaResponse;
 
         const id = isUpload ? uploadItem.id : instaItem.id;
-        const url = isUpload
+        const mediaUrl = isUpload
           ? uploadItem.url
           : instaItem.media_url || instaItem.thumbnail_url;
-        const name = isUpload
-          ? uploadItem.name
-          : instaItem.caption || 'Instagram Media';
+        const thumbnailUrl = isUpload
+          ? uploadItem.thumbnail_url
+          : instaItem.thumbnail_url;
+
+        const name =
+          (isUpload ? uploadItem.name : instaItem.caption) || 'Untitled';
         const date = isUpload ? uploadItem.created_at : instaItem.timestamp;
         const isVideo = isUpload
           ? uploadItem.mime_type.startsWith('video')
@@ -86,12 +91,30 @@ export function MediaGallery({
           <Card
             key={id}
             ref={index === items.length - 1 ? lastElementRef : undefined}
-            className='group relative overflow-hidden aspect-square border-0 bg-muted/20'
+            className='group relative overflow-hidden aspect-square border-0 bg-muted/20 cursor-pointer'
+            onClick={() => isUpload && onEdit?.(uploadItem)}
           >
-            {url ? (
+            {isVideo ? (
+              thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumbnailUrl}
+                  alt={name}
+                  className='h-full w-full object-cover transition-transform group-hover:scale-105'
+                  loading='lazy'
+                />
+              ) : (
+                <video
+                  src={mediaUrl}
+                  className='h-full w-full object-cover'
+                  muted
+                  preload='metadata'
+                />
+              )
+            ) : mediaUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={url}
+                src={mediaUrl}
                 alt={name}
                 className='h-full w-full object-cover transition-transform group-hover:scale-105'
                 loading='lazy'
@@ -103,8 +126,11 @@ export function MediaGallery({
             )}
 
             <div className='absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3'>
-              <div className='text-white text-sm font-medium truncate'>
-                {name}
+              <div
+                className='text-white text-sm font-medium truncate'
+                title={name}
+              >
+                {name.length > 20 ? `${name.substring(0, 20)}...` : name}
               </div>
               <div className='text-white/80 text-xs'>
                 {format(new Date(date), 'MMM d, yyyy')}
@@ -117,8 +143,11 @@ export function MediaGallery({
               </div>
             )}
 
-            {isUpload && onDelete && (
-              <div className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+            {isUpload && (onDelete || onEdit) && (
+              <div
+                className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity'
+                onClick={e => e.stopPropagation()}
+              >
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -130,13 +159,21 @@ export function MediaGallery({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align='end'>
-                    <DropdownMenuItem
-                      className='text-destructive focus:text-destructive'
-                      onClick={() => onDelete(id)}
-                    >
-                      <Trash className='mr-2 h-4 w-4' />
-                      Delete
-                    </DropdownMenuItem>
+                    {onEdit && (
+                      <DropdownMenuItem onClick={() => onEdit(uploadItem)}>
+                        <Edit className='mr-2 h-4 w-4' />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete && (
+                      <DropdownMenuItem
+                        className='text-destructive focus:text-destructive'
+                        onClick={() => onDelete(id)}
+                      >
+                        <Trash className='mr-2 h-4 w-4' />
+                        Delete
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
