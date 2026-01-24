@@ -30,13 +30,14 @@ import { MediaApi } from '@/lib/api/media';
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
-  'image/gif',
-  'image/webp',
-  'video/mp4',
-  'video/quicktime',
-  'audio/mpeg',
+  'audio/aac',
   'audio/mp4',
   'audio/wav',
+  'video/mp4',
+  'video/ogg',
+  'video/x-msvideo',
+  'video/quicktime',
+  'video/webm',
   'application/pdf',
 ];
 
@@ -237,9 +238,51 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
                 <p className='text-sm text-muted-foreground'>
                   Drag and drop your file here, or click to select
                 </p>
-                <p className='text-xs text-muted-foreground mt-2'>
-                  Supported: Images, Video, Audio, PDF (Max 50MB)
-                </p>
+
+                <div className='mt-6 text-xs text-muted-foreground bg-muted/30 p-4 rounded-md text-left w-full max-w-[350px] mx-auto'>
+                  <p className='font-semibold mb-2 text-center'>
+                    Supported Media Types & Limits
+                  </p>
+                  <ul className='space-y-1.5 list-disc pl-4'>
+                    <li>
+                      <span className='font-medium text-foreground/80'>
+                        Images:
+                      </span>{' '}
+                      JPEG, PNG{' '}
+                      <span className='text-xs bg-muted-foreground/10 px-1.5 py-0.5 rounded ml-1'>
+                        Max 8MB
+                      </span>
+                    </li>
+                    <li>
+                      <span className='font-medium text-foreground/80'>
+                        Audio:
+                      </span>{' '}
+                      AAC, MP4, WAV{' '}
+                      <span className='text-xs bg-muted-foreground/10 px-1.5 py-0.5 rounded ml-1'>
+                        Max 25MB
+                      </span>
+                    </li>
+                    <li>
+                      <span className='font-medium text-foreground/80'>
+                        Video:
+                      </span>{' '}
+                      MP4, MOV, AVI, OGG, WebM{' '}
+                      <span className='text-xs bg-muted-foreground/10 px-1.5 py-0.5 rounded ml-1'>
+                        Max 25MB
+                      </span>
+                    </li>
+                    <li>
+                      <span className='font-medium text-foreground/80'>
+                        Documents:
+                      </span>{' '}
+                      PDF{' '}
+                      <span className='text-xs bg-muted-foreground/10 px-1.5 py-0.5 rounded ml-1'>
+                        Max 25MB
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
                 <Input
                   id='file-upload'
                   type='file'
@@ -268,6 +311,7 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
                     variant='ghost'
                     size='icon'
                     onClick={() => setFile(null)}
+                    className='cursor-pointer'
                   >
                     <X className='h-4 w-4' />
                   </Button>
