@@ -55,43 +55,58 @@ export interface AutomationTriggerResponse extends AutomationTrigger {
   updated_at: string;
 }
 
-export interface AutomationActionPayload {
-  message?:
-    | {
-        type: 'text';
-        text: string;
-      }
-    | {
-        type: 'image' | 'video' | 'audio' | 'file';
-        payload: {
-          url: string;
-          is_reusable?: boolean;
-        };
-      };
-  text?: string;
+export interface SendDmTextMessage {
+  type: 'text';
+  text: string;
+}
+
+export interface SendDmMediaMessage {
+  type: 'image' | 'video' | 'file';
+  payload: {
+    url: string;
+    is_reusable?: boolean;
+  };
+}
+
+export type SendDmMessage = SendDmTextMessage | SendDmMediaMessage;
+
+export interface SendDmTextPayload {
+  message: SendDmTextMessage;
+}
+
+export interface SendDmMediaPayload {
+  message: SendDmMediaMessage;
+  attachment_id?: string;
+}
+
+export type SendDmPayload = SendDmTextPayload | SendDmMediaPayload;
+
+export interface ReplyCommentPayload {
+  text: string;
   variations?: string[];
   hide_comment?: boolean;
-  attachment_url?: string;
-  attachment_id?: string;
-  attachment_name?: string;
-  attachment_type?: 'image' | 'video' | 'file';
-  cta_buttons?: { label: string; url: string }[];
-  tag_name?: string;
-  create_if_missing?: boolean;
-  email?: string;
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | string[]
-    | { label: string; url: string }[]
-    | {
-        type: string;
-        text?: string;
-        payload?: { url: string; is_reusable?: boolean };
-      }
-    | undefined;
 }
+
+export interface PrivateReplyPayload {
+  text: string;
+}
+
+export interface AddTagPayload {
+  tag_name: string;
+  create_if_missing?: boolean;
+}
+
+export interface NotifyAdminPayload {
+  message: string;
+  email?: string;
+}
+
+export type AutomationActionPayload =
+  | ReplyCommentPayload
+  | SendDmPayload
+  | PrivateReplyPayload
+  | AddTagPayload
+  | NotifyAdminPayload;
 
 export interface AutomationAction {
   action_type: AutomationActionType;
