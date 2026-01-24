@@ -24,9 +24,14 @@ import type { Automation } from '@/lib/types/dashboard';
 interface AutomationCardProps {
   automation: Automation;
   onToggle: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function AutomationCard({ automation, onToggle }: AutomationCardProps) {
+export function AutomationCard({
+  automation,
+  onToggle,
+  onDelete,
+}: AutomationCardProps) {
   const isRunning = automation.status === 'running';
 
   // Get trigger icon
@@ -188,7 +193,10 @@ export function AutomationCard({ automation, onToggle }: AutomationCardProps) {
                 <DropdownMenuItem>Edit</DropdownMenuItem>
                 <DropdownMenuItem>Duplicate</DropdownMenuItem>
                 <DropdownMenuItem>View history</DropdownMenuItem>
-                <DropdownMenuItem className='text-destructive focus:text-destructive'>
+                <DropdownMenuItem
+                  className='text-destructive focus:text-destructive'
+                  onClick={() => onDelete?.(automation.id)}
+                >
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>

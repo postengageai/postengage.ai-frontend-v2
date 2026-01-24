@@ -55,26 +55,58 @@ export interface AutomationTriggerResponse extends AutomationTrigger {
   updated_at: string;
 }
 
-export interface AutomationActionPayload {
-  text?: string;
+export interface SendDmTextMessage {
+  type: 'text';
+  text: string;
+}
+
+export interface SendDmMediaMessage {
+  type: 'image' | 'video' | 'file';
+  payload: {
+    url: string;
+    is_reusable?: boolean;
+  };
+}
+
+export type SendDmMessage = SendDmTextMessage | SendDmMediaMessage;
+
+export interface SendDmTextPayload {
+  message: SendDmTextMessage;
+}
+
+export interface SendDmMediaPayload {
+  message: SendDmMediaMessage;
+  attachment_id?: string;
+}
+
+export type SendDmPayload = SendDmTextPayload | SendDmMediaPayload;
+
+export interface ReplyCommentPayload {
+  text: string;
   variations?: string[];
   hide_comment?: boolean;
-  attachment_url?: string;
-  attachment_id?: string;
-  attachment_type?: 'image' | 'video' | 'file';
-  cta_buttons?: { label: string; url: string }[];
-  tag_name?: string;
-  create_if_missing?: boolean;
-  message?: string;
-  email?: string;
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | string[]
-    | { label: string; url: string }[]
-    | undefined;
 }
+
+export interface PrivateReplyPayload {
+  text: string;
+}
+
+export interface AddTagPayload {
+  tag_name: string;
+  create_if_missing?: boolean;
+}
+
+export interface NotifyAdminPayload {
+  message: string;
+  email?: string;
+}
+
+export type AutomationActionPayload =
+  | ReplyCommentPayload
+  | SendDmPayload
+  | PrivateReplyPayload
+  | AddTagPayload
+  | NotifyAdminPayload;
 
 export interface AutomationAction {
   action_type: AutomationActionType;
@@ -239,6 +271,10 @@ export class AutomationsApi {
     return response.data!;
   }
 
+  static async delete(id: string): Promise<void> {
+    await httpClient.delete(`${AUTOMATIONS_BASE_URL}/${id}`);
+  }
+
   static async get(id: string): Promise<SuccessResponse<Automation>> {
     const response = await httpClient.get<Automation>(
       `${AUTOMATIONS_BASE_URL}/${id}`
@@ -273,6 +309,7 @@ export class AutomationsApi {
 export const automationsApi = {
   create: AutomationsApi.create,
   update: AutomationsApi.update,
+  delete: AutomationsApi.delete,
   get: AutomationsApi.get,
   list: AutomationsApi.list,
   getHistory: AutomationsApi.getHistory,

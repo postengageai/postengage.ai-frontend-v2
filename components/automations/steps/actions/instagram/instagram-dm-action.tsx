@@ -1,0 +1,264 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Image as ImageIcon, X } from 'lucide-react';
+import { MediaPickerDialog } from '@/components/media/media-picker-dialog';
+import { useToast } from '@/hooks/use-toast';
+import {
+  SendDmMediaMessage,
+  SendDmTextMessage,
+  SendDmPayload,
+} from '@/lib/api/automations';
+
+interface InstagramDmActionProps {
+  payload: SendDmPayload;
+  onUpdate: (updates: Partial<SendDmPayload>) => void;
+}
+
+export function InstagramDmAction({
+  payload,
+  onUpdate,
+}: InstagramDmActionProps) {
+  // Determine if we are in text or media mode based on the message type
+  const messageType =
+    payload.message?.type === 'text' || !payload.message ? 'text' : 'media';
+
+  const handleTypeChange = (val: string) => {
+    if (val === 'text') {
+      // Switch to text payload
+      const textPayload: SendDmPayload = {
+        ...payload,
+        attachment_id: undefined,
+        message: {
+          type: 'text',
+          text:
+            payload.message?.type === 'text'
+              ? (payload.message as SendDmTextMessage).text
+              : '',
+        },
+      };
+      onUpdate(textPayload);
+    } else {
+      // Switch to media payload
+      // Preserve existing media if switching back, or default to image
+      const currentMessage =
+        payload.message?.type !== 'text'
+          ? (payload.message as SendDmMediaMessage)
+          : null;
+
+      const type =
+        currentMessage?.type &&
+        ['image', 'video', 'file'].includes(currentMessage.type)
+          ? currentMessage.type
+          : 'image';
+
+      const mediaPayload: SendDmPayload = {
+        ...payload,
+        message: {
+          type: type,
+          payload: {
+            url: currentMessage?.payload?.url || '',
+            is_reusable: true,
+          },
+        },
+      };
+      onUpdate(mediaPayload);
+    }
+  };
+
+  return (
+    <Tabs
+      value={messageType}
+      onValueChange={handleTypeChange}
+      className='w-full'
+    >
+      <TabsList className='mb-4 grid w-full grid-cols-2'>
+        <TabsTrigger value='text'>Text Message</TabsTrigger>
+        <TabsTrigger value='media'>Media Message</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value='text' className='mt-0'>
+        <DmTextPanel payload={payload} onUpdate={onUpdate} />
+      </TabsContent>
+
+      <TabsContent value='media' className='mt-0'>
+        <DmMediaPanel payload={payload} onUpdate={onUpdate} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+// Subcomponent for Text Panel
+function DmTextPanel({
+  payload,
+  onUpdate,
+}: {
+  payload: SendDmPayload;
+  onUpdate: (updates: Partial<SendDmPayload>) => void;
+}) {
+  // Safe access to text property
+  const textValue =
+    payload.message?.type === 'text' ? payload.message.text : '';
+
+  return (
+    <div>
+      <Label className='mb-2 block text-sm font-medium'>Message</Label>
+      <Textarea
+        placeholder='Enter DM message...'
+        value={textValue}
+        onChange={e =>
+          onUpdate({
+            ...payload,
+            message: {
+              type: 'text',
+              text: e.target.value,
+            },
+          })
+        }
+        rows={3}
+      />
+    </div>
+  );
+}
+
+// Subcomponent for Media Panel
+function DmMediaPanel({
+  payload,
+  onUpdate,
+}: {
+  payload: SendDmPayload;
+  onUpdate: (updates: Partial<SendDmPayload>) => void;
+}) {
+  const { toast } = useToast();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Safe access to media message
+  const mediaMessage =
+    payload.message?.type !== 'text' ? payload.message : null;
+
+  const handleMediaSelect = (media: {
+    url: string;
+    mime_type: string;
+    size?: number;
+  }) => {
+    // Validate size
+    let limit = 25 * 1024 * 1024;
+    let limitLabel = '25MB';
+    if (media.mime_type.startsWith('image/')) {
+      limit = 8 * 1024 * 1024;
+      limitLabel = '8MB';
+    }
+
+    if (media.size && media.size > limit) {
+      toast({
+        variant: 'destructive',
+        title: 'Media too large',
+        description: `Selected media exceeds Instagram limit of ${limitLabel}.`,
+      });
+      return;
+    }
+
+    // Determine type based on mime_type
+    let type: 'image' | 'video' | 'file' = 'file';
+    if (media.mime_type.startsWith('image/')) type = 'image';
+    else if (media.mime_type.startsWith('video/')) type = 'video';
+
+    onUpdate({
+      ...payload,
+      message: {
+        type: type,
+        payload: {
+          url: media.url,
+          is_reusable: true,
+        },
+      },
+    });
+  };
+
+  const handleRemoveAttachment = () => {
+    onUpdate({
+      ...payload,
+      attachment_id: undefined,
+      message: {
+        type: 'image', // default reset
+        payload: {
+          url: '',
+          is_reusable: true,
+        },
+      },
+    });
+  };
+
+  return (
+    <div className='space-y-4 rounded-md border border-border bg-muted/30 p-4'>
+      <Label className='block text-sm font-medium'>Attachment</Label>
+      <div className='grid gap-4 sm:grid-cols-3'>
+        <div className='sm:col-span-3'>
+          {mediaMessage?.payload?.url ? (
+            <div className='relative mt-2 overflow-hidden rounded-md border border-border bg-background'>
+              {mediaMessage.type === 'image' && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mediaMessage.payload.url}
+                  alt='Attachment preview'
+                  className='h-48 w-full object-cover'
+                />
+              )}
+              {mediaMessage.type === 'video' && (
+                <video
+                  src={mediaMessage.payload.url}
+                  className='h-48 w-full bg-black'
+                  controls
+                />
+              )}
+              {(!mediaMessage.type || mediaMessage.type === 'file') && (
+                <div className='flex h-48 flex-col items-center justify-center gap-3 bg-muted/30 p-4 transition-colors hover:bg-muted/50'>
+                  <div className='rounded-full bg-primary/10 p-4'>
+                    <FileText className='h-8 w-8 text-primary' />
+                  </div>
+                  <div className='px-4 text-center'>
+                    <p className='line-clamp-2 text-sm font-medium'>
+                      Attached File
+                    </p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={handleRemoveAttachment}
+                className='absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70'
+                title='Remove attachment'
+              >
+                <X className='h-4 w-4' />
+              </button>
+            </div>
+          ) : (
+            <Button
+              variant='outline'
+              type='button'
+              className='mt-2 h-auto w-full flex-col gap-2 border-dashed py-8 hover:border-primary hover:bg-primary/5'
+              onClick={() => setPickerOpen(true)}
+            >
+              <div className='rounded-full bg-muted p-3 group-hover:bg-primary/10'>
+                <ImageIcon className='h-6 w-6 text-muted-foreground group-hover:text-primary' />
+              </div>
+              <div className='flex flex-col gap-0.5'>
+                <span className='text-sm font-medium'>Select Attachment</span>
+                <span className='text-xs text-muted-foreground'>
+                  Image or Video
+                </span>
+              </div>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handleMediaSelect}
+      />
+    </div>
+  );
+}

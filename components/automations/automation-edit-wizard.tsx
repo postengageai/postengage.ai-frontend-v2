@@ -108,9 +108,12 @@ function apiToFormData(apiData: Automation): AutomationFormData {
         delay_seconds: action.delay_seconds || 0,
         status: 'active',
         action_payload: {
+          ...(action.action_payload || {}),
           text: action.action_payload?.text || '',
-          attachment_type: action.action_payload?.attachment_type,
-          attachment_url: action.action_payload?.attachment_url,
+          message: action.action_payload?.message || {
+            type: 'text',
+            text: action.action_payload?.text || '',
+          },
         },
       })) || [],
     name: apiData.name,

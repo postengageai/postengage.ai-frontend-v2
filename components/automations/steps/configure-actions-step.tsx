@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -21,6 +20,13 @@ import {
   AutomationActionType,
   type AutomationActionTypeType,
 } from '@/lib/constants/automations';
+import {
+  AutomationActionPayload,
+  SendDmPayload,
+  ReplyCommentPayload,
+  PrivateReplyPayload,
+} from '@/lib/api/automations';
+import { InstagramCommentAction, InstagramDmAction } from './actions/instagram';
 
 interface ConfigureActionsStepProps {
   formData: AutomationFormData;
@@ -71,14 +77,28 @@ export function ConfigureActionsStep({
   };
 
   const addAction = (type: AutomationActionTypeType) => {
+    let payload: AutomationActionPayload;
+
+    if (type === AutomationActionType.SEND_DM) {
+      payload = {
+        message: {
+          type: 'text',
+          text: '',
+        },
+      };
+    } else {
+      // REPLY_COMMENT or PRIVATE_REPLY
+      payload = {
+        text: '',
+      };
+    }
+
     const newAction = {
       action_type: type,
       execution_order: actions.length + 1,
       delay_seconds: actions.length === 0 ? 2 : 5,
       status: 'active' as const,
-      action_payload: {
-        text: '',
-      },
+      action_payload: payload,
     };
     setActions([...actions, newAction]);
   };
@@ -93,7 +113,10 @@ export function ConfigureActionsStep({
     setActions(newActions);
   };
 
-  const updateAction = (index: number, updates: any) => {
+  const updateAction = (
+    index: number,
+    updates: Partial<AutomationFormData['actions'][0]>
+  ) => {
     const newActions = [...actions];
     newActions[index] = { ...newActions[index], ...updates };
     setActions(newActions);
@@ -191,92 +214,35 @@ export function ConfigureActionsStep({
               </div>
 
               <div className='space-y-4'>
-                <div>
-                  <Label
-                    htmlFor={`action-text-${index}`}
-                    className='mb-2 block text-sm font-medium'
-                  >
-                    Message
-                  </Label>
-                  <Textarea
-                    id={`action-text-${index}`}
-                    placeholder={`Enter ${action.action_type === AutomationActionType.REPLY_COMMENT ? 'reply' : 'DM'} message...`}
-                    value={action.action_payload.text}
-                    onChange={e =>
+                {action.action_type === AutomationActionType.SEND_DM ? (
+                  <InstagramDmAction
+                    payload={action.action_payload as SendDmPayload}
+                    onUpdate={updates =>
                       updateAction(index, {
                         action_payload: {
                           ...action.action_payload,
-                          text: e.target.value,
-                        },
+                          ...updates,
+                        } as SendDmPayload,
                       })
                     }
-                    rows={3}
                   />
-                  <p className='mt-1 text-xs text-muted-foreground'>
-                    Variables: {'{{commenter_name}}'}, {'{{comment_text}}'},{' '}
-                    {'{{post_content}}'}
-                  </p>
-                </div>
-
-                {action.action_type === AutomationActionType.SEND_DM && (
-                  <div className='space-y-4 rounded-md border border-border bg-muted/30 p-4'>
-                    <Label className='block text-sm font-medium'>
-                      Attachment (Optional)
-                    </Label>
-
-                    <div className='grid gap-4 sm:grid-cols-3'>
-                      <div className='sm:col-span-1'>
-                        <Label
-                          htmlFor={`action-att-type-${index}`}
-                          className='mb-1.5 block text-xs text-muted-foreground'
-                        >
-                          Type
-                        </Label>
-                        <select
-                          id={`action-att-type-${index}`}
-                          className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                          value={action.action_payload.attachment_type || ''}
-                          onChange={e =>
-                            updateAction(index, {
-                              action_payload: {
-                                ...action.action_payload,
-                                attachment_type: e.target.value || undefined,
-                              },
-                            })
-                          }
-                        >
-                          <option value=''>None</option>
-                          <option value='image'>Image</option>
-                          <option value='video'>Video</option>
-                          <option value='file'>File</option>
-                        </select>
-                      </div>
-
-                      <div className='sm:col-span-2'>
-                        <Label
-                          htmlFor={`action-att-url-${index}`}
-                          className='mb-1.5 block text-xs text-muted-foreground'
-                        >
-                          URL
-                        </Label>
-                        <input
-                          id={`action-att-url-${index}`}
-                          type='url'
-                          placeholder='https://...'
-                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-                          value={action.action_payload.attachment_url || ''}
-                          onChange={e =>
-                            updateAction(index, {
-                              action_payload: {
-                                ...action.action_payload,
-                                attachment_url: e.target.value,
-                              },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
+                ) : (
+                  <InstagramCommentAction
+                    actionType={action.action_type}
+                    payload={
+                      action.action_payload as
+                        | ReplyCommentPayload
+                        | PrivateReplyPayload
+                    }
+                    onUpdate={updates =>
+                      updateAction(index, {
+                        action_payload: {
+                          ...action.action_payload,
+                          ...updates,
+                        } as ReplyCommentPayload | PrivateReplyPayload,
+                      })
+                    }
+                  />
                 )}
 
                 <div>

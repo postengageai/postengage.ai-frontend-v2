@@ -63,6 +63,11 @@ const navItems = [
     href: '/dashboard/automations',
     icon: Zap,
   },
+  {
+    title: 'Media',
+    href: '/dashboard/media',
+    icon: Sparkles,
+  },
 ];
 
 const creditsSubItems = [

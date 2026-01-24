@@ -136,6 +136,23 @@ export default function AutomationsPage() {
     0
   );
 
+  const handleDelete = async (id: string) => {
+    try {
+      await automationsApi.delete(id);
+      setAutomations(prev => prev.filter(a => a.id !== id));
+      toast({
+        title: 'Automation deleted',
+        description: 'The automation has been successfully deleted.',
+      });
+    } catch (_error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete automation',
+      });
+    }
+  };
+
   function getTriggerTypeLabel(type: string): string {
     const labels: Record<string, string> = {
       [AutomationTriggerType.NEW_COMMENT]: 'New Comment',
@@ -433,7 +450,10 @@ export default function AutomationsPage() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem className='text-destructive'>
+                            <DropdownMenuItem
+                              className='text-destructive'
+                              onClick={() => handleDelete(automation.id)}
+                            >
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
