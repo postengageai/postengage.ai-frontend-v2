@@ -66,6 +66,7 @@ export function SocialAccounts() {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
@@ -139,6 +140,20 @@ export function SocialAccounts() {
       setError(errorMessage);
     } finally {
       setReconnectingId(null);
+    }
+  };
+
+  const handleRefresh = async (accountId: string) => {
+    try {
+      setRefreshingId(accountId);
+      await SocialAccountsApi.refresh(accountId);
+      await loadAccounts();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to refresh account';
+      setError(errorMessage);
+    } finally {
+      setRefreshingId(null);
     }
   };
 
@@ -345,21 +360,37 @@ export function SocialAccounts() {
                       Reconnect
                     </Button>
                   ) : (
-                    !account.is_primary && (
+                    <>
                       <Button
                         variant='ghost'
                         size='sm'
-                        onClick={() => handleSetPrimary(account.id)}
-                        disabled={settingPrimaryId === account.id}
+                        onClick={() => handleRefresh(account.id)}
+                        disabled={refreshingId === account.id}
+                        title='Sync profile'
                       >
-                        {settingPrimaryId === account.id ? (
+                        {refreshingId === account.id ? (
                           <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                         ) : (
-                          <Star className='mr-2 h-4 w-4' />
+                          <RefreshCw className='mr-2 h-4 w-4' />
                         )}
-                        Set primary
+                        Sync
                       </Button>
-                    )
+                      {!account.is_primary && (
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => handleSetPrimary(account.id)}
+                          disabled={settingPrimaryId === account.id}
+                        >
+                          {settingPrimaryId === account.id ? (
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          ) : (
+                            <Star className='mr-2 h-4 w-4' />
+                          )}
+                          Set primary
+                        </Button>
+                      )}
+                    </>
                   )}
                   <Button
                     variant='ghost'
