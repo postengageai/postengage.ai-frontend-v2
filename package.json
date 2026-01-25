@@ -1,6 +1,8 @@
 {
-  "name": "my-v0-project",
+  "name": "postengage.ai-frontend",
   "version": "0.1.0",
+  "description": "PostEngage.ai Frontend Application",
+  "author": "PostEngage.ai",
   "private": true,
   "scripts": {
     "build": "next build",
