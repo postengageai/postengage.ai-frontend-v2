@@ -19,6 +19,7 @@ import {
   isPasswordValid,
 } from '@/components/auth/password-strength';
 import { FormError } from '@/components/auth/form-error';
+import { GoogleLoginButton } from '@/components/auth/google-login-button';
 import { AuthApi } from '@/lib/api/auth';
 
 export default function SignupPage() {
@@ -97,6 +98,20 @@ export default function SignupPage() {
       />
 
       <form onSubmit={handleSubmit} className='space-y-5'>
+        <div className='space-y-4'>
+          <GoogleLoginButton text='Sign up with Google' />
+          <div className='relative'>
+            <div className='absolute inset-0 flex items-center'>
+              <span className='w-full border-t' />
+            </div>
+            <div className='relative flex justify-center text-xs uppercase'>
+              <span className='bg-background px-2 text-muted-foreground'>
+                Or continue with
+              </span>
+            </div>
+          </div>
+        </div>
+
         {error && <FormError title={error.title} message={error.message} />}
 
         <div className='grid grid-cols-2 gap-4'>

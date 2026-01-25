@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { GoogleLoginButton } from '@/components/auth/google-login-button';
 import {
   AuthCard,
   AuthCardHeader,
@@ -86,6 +87,20 @@ export default function LoginPage() {
       />
 
       <form onSubmit={handleSubmit} className='space-y-5'>
+        <div className='space-y-4'>
+          <GoogleLoginButton text='Sign in with Google' />
+          <div className='relative'>
+            <div className='absolute inset-0 flex items-center'>
+              <span className='w-full border-t' />
+            </div>
+            <div className='relative flex justify-center text-xs uppercase'>
+              <span className='bg-background px-2 text-muted-foreground'>
+                Or continue with
+              </span>
+            </div>
+          </div>
+        </div>
+
         {errors.loginError && (
           <div className='space-y-3'>
             <FormError message={errors.loginError.message} />
