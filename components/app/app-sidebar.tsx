@@ -381,7 +381,7 @@ export function AppSidebar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href='/help' className='flex items-center gap-2'>
+              <Link href='/dashboard/help' className='flex items-center gap-2'>
                 <HelpCircle className='h-4 w-4' />
                 Help & Support
               </Link>
