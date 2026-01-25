@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Check, Copy } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -210,8 +209,14 @@ export function SecurityForm() {
             <div className='mt-4 rounded-lg border p-4 bg-muted/50'>
               <h3 className='font-medium mb-4'>Scan QR Code</h3>
               <div className='flex flex-col md:flex-row gap-6'>
-                <div className='bg-white p-4 rounded-lg w-fit'>
-                  <QRCodeSVG value={mfaData.qrCode} size={160} />
+                <div className='bg-white p-4 rounded-lg w-fit flex flex-col items-center justify-center'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mfaData.qrCode}
+                    alt='Scan QR Code'
+                    width={200}
+                    height={200}
+                  />
                 </div>
                 <div className='space-y-4 flex-1'>
                   <p className='text-sm text-muted-foreground'>
