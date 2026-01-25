@@ -8,6 +8,11 @@ import {
   LoginResponse,
   SignupResponse,
   VerifyEmailResponse,
+  VerifyMfaLoginRequest,
+  GenerateMfaResponse,
+  EnableMfaRequest,
+  EnableMfaResponse,
+  DisableMfaResponse,
   User,
 } from '../schemas/auth';
 import { httpClient, SuccessResponse } from '../http/client';
@@ -35,6 +40,50 @@ export class AuthApi {
     const response = await httpClient.post<LoginResponse>(
       `${AUTH_BASE_URL}/login`,
       request
+    );
+
+    return response.data!;
+  }
+
+  // Verify MFA Login
+  static async verifyMfaLogin(
+    request: VerifyMfaLoginRequest
+  ): Promise<SuccessResponse<LoginResponse>> {
+    const response = await httpClient.post<LoginResponse>(
+      `${AUTH_BASE_URL}/mfa/verify-login`,
+      request
+    );
+
+    return response.data!;
+  }
+
+  // Generate MFA Secret
+  static async generateMfaSecret(): Promise<
+    SuccessResponse<GenerateMfaResponse>
+  > {
+    const response = await httpClient.post<GenerateMfaResponse>(
+      `${AUTH_BASE_URL}/mfa/generate`
+    );
+
+    return response.data!;
+  }
+
+  // Enable MFA
+  static async enableMfa(
+    request: EnableMfaRequest
+  ): Promise<SuccessResponse<EnableMfaResponse>> {
+    const response = await httpClient.post<EnableMfaResponse>(
+      `${AUTH_BASE_URL}/mfa/enable`,
+      request
+    );
+
+    return response.data!;
+  }
+
+  // Disable MFA
+  static async disableMfa(): Promise<SuccessResponse<DisableMfaResponse>> {
+    const response = await httpClient.post<DisableMfaResponse>(
+      `${AUTH_BASE_URL}/mfa/disable`
     );
 
     return response.data!;

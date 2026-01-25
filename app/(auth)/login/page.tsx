@@ -44,13 +44,22 @@ export default function LoginPage() {
       // Use the AuthApi class for proper API integration
       const response = await AuthApi.login({ email, password });
 
-      // Update auth store with user data
-      userActions.setUser(response.data.user);
-      actions.setIsAuthenticated(true);
+      if (response.data.mfa_required && response.data.mfa_token) {
+        setIsLoading(false);
+        actions.setLoading(false);
+        router.push(`/mfa/verify?token=${response.data.mfa_token}`);
+        return;
+      }
 
-      // Redirect to dashboard on success
-      router.push('/dashboard');
-      router.refresh(); // Refresh to update auth state
+      // Update auth store with user data
+      if (response.data.user) {
+        userActions.setUser(response.data.user);
+        actions.setIsAuthenticated(true);
+
+        // Redirect to dashboard on success
+        router.push('/dashboard');
+        router.refresh(); // Refresh to update auth state
+      }
     } catch (error: unknown) {
       // console.error('Login error:', error);
 

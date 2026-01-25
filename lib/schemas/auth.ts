@@ -25,6 +25,7 @@ export const UserSchema = z.object({
   timezone: z.string().nullable(),
   language: z.string(),
   role: z.string(),
+  is_mfa_enabled: z.boolean().default(false),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -69,11 +70,53 @@ export type SignupResponse = z.infer<typeof SignupResponseSchema>;
 
 // Login response schema
 export const LoginResponseSchema = z.object({
-  user: UserSchema,
+  user: UserSchema.optional(), // User is optional if MFA is required
   message: z.string(),
+  mfa_required: z.boolean().optional(),
+  mfa_token: z.string().optional(),
 });
 
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+
+// Verify MFA login request schema
+export const VerifyMfaLoginRequestSchema = z.object({
+  mfa_pending_token: z.string(),
+  code: z.string().min(6, 'Code must be at least 6 characters'),
+});
+
+export type VerifyMfaLoginRequest = z.infer<typeof VerifyMfaLoginRequestSchema>;
+
+// MFA Management Schemas
+
+// Generate MFA Response
+export const GenerateMfaResponseSchema = z.object({
+  secret: z.string(),
+  qrCode: z.string(),
+});
+
+export type GenerateMfaResponse = z.infer<typeof GenerateMfaResponseSchema>;
+
+// Enable MFA Request
+export const EnableMfaRequestSchema = z.object({
+  token: z.string().length(6, 'Code must be 6 digits'),
+});
+
+export type EnableMfaRequest = z.infer<typeof EnableMfaRequestSchema>;
+
+// Enable MFA Response
+export const EnableMfaResponseSchema = z.object({
+  message: z.string(),
+  backupCodes: z.array(z.string()),
+});
+
+export type EnableMfaResponse = z.infer<typeof EnableMfaResponseSchema>;
+
+// Disable MFA Response
+export const DisableMfaResponseSchema = z.object({
+  message: z.string(),
+});
+
+export type DisableMfaResponse = z.infer<typeof DisableMfaResponseSchema>;
 
 // Verify email request schema
 export const VerifyEmailRequestSchema = z.object({
