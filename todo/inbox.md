@@ -101,20 +101,20 @@ We need a service that aggregates `Conversations` and enriches them with `Lead` 
 
 ### Frontend Tasks
 
-- [ ] **Setup Route**: Create `app/dashboard/inbox/page.tsx` and `layout.tsx`.
-- [ ] **API Client**: Add methods to `lib/api` for fetching inbox data.
-- [ ] **State Management**: Create `InboxContext` or use Query for managing selected conversation.
-- [ ] **Component: `InboxSidebar`**:
-  - Implement virtualized list for performance.
-  - Add filters.
-- [ ] **Component: `ChatWindow`**:
-  - Message bubbles component.
-  - Input component with optimistic updates.
-  - **Implement 24h Window Logic**: Show warning if conversation is expired; handle `HUMAN_AGENT` tag flow.
-  - **Send Read Receipt**: Trigger API call when chat is opened/focused.
-- [ ] **Component: `LeadSidebar`**:
-  - Display Lead details.
-  - Allow editing Tags/Notes.
+- [x] **Setup Route**: Create `app/dashboard/inbox/page.tsx` and `layout.tsx`.
+- [x] **API Client**: Add methods to `lib/api` for fetching inbox data.
+- [x] **State Management**: Create `InboxContext` or use Query for managing selected conversation.
+- [x] **Component: `InboxSidebar`**:
+  - [ ] Implement virtualized list for performance.
+  - [x] Add filters (Status, Search).
+  - [x] **Component: `ChatWindow`**:
+    - [x] Message bubbles component.
+    - [x] Input component with optimistic updates.
+    - [x] **Implement 24h Window Logic**: Show warning if conversation is expired; handle `HUMAN_AGENT` tag flow.
+    - [x] **Send Read Receipt**: Trigger API call when chat is opened/focused.
+  - [x] **Component: `LeadSidebar`**:
+    - [x] Display Lead details.
+    - [x] Allow editing Tags/Notes.
 
 ### UX/UI Polish
 
