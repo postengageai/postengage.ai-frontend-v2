@@ -1,4 +1,5 @@
 export enum InboxConversationStatus {
+  ALL = 'all',
   OPEN = 'open',
   CLOSED = 'closed',
 }

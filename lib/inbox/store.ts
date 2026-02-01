@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import React from 'react';
 import {
   InboxConversation,
   InboxMessage,
@@ -26,6 +27,11 @@ interface InboxState {
 
     setMessages: (conversationId: string, messages: InboxMessage[]) => void;
     addMessage: (conversationId: string, message: InboxMessage) => void;
+    updateMessage: (
+      conversationId: string,
+      messageId: string,
+      updates: Partial<InboxMessage>
+    ) => void;
 
     setLoadingConversations: (isLoading: boolean) => void;
     setLoadingMessages: (isLoading: boolean) => void;
@@ -40,7 +46,7 @@ export const useInboxStore = create<InboxState>(set => ({
   messages: {},
   isLoadingConversations: false,
   isLoadingMessages: false,
-  filters: { status: InboxConversationStatus.OPEN }, // default filter
+  filters: { status: InboxConversationStatus.ALL }, // default filter
 
   actions: {
     setConversations: conversations => set({ conversations }),
@@ -69,6 +75,19 @@ export const useInboxStore = create<InboxState>(set => ({
           ],
         },
       })),
+    updateMessage: (
+      conversationId: string,
+      messageId: string,
+      updates: Partial<InboxMessage>
+    ) =>
+      set(state => ({
+        messages: {
+          ...state.messages,
+          [conversationId]: (state.messages[conversationId] || []).map(msg =>
+            msg._id === messageId ? { ...msg, ...updates } : msg
+          ),
+        },
+      })),
 
     setLoadingConversations: isLoading =>
       set({ isLoadingConversations: isLoading }),
@@ -82,8 +101,18 @@ export const useInboxConversations = () =>
   useInboxStore(state => state.conversations);
 export const useSelectedConversationId = () =>
   useInboxStore(state => state.selectedConversationId);
-export const useInboxMessages = (conversationId: string) =>
-  useInboxStore(state => state.messages[conversationId] || []);
+const EMPTY_MESSAGES: InboxMessage[] = [];
+
+export const useInboxMessages = (conversationId: string | null) => {
+  const selector = React.useCallback(
+    (state: InboxState) =>
+      conversationId
+        ? state.messages[conversationId] || EMPTY_MESSAGES
+        : EMPTY_MESSAGES,
+    [conversationId]
+  );
+  return useInboxStore(selector);
+};
 export const useInboxLoading = () =>
   useInboxStore(state => ({
     conversations: state.isLoadingConversations,

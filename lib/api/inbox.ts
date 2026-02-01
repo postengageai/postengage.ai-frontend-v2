@@ -15,7 +15,8 @@ export class InboxApi {
     perPage: number = 20
   ): Promise<SuccessResponse<InboxConversation[]>> {
     const params = new URLSearchParams();
-    if (filters.status) params.append('status', filters.status);
+    if (filters.status && filters.status !== 'all')
+      params.append('status', filters.status);
     if (filters.platform) params.append('platform', filters.platform);
     if (filters.social_account_id)
       params.append('social_account_id', filters.social_account_id);
