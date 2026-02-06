@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AuthCard,
   AuthCardHeader,
@@ -33,6 +34,8 @@ export default function SignupPage() {
     lastName: '',
     email: '',
     password: '',
+    referralCode: '',
+    acceptTerms: false,
   });
 
   const [touched, setTouched] = useState({
@@ -40,6 +43,8 @@ export default function SignupPage() {
     lastName: false,
     email: false,
     password: false,
+    referralCode: false,
+    acceptTerms: false,
   });
 
   const handleChange =
@@ -49,6 +54,11 @@ export default function SignupPage() {
       setError(null);
     };
 
+  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
+    setFormData(prev => ({ ...prev, acceptTerms: checked === true }));
+    setError(null);
+  };
+
   const handleBlur = (field: keyof typeof touched) => () => {
     setTouched(prev => ({ ...prev, [field]: true }));
   };
@@ -57,7 +67,8 @@ export default function SignupPage() {
     formData.firstName.length >= 2 &&
     formData.lastName.length >= 2 &&
     formData.email.includes('@') &&
-    isPasswordValid(formData.password);
+    isPasswordValid(formData.password) &&
+    formData.acceptTerms;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +83,8 @@ export default function SignupPage() {
         first_name: formData.firstName,
         last_name: formData.lastName,
         password: formData.password,
+        referral_code: formData.referralCode || undefined,
+        accept_terms: true,
       });
 
       // Redirect to verification pending page
@@ -166,6 +179,43 @@ export default function SignupPage() {
             disabled={isLoading}
           />
           <PasswordStrength password={formData.password} />
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='referralCode'>Referral Code (Optional)</Label>
+          <Input
+            id='referralCode'
+            type='text'
+            value={formData.referralCode}
+            onChange={handleChange('referralCode')}
+            onBlur={handleBlur('referralCode')}
+            placeholder='e.g. SUMMER2026'
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className='flex items-start space-x-2'>
+          <Checkbox
+            id='terms'
+            checked={formData.acceptTerms}
+            onCheckedChange={handleCheckboxChange}
+            disabled={isLoading}
+          />
+          <div className='grid gap-1.5 leading-none'>
+            <Label
+              htmlFor='terms'
+              className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+            >
+              I accept the{' '}
+              <Link href='/terms' className='text-primary hover:underline'>
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href='/privacy' className='text-primary hover:underline'>
+                Privacy Policy
+              </Link>
+            </Label>
+          </div>
         </div>
 
         <Button

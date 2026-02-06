@@ -54,6 +54,10 @@ export const SignupRequestSchema = z.object({
       /[^A-Za-z0-9]/,
       'Password must contain at least one special character'
     ),
+  referral_code: z.string().optional(),
+  accept_terms: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the terms and conditions' }),
+  }),
 });
 
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
