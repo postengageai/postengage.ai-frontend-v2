@@ -18,6 +18,36 @@ import {
 } from '@/lib/constants/automations';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import type {
+  AutomationActionResponse,
+  ReplyCommentPayload,
+  SendDmPayload,
+  PrivateReplyPayload,
+  NotifyAdminPayload,
+  AddTagPayload,
+} from '@/lib/api/automations';
+
+function getActionText(action: AutomationActionResponse): string {
+  switch (action.action_type) {
+    case AutomationActionType.REPLY_COMMENT:
+      return (action.action_payload as ReplyCommentPayload).text || '';
+    case AutomationActionType.PRIVATE_REPLY:
+      return (action.action_payload as PrivateReplyPayload).text || '';
+    case AutomationActionType.SEND_DM: {
+      const payload = action.action_payload as SendDmPayload;
+      if (payload.message.type === 'text') {
+        return payload.message.text;
+      }
+      return 'Media message';
+    }
+    case AutomationActionType.NOTIFY_ADMIN:
+      return (action.action_payload as NotifyAdminPayload).message || '';
+    case AutomationActionType.ADD_TAG:
+      return (action.action_payload as AddTagPayload).tag_name || '';
+    default:
+      return '';
+  }
+}
 
 export default function AutomationDetailPage() {
   const params = useParams();
@@ -93,7 +123,7 @@ export default function AutomationDetailPage() {
                 : action.action_type === AutomationActionType.SEND_DM
                   ? 'send_dm'
                   : 'private_reply',
-            text: action.action_payload.text || '',
+            text: getActionText(action),
             delay_seconds: action.delay_seconds || 0,
           })),
           statistics: {
@@ -126,6 +156,7 @@ export default function AutomationDetailPage() {
           })),
           created_at: apiData.created_at,
           updated_at: apiData.updated_at,
+          last_executed_at: apiData.last_executed_at || undefined,
         };
 
         setAutomation(mappedData);

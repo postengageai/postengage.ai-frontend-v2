@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Copy,
   ExternalLink,
+  ArrowRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,6 +93,7 @@ export interface AutomationData {
   }>;
   created_at: string;
   updated_at: string;
+  last_executed_at?: string;
 }
 
 interface AutomationDetailProps {
@@ -223,6 +225,17 @@ export function AutomationDetail({
                   </div>
                   <span className='text-muted-foreground/50'>•</span>
                   <span>Updated {formatTimeAgo(automation.updated_at)}</span>
+                  {automation.last_executed_at && (
+                    <>
+                      <span className='text-muted-foreground/50'>•</span>
+                      <div className='flex items-center gap-1'>
+                        <Clock className='h-3 w-3' />
+                        <span>
+                          Last run {formatTimeAgo(automation.last_executed_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -410,104 +423,137 @@ export function AutomationDetail({
           </div>
 
           {/* Automation Flow */}
-          <Card className='bg-card/50'>
-            <CardHeader className='pb-4'>
-              <CardTitle className='text-base'>Automation Flow</CardTitle>
+          <Card className='bg-card/50 overflow-hidden'>
+            <CardHeader className='pb-4 border-b border-border/50 bg-muted/20'>
+              <CardTitle className='text-base flex items-center gap-2'>
+                <Zap className='h-4 w-4 text-primary' />
+                Automation Flow
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
+            <CardContent className='p-6'>
+              <div className='flex flex-col gap-6 lg:flex-row lg:items-stretch'>
                 {/* Trigger */}
-                <div className='flex-1 rounded-lg border border-border bg-background/50 p-4'>
-                  <div className='mb-2 flex items-center gap-2'>
-                    <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10'>
-                      <Play className='h-4 w-4 text-blue-500' />
+                <div className='flex-1 flex flex-col'>
+                  <div className='rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex-1 transition-all hover:shadow-md hover:border-blue-500/30'>
+                    <div className='mb-3 flex items-center justify-between'>
+                      <div className='flex items-center gap-2'>
+                        <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 shadow-sm'>
+                          <Play className='h-4 w-4 text-blue-500' />
+                        </div>
+                        <span className='text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400'>
+                          Trigger
+                        </span>
+                      </div>
                     </div>
-                    <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                      Trigger
-                    </span>
-                  </div>
-                  <p className='font-medium'>
-                    {getTriggerLabel(
-                      automation.trigger.type,
-                      automation.trigger.scope
-                    )}
-                  </p>
-                  {automation.trigger.content_count && (
-                    <p className='mt-1 text-xs text-muted-foreground'>
-                      {automation.trigger.content_count} posts selected
+                    <p className='font-semibold text-lg'>
+                      {getTriggerLabel(
+                        automation.trigger.type,
+                        automation.trigger.scope
+                      )}
                     </p>
-                  )}
+                    {automation.trigger.content_count ? (
+                      <div className='mt-2 inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400'>
+                        {automation.trigger.content_count} posts selected
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className='hidden text-muted-foreground/50 sm:block'>
-                  →
+                <div className='flex items-center justify-center lg:w-8 text-muted-foreground/30'>
+                  <ArrowRight className='h-6 w-6 rotate-90 lg:rotate-0' />
                 </div>
 
                 {/* Condition */}
                 {automation.condition && (
                   <>
-                    <div className='flex-1 rounded-lg border border-border bg-background/50 p-4'>
-                      <div className='mb-2 flex items-center gap-2'>
-                        <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10'>
-                          <RefreshCw className='h-4 w-4 text-amber-500' />
+                    <div className='flex-1 flex flex-col'>
+                      <div className='rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 flex-1 transition-all hover:shadow-md hover:border-amber-500/30'>
+                        <div className='mb-3 flex items-center justify-between'>
+                          <div className='flex items-center gap-2'>
+                            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shadow-sm'>
+                              <RefreshCw className='h-4 w-4 text-amber-500' />
+                            </div>
+                            <span className='text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400'>
+                              Condition
+                            </span>
+                          </div>
                         </div>
-                        <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                          Condition
-                        </span>
-                      </div>
-                      <p className='font-medium'>Keyword Filter</p>
-                      <div className='mt-2 flex flex-wrap gap-1'>
-                        {automation.condition.keywords
-                          .slice(0, 3)
-                          .map(keyword => (
+                        <p className='font-semibold text-lg'>Keyword Filter</p>
+                        <div className='mt-3 flex flex-wrap gap-1.5'>
+                          {automation.condition.keywords
+                            .slice(0, 5)
+                            .map(keyword => (
+                              <Badge
+                                key={keyword}
+                                variant='secondary'
+                                className='bg-background/80 hover:bg-background text-xs font-normal border border-amber-200 dark:border-amber-800'
+                              >
+                                {keyword}
+                              </Badge>
+                            ))}
+                          {automation.condition.keywords.length > 5 && (
                             <Badge
-                              key={keyword}
                               variant='secondary'
-                              className='text-xs'
+                              className='bg-background/80 text-xs font-normal border border-amber-200 dark:border-amber-800'
                             >
-                              {keyword}
+                              +{automation.condition.keywords.length - 5} more
                             </Badge>
-                          ))}
-                        {automation.condition.keywords.length > 3 && (
-                          <Badge variant='secondary' className='text-xs'>
-                            +{automation.condition.keywords.length - 3} more
-                          </Badge>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className='hidden text-muted-foreground/50 sm:block'>
-                      →
+                    <div className='flex items-center justify-center lg:w-8 text-muted-foreground/30'>
+                      <ArrowRight className='h-6 w-6 rotate-90 lg:rotate-0' />
                     </div>
                   </>
                 )}
 
                 {/* Actions */}
-                <div className='flex-1 rounded-lg border border-border bg-background/50 p-4'>
-                  <div className='mb-2 flex items-center gap-2'>
-                    <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10'>
-                      <Zap className='h-4 w-4 text-emerald-500' />
-                    </div>
-                    <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                      Actions
-                    </span>
-                  </div>
-                  <div className='space-y-2'>
-                    {automation.actions.map((action, index) => (
-                      <div key={index} className='flex items-center gap-2'>
-                        <span className='flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs'>
-                          {index + 1}
+                <div className='flex-1 flex flex-col'>
+                  <div className='rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex-1 transition-all hover:shadow-md hover:border-emerald-500/30'>
+                    <div className='mb-3 flex items-center justify-between'>
+                      <div className='flex items-center gap-2'>
+                        <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 shadow-sm'>
+                          <Zap className='h-4 w-4 text-emerald-500' />
+                        </div>
+                        <span className='text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400'>
+                          Actions
                         </span>
-                        <span className='text-sm'>
-                          {getActionLabel(action.type)}
-                        </span>
-                        {action.delay_seconds > 0 && (
-                          <span className='flex items-center gap-1 text-xs text-muted-foreground'>
-                            <Clock className='h-3 w-3' />
-                            {action.delay_seconds}s
-                          </span>
-                        )}
                       </div>
-                    ))}
+                      <Badge
+                        variant='outline'
+                        className='border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400'
+                      >
+                        {automation.actions.length} Step
+                        {automation.actions.length !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                    <div className='space-y-3'>
+                      {automation.actions.map((action, index) => (
+                        <div
+                          key={index}
+                          className='flex items-center gap-3 rounded-lg bg-background/60 p-2 border border-border/50'
+                        >
+                          <span className='flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground shadow-xs'>
+                            {index + 1}
+                          </span>
+                          <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-medium truncate'>
+                              {getActionLabel(action.type)}
+                            </p>
+                          </div>
+                          {action.delay_seconds > 0 && (
+                            <Badge
+                              variant='secondary'
+                              className='flex items-center gap-1 text-[10px] h-5 px-1.5 font-normal'
+                            >
+                              <Clock className='h-3 w-3' />
+                              {action.delay_seconds}s
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { formatDistanceToNow, format } from 'date-fns';
 import {
   Plus,
   Search,
@@ -11,6 +12,8 @@ import {
   MessageCircle,
   ArrowUpDown,
   Zap,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -325,33 +328,36 @@ export default function AutomationsPage() {
                     !isActive && 'opacity-70'
                   )}
                 >
-                  <CardContent className='p-4'>
-                    <div className='flex items-center gap-4'>
+                  <CardContent className='p-5'>
+                    <div className='flex items-start gap-4'>
                       {/* Status toggle */}
-                      <Switch
-                        checked={isActive}
-                        onCheckedChange={() =>
-                          toggleStatus(
-                            automation.id,
-                            automation.status || AutomationStatus.DRAFT
-                          )
-                        }
-                        className='data-[state=checked]:bg-emerald-500'
-                      />
+                      <div className='pt-1'>
+                        <Switch
+                          checked={isActive}
+                          onCheckedChange={() =>
+                            toggleStatus(
+                              automation.id,
+                              automation.status || AutomationStatus.DRAFT
+                            )
+                          }
+                          className='data-[state=checked]:bg-emerald-500'
+                        />
+                      </div>
 
                       {/* Main content */}
-                      <Link
-                        href={`/dashboard/automations/${automation.id}`}
-                        className='flex-1 min-w-0'
-                      >
-                        <div className='flex items-center gap-3 mb-2'>
-                          <h3 className='font-semibold truncate'>
+                      <div className='flex-1 min-w-0 grid gap-3'>
+                        {/* Header: Name + Badges */}
+                        <div className='flex items-center gap-2'>
+                          <Link
+                            href={`/dashboard/automations/${automation.id}`}
+                            className='font-semibold text-lg truncate hover:underline underline-offset-4 decoration-primary/50'
+                          >
                             {automation.name}
-                          </h3>
+                          </Link>
                           <Badge
                             variant='secondary'
                             className={cn(
-                              'shrink-0',
+                              'shrink-0 text-[10px] h-5 px-1.5',
                               isActive
                                 ? 'bg-emerald-500/10 text-emerald-500'
                                 : automation.status === AutomationStatus.DRAFT
@@ -367,55 +373,98 @@ export default function AutomationsPage() {
                           </Badge>
                         </div>
 
-                        {/* Flow summary */}
-                        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                          <div className='flex items-center gap-1'>
-                            <div className='w-5 h-5 rounded bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
-                              <Instagram className='h-3 w-3 text-white' />
+                        {/* Metadata Row: Social Account | Created | Last Run */}
+                        <div className='flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground'>
+                          {/* Social Account */}
+                          {automation.social_account && (
+                            <div className='flex items-center gap-1.5 text-foreground/80'>
+                              <div className='w-5 h-5 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
+                                <Instagram className='h-3 w-3 text-white' />
+                              </div>
+                              <span className='font-medium'>
+                                @{automation.social_account.username}
+                              </span>
                             </div>
+                          )}
+
+                          {/* Created Date */}
+                          <div className='flex items-center gap-1.5'>
+                            <Calendar className='h-3.5 w-3.5' />
+                            <span>
+                              Created{' '}
+                              {format(
+                                new Date(automation.created_at),
+                                'MMM d, yyyy'
+                              )}
+                            </span>
                           </div>
-                          <span>
+
+                          {/* Last Run */}
+                          {automation.last_executed_at && (
+                            <div className='flex items-center gap-1.5'>
+                              <Clock className='h-3.5 w-3.5' />
+                              <span>
+                                Run{' '}
+                                {formatDistanceToNow(
+                                  new Date(automation.last_executed_at),
+                                  { addSuffix: true }
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Flow Visualization */}
+                        <Link
+                          href={`/dashboard/automations/${automation.id}`}
+                          className='flex flex-wrap items-center gap-2 mt-1 p-2 bg-muted/30 hover:bg-muted/50 transition-colors rounded-lg border border-border/40 w-fit'
+                        >
+                          <div className='flex items-center gap-1.5 text-sm font-medium'>
                             {getTriggerTypeLabel(
                               automation.trigger.trigger_type
                             )}
+                          </div>
+
+                          <span className='text-muted-foreground text-xs'>
+                            →
                           </span>
-                          <span className='text-muted-foreground/50'>→</span>
-                          <div className='flex items-center gap-1'>
-                            {automation.actions.slice(0, 2).map(action => (
+
+                          <div className='flex items-center gap-1.5'>
+                            {automation.actions.slice(0, 3).map(action => (
                               <Badge
                                 key={action.id}
                                 variant='outline'
-                                className='text-xs'
+                                className='bg-background/50 border-border text-xs font-normal shadow-sm'
                               >
                                 {getActionTypeLabel(action.action_type)}
                               </Badge>
                             ))}
-                            {automation.actions.length > 2 && (
-                              <Badge variant='outline' className='text-xs'>
-                                +{automation.actions.length - 2}
+                            {automation.actions.length > 3 && (
+                              <Badge
+                                variant='outline'
+                                className='bg-background/50 border-border text-xs font-normal shadow-sm'
+                              >
+                                +{automation.actions.length - 3} more
                               </Badge>
                             )}
                           </div>
-                        </div>
-                      </Link>
+                        </Link>
+                      </div>
 
                       {/* Stats */}
-                      <div className='flex items-center gap-6 shrink-0'>
-                        <div className='text-right'>
-                          <p className='text-sm font-semibold'>
+                      <div className='hidden sm:flex flex-col items-end justify-center gap-1 min-w-[100px] border-l border-border pl-6 py-2 self-stretch'>
+                        <div className='text-right mb-1'>
+                          <p className='text-xl font-bold'>
                             {(automation.execution_count || 0).toLocaleString()}
                           </p>
-                          {/* Trend is missing in backend for now, hiding it or using placeholder if needed. 
-                              User didn't ask for trend, so keeping it simple. */}
-                          <p className='text-xs text-muted-foreground'>
+                          <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
                             executions
                           </p>
                         </div>
-
                         <div className='text-right'>
                           <p
                             className={cn(
-                              'text-sm font-semibold',
+                              'font-semibold text-sm',
                               successRate >= 90
                                 ? 'text-emerald-500'
                                 : successRate >= 70
@@ -425,12 +474,14 @@ export default function AutomationsPage() {
                           >
                             {successRate}%
                           </p>
-                          <p className='text-xs text-muted-foreground'>
-                            success
+                          <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
+                            success rate
                           </p>
                         </div>
+                      </div>
 
-                        {/* Actions */}
+                      {/* Actions */}
+                      <div className='pl-2'>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
