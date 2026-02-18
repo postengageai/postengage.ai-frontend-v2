@@ -9,8 +9,30 @@ export interface OAuthRevokeResponse {
   message: string;
 }
 
+export interface TokenExchangeResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    platform: string;
+    username: string;
+    avatar?: string;
+  };
+}
+
 export class InstagramOAuthApi {
   private static readonly BASE_URL = 'api/v1/instagram/oauth';
+
+  static async exchangeFacebookToken(
+    accessToken: string,
+    userID: string
+  ): Promise<SuccessResponse<TokenExchangeResponse>> {
+    const response = await httpClient.post<TokenExchangeResponse>(
+      `${this.BASE_URL}/exchange`,
+      { accessToken, userID }
+    );
+    return response.data!;
+  }
 
   static async init(): Promise<SuccessResponse<OAuthInitResponse>> {
     const response = await httpClient.get<OAuthInitResponse>(

@@ -26,7 +26,6 @@ import {
   Star,
   RefreshCw,
   Trash2,
-  Plus,
   AlertTriangle,
   CheckCircle2,
   Loader2,
@@ -34,6 +33,8 @@ import {
 import { cn } from '@/lib/utils';
 import { SocialAccountsApi } from '@/lib/api/social-accounts';
 import { InstagramOAuthApi } from '@/lib/api/oauth';
+import { FacebookLoginButton } from '@/components/FacebookLoginButton';
+import type { FacebookAuthResponse } from '@/types/facebook';
 import type {
   SocialAccount,
   SocialAccountConnectionStatus,
@@ -158,6 +159,29 @@ export function SocialAccounts() {
     }
   };
 
+  const handleFacebookLoginSuccess = async (response: FacebookAuthResponse) => {
+    try {
+      setIsConnecting(true);
+      setError(null);
+      await InstagramOAuthApi.exchangeFacebookToken(
+        response.accessToken,
+        response.userID
+      );
+      // Reload accounts after a short delay
+      setTimeout(loadAccounts, 2000);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to connect account';
+      setError(errorMessage);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleFacebookLoginError = (err: Error) => {
+    setError(err.message);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -216,14 +240,36 @@ export function SocialAccounts() {
             Connect your first account to start automating your engagement and
             growing your audience.
           </p>
-          <Button onClick={handleConnect} disabled={isConnecting}>
-            {isConnecting ? (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            ) : (
-              <Instagram className='mr-2 h-4 w-4' />
-            )}
-            Connect Instagram
-          </Button>
+          <div className='flex flex-col gap-4'>
+            <FacebookLoginButton
+              onLoginSuccess={handleFacebookLoginSuccess}
+              onLoginError={handleFacebookLoginError}
+              className='w-full max-w-sm'
+            />
+            <div className='relative flex items-center justify-center w-full max-w-sm'>
+              <div className='absolute inset-0 flex items-center'>
+                <span className='w-full border-t' />
+              </div>
+              <div className='relative flex justify-center text-xs uppercase'>
+                <span className='bg-background px-2 text-muted-foreground'>
+                  Or
+                </span>
+              </div>
+            </div>
+            <Button
+              onClick={handleConnect}
+              disabled={isConnecting}
+              variant='outline'
+              className='w-full max-w-sm'
+            >
+              {isConnecting ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <Instagram className='mr-2 h-4 w-4' />
+              )}
+              Connect Instagram (Legacy)
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -240,14 +286,27 @@ export function SocialAccounts() {
               Manage your social media accounts for automation
             </CardDescription>
           </div>
-          <Button onClick={handleConnect} disabled={isConnecting} size='sm'>
-            {isConnecting ? (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            ) : (
-              <Plus className='mr-2 h-4 w-4' />
-            )}
-            Add account
-          </Button>
+          <div className='flex items-center gap-2'>
+            <Button
+              onClick={handleConnect}
+              disabled={isConnecting}
+              variant='outline'
+              size='sm'
+            >
+              {isConnecting ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <Instagram className='h-4 w-4' />
+              )}
+              <span className='ml-2 hidden sm:inline'>Legacy</span>
+            </Button>
+            <FacebookLoginButton
+              onLoginSuccess={handleFacebookLoginSuccess}
+              onLoginError={handleFacebookLoginError}
+              label='Add account'
+              className='h-9 px-3'
+            />
+          </div>
         </CardHeader>
         <CardContent className='space-y-4'>
           {accounts.map(account => {

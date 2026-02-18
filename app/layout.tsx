@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { Providers } from '@/components/providers';
+import { FacebookSDK } from '@/components/FacebookSDK';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -105,7 +106,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <FacebookSDK />
+          {children}
+        </Providers>
         <Analytics />
       </body>
     </html>
