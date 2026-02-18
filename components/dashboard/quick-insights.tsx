@@ -88,7 +88,10 @@ export function QuickInsights({
           <div className='flex items-start justify-between'>
             <div>
               <p className='text-sm text-muted-foreground'>Weekly Growth</p>
-              <p className='text-2xl font-bold mt-1'>+{weeklyGrowth}%</p>
+              <p className='text-2xl font-bold mt-1'>
+                {weeklyGrowth > 0 ? '+' : ''}
+                {weeklyGrowth}%
+              </p>
               <p className='text-xs text-muted-foreground mt-1'>vs last week</p>
             </div>
             <div className='p-2 rounded-md bg-primary/10'>
