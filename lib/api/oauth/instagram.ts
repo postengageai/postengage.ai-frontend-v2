@@ -29,17 +29,45 @@ export class InstagramOAuthApi {
   }
 
   static async openAuthorization(): Promise<void> {
+    // Open the popup immediately to avoid browser blocking
+    // Note: We cannot use 'noopener' here because we need the window reference to redirect it later
+    const newWindow = window.open('', '_blank', 'width=600,height=700');
+
+    if (!newWindow) {
+      throw new Error('Popup blocked. Please allow popups for this site.');
+    }
+
+    // Set loading content
+    newWindow.document.write(`
+      <html>
+        <head>
+          <title>Connecting to Instagram...</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb; color: #111827; }
+            .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin-right: 12px; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .container { display: flex; align-items: center; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="loader"></div>
+            <span>Connecting to Instagram...</span>
+          </div>
+        </body>
+      </html>
+    `);
+
     try {
       const response = await this.init();
       const { url } = response.data;
-      const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
 
-      if (!newWindow) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
-
+      // Navigate the popup to the auth URL
+      newWindow.location.href = url;
       newWindow.focus();
     } catch (error) {
+      // Close the popup if initialization fails
+      newWindow.close();
       throw new Error(
         error instanceof Error
           ? error.message
