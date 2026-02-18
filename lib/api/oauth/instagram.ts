@@ -25,11 +25,12 @@ export class InstagramOAuthApi {
 
   static async exchangeFacebookToken(
     accessToken: string,
-    userID: string
+    userID: string,
+    expiresIn: number
   ): Promise<SuccessResponse<TokenExchangeResponse>> {
     const response = await httpClient.post<TokenExchangeResponse>(
       `${this.BASE_URL}/exchange`,
-      { accessToken, userID }
+      { accessToken, userID, expiresIn }
     );
     return response.data!;
   }
