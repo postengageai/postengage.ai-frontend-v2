@@ -38,8 +38,24 @@ function OAuthSuccessContent() {
 
     // Trigger success animation on mount
     const timer = setTimeout(() => setShowAnimation(true), 100);
-    return () => clearTimeout(timer);
-  }, [id, username, router]);
+
+    // Auto-close popup after 3 seconds if opened as popup
+    let closeTimer: NodeJS.Timeout;
+    if (window.opener) {
+      closeTimer = setTimeout(() => {
+        window.opener.postMessage(
+          { type: 'OAUTH_SUCCESS', platform, id, username },
+          '*'
+        );
+        window.close();
+      }, 3000);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      if (closeTimer) clearTimeout(closeTimer);
+    };
+  }, [id, username, router, platform]);
 
   if (!id || !username) {
     return null; // Or a loading spinner while redirecting

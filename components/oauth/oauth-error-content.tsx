@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import {
 export function OAuthErrorContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [countdown, setCountdown] = useState(5);
 
   const errorParam = searchParams.get('error');
   const errorDescription = searchParams.get('description');
@@ -36,9 +38,44 @@ export function OAuthErrorContent() {
   const canRetry = isRetryableError(error);
   const provider = capitalizeProvider(error.details.provider);
 
+  useEffect(() => {
+    // Only auto-close if opened as a popup
+    if (!window.opener) return;
+
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Send error message to opener before closing
+          window.opener.postMessage(
+            {
+              type: 'OAUTH_ERROR',
+              error: errorParam,
+              description: errorDescription,
+            },
+            '*'
+          );
+          window.close();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [errorParam, errorDescription]);
+
   const handleRetry = () => {
     // Redirect to social accounts settings page to retry
     if (window.opener) {
+      window.opener.postMessage(
+        {
+          type: 'OAUTH_ERROR',
+          error: errorParam,
+          description: errorDescription,
+        },
+        '*'
+      );
       window.close();
     } else {
       router.push('/dashboard/settings/social-accounts');
@@ -100,6 +137,12 @@ export function OAuthErrorContent() {
             {canRetry ? 'Try Connecting Again' : 'Return to Settings'}
           </Button>
         </div>
+        {/* Auto-close notice */}
+        {window.opener && (
+          <p className='mt-4 text-center text-xs text-muted-foreground'>
+            Closing automatically in {countdown}s...
+          </p>
+        )}
       </div>
     </div>
   );

@@ -70,6 +70,28 @@ export function SocialAccounts() {
 
   useEffect(() => {
     loadAccounts();
+
+    // Listen for OAuth success/error message from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data) {
+        if (
+          event.data.type === 'OAUTH_SUCCESS' &&
+          event.data.platform === 'instagram'
+        ) {
+          // Refresh accounts list
+          loadAccounts();
+        } else if (event.data.type === 'OAUTH_ERROR') {
+          // Show error toast or alert
+          setError(
+            event.data.description ||
+              'Failed to connect account. Please try again.'
+          );
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const loadAccounts = async () => {
