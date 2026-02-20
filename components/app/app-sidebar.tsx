@@ -30,6 +30,7 @@ import {
   Coins,
   Settings,
   Sparkles,
+  Bot,
   LogOut,
   User,
   Shield,
@@ -67,6 +68,11 @@ const navItems = [
     title: 'Media',
     href: '/dashboard/media',
     icon: Sparkles,
+  },
+  {
+    title: 'Intelligence',
+    href: '/dashboard/intelligence/bots',
+    icon: Bot,
   },
 ];
 
@@ -110,8 +116,8 @@ export function AppSidebar() {
   const handleLogout = async () => {
     try {
       await AuthApi.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch (_error) {
+      // console.error('Logout failed:', error);
     } finally {
       setUser(null);
       router.push('/login');
@@ -128,8 +134,8 @@ export function AppSidebar() {
             remaining: response.data.available_credits,
           }));
         }
-      } catch (error) {
-        console.error('Failed to fetch credits:', error);
+      } catch (_error) {
+        // console.error('Failed to fetch credits:', error);
       }
     }
     fetchCredits();

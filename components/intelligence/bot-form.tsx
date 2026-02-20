@@ -1,0 +1,353 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { useToast } from '@/hooks/use-toast';
+import { IntelligenceApi } from '@/lib/api/intelligence';
+import { Bot, CreateBotDto } from '@/lib/types/intelligence';
+import { SocialAccount } from '@/lib/api/social-accounts';
+
+const botFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  description: z.string().optional(),
+  social_account_id: z.string().min(1, 'Social account is required'),
+  brand_voice_id: z.string().optional(),
+  behavior: z.object({
+    auto_reply_enabled: z.boolean().default(true),
+    max_replies_per_hour: z.number().min(0),
+    max_replies_per_day: z.number().min(0),
+    reply_delay_min_seconds: z.number().min(0),
+    reply_delay_max_seconds: z.number().min(0),
+    escalation_threshold: z.number().min(0).max(1),
+    cta_aggressiveness: z.enum(['none', 'soft', 'moderate', 'aggressive']),
+    should_reply_to_spam: z.boolean().default(false),
+    stop_after_escalation: z.boolean().default(true),
+  }),
+});
+
+type BotFormValues = z.infer<typeof botFormSchema>;
+
+interface BotFormProps {
+  initialData?: Bot;
+  socialAccounts: SocialAccount[];
+}
+
+export function BotForm({ initialData, socialAccounts }: BotFormProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const defaultValues: Partial<BotFormValues> = initialData
+    ? {
+        name: initialData.name,
+        description: initialData.description,
+        social_account_id: initialData.social_account_id,
+        brand_voice_id: initialData.brand_voice_id,
+        behavior: {
+          auto_reply_enabled: initialData.behavior.auto_reply_enabled,
+          max_replies_per_hour: initialData.behavior.max_replies_per_hour,
+          max_replies_per_day: initialData.behavior.max_replies_per_day,
+          reply_delay_min_seconds: initialData.behavior.reply_delay_min_seconds,
+          reply_delay_max_seconds: initialData.behavior.reply_delay_max_seconds,
+          escalation_threshold: initialData.behavior.escalation_threshold,
+          cta_aggressiveness: initialData.behavior.cta_aggressiveness,
+          should_reply_to_spam: initialData.behavior.should_reply_to_spam,
+          stop_after_escalation: initialData.behavior.stop_after_escalation,
+        },
+      }
+    : {
+        name: '',
+        description: '',
+        social_account_id: '',
+        behavior: {
+          auto_reply_enabled: true,
+          max_replies_per_hour: 10,
+          max_replies_per_day: 50,
+          reply_delay_min_seconds: 30,
+          reply_delay_max_seconds: 120,
+          escalation_threshold: 0.7,
+          cta_aggressiveness: 'soft',
+          should_reply_to_spam: false,
+          stop_after_escalation: true,
+        },
+      };
+
+  const form = useForm<BotFormValues>({
+    resolver: zodResolver(botFormSchema),
+    defaultValues,
+  });
+
+  const onSubmit = async (data: BotFormValues) => {
+    setIsLoading(true);
+    try {
+      if (initialData) {
+        await IntelligenceApi.updateBot(initialData._id, data);
+        toast({
+          title: 'Success',
+          description: 'Bot updated successfully',
+        });
+      } else {
+        await IntelligenceApi.createBot(data as CreateBotDto);
+        toast({
+          title: 'Success',
+          description: 'Bot created successfully',
+        });
+      }
+      router.push('/dashboard/intelligence/bots');
+      router.refresh();
+    } catch (_error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: initialData
+          ? 'Failed to update bot'
+          : 'Failed to create bot',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+        <div className='grid gap-6 md:grid-cols-2'>
+          <Card>
+            <CardHeader>
+              <CardTitle>General Information</CardTitle>
+              <CardDescription>
+                Basic details about your AI bot.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bot Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder='My Support Bot' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='description'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder='Handles general inquiries...'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='social_account_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Social Account</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={!!initialData}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select an account' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {socialAccounts.map(account => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.username} ({account.platform})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The social account this bot will manage.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Behavior Settings</CardTitle>
+              <CardDescription>
+                Configure how the bot interacts with users.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <FormField
+                control={form.control}
+                name='behavior.auto_reply_enabled'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                    <div className='space-y-0.5'>
+                      <FormLabel>Auto-Reply</FormLabel>
+                      <FormDescription>
+                        Enable automatic replies to messages.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='behavior.cta_aggressiveness'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CTA Aggressiveness</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select aggressiveness' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='none'>None</SelectItem>
+                        <SelectItem value='soft'>Soft</SelectItem>
+                        <SelectItem value='moderate'>Moderate</SelectItem>
+                        <SelectItem value='aggressive'>Aggressive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      How aggressively the bot pushes for a Call to Action.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='behavior.max_replies_per_hour'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max Replies / Hour</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          {...field}
+                          onChange={e =>
+                            field.onChange(parseInt(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='behavior.max_replies_per_day'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max Replies / Day</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          {...field}
+                          onChange={e =>
+                            field.onChange(parseInt(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name='behavior.escalation_threshold'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Escalation Threshold ({field.value})</FormLabel>
+                    <FormControl>
+                      <Slider
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        defaultValue={[field.value]}
+                        onValueChange={vals => field.onChange(vals[0])}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Confidence score below which the bot escalates to a human.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={isLoading}>
+            {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+            {initialData ? 'Update Bot' : 'Create Bot'}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
