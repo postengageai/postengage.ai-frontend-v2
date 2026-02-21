@@ -158,6 +158,7 @@ function apiToFormData(apiData: Automation): AutomationFormData {
       AutomationStatus,
       AutomationStatus.ACTIVE
     ),
+    bot_id: apiData.bot_id,
   };
 }
 

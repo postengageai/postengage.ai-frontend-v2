@@ -197,6 +197,7 @@ export interface Automation {
   platform: AutomationPlatform;
   status: AutomationStatus;
   execution_mode: AutomationExecutionMode;
+  bot_id?: string;
   paused_reason?: string | null;
   scheduled_time?: string | null;
   delayed_minutes?: number | null;
