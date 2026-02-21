@@ -98,9 +98,59 @@ export interface ByomConfig {
   api_key: string;
   preferred_model?: string;
   fallback_model?: string;
-  max_tokens_per_request?: number;
-  monthly_token_budget?: number;
 }
+
+export interface BrandVoice {
+  _id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  tone_primary: string;
+  tone_intensity: number;
+  formality: string;
+  language: string;
+  keywords_to_include: string[];
+  keywords_to_avoid: string[];
+  preferred_greetings: string[];
+  preferred_closings: string[];
+  response_length: string;
+  use_emojis: boolean;
+  emoji_intensity: number;
+  use_hashtags: boolean;
+  company_name?: string;
+  company_description?: string;
+  website?: string;
+  contact_email?: string;
+  operating_hours?: string;
+  custom_instructions?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBrandVoiceDto {
+  name: string;
+  description?: string;
+  tone_primary: string;
+  tone_intensity?: number;
+  formality: string;
+  language?: string;
+  keywords_to_include?: string[];
+  keywords_to_avoid?: string[];
+  preferred_greetings?: string[];
+  preferred_closings?: string[];
+  response_length?: string;
+  use_emojis?: boolean;
+  emoji_intensity?: number;
+  use_hashtags?: boolean;
+  company_name?: string;
+  company_description?: string;
+  website?: string;
+  contact_email?: string;
+  operating_hours?: string;
+  custom_instructions?: string;
+}
+
+export interface UpdateBrandVoiceDto extends Partial<CreateBrandVoiceDto> {}
 
 export interface LlmSettings {
   temperature?: number;

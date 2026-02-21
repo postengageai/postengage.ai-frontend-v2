@@ -7,6 +7,9 @@ import {
   AddKnowledgeSourceDto,
   UserLlmConfig,
   UpdateUserLlmConfigDto,
+  BrandVoice,
+  CreateBrandVoiceDto,
+  UpdateBrandVoiceDto,
 } from '../types/intelligence';
 
 const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
@@ -107,6 +110,54 @@ export class IntelligenceApi {
     const response = await httpClient.patch<UserLlmConfig>(
       `${INTELLIGENCE_BASE_URL}/config`,
       data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Brand Voices
+  static async getBrandVoices(): Promise<SuccessResponse<BrandVoice[]>> {
+    const response = await httpClient.get<BrandVoice[]>(
+      `${INTELLIGENCE_BASE_URL}/brand-voices`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async getBrandVoice(id: string): Promise<SuccessResponse<BrandVoice>> {
+    const response = await httpClient.get<BrandVoice>(
+      `${INTELLIGENCE_BASE_URL}/brand-voices/${id}`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async createBrandVoice(
+    data: CreateBrandVoiceDto
+  ): Promise<SuccessResponse<BrandVoice>> {
+    const response = await httpClient.post<BrandVoice>(
+      `${INTELLIGENCE_BASE_URL}/brand-voices`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async updateBrandVoice(
+    id: string,
+    data: UpdateBrandVoiceDto
+  ): Promise<SuccessResponse<BrandVoice>> {
+    const response = await httpClient.patch<BrandVoice>(
+      `${INTELLIGENCE_BASE_URL}/brand-voices/${id}`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async deleteBrandVoice(id: string): Promise<SuccessResponse<void>> {
+    const response = await httpClient.delete<void>(
+      `${INTELLIGENCE_BASE_URL}/brand-voices/${id}`
     );
     if (response.error) throw response.error;
     return response.data;

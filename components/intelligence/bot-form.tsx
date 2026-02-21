@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,7 +37,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
-import { Bot, CreateBotDto } from '@/lib/types/intelligence';
+import { Bot, CreateBotDto, BrandVoice } from '@/lib/types/intelligence';
 import { SocialAccount } from '@/lib/api/social-accounts';
 
 const botFormSchema = z.object({
@@ -68,6 +69,22 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [brandVoices, setBrandVoices] = useState<BrandVoice[]>([]);
+
+  useEffect(() => {
+    fetchBrandVoices();
+  }, []);
+
+  const fetchBrandVoices = async () => {
+    try {
+      const response = await IntelligenceApi.getBrandVoices();
+      if (response && response.data) {
+        setBrandVoices(response.data);
+      }
+    } catch (_error) {
+      console.error('Failed to fetch brand voices');
+    }
+  };
 
   const defaultValues: Partial<BotFormValues> = initialData
     ? {
@@ -207,6 +224,42 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
                     </Select>
                     <FormDescription>
                       The social account this bot will manage.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='brand_voice_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Brand Voice</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select a brand voice' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {brandVoices.map(voice => (
+                          <SelectItem key={voice._id} value={voice._id}>
+                            {voice.name} ({voice.tone_primary})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The personality the bot will use.{' '}
+                      <Link
+                        href='/dashboard/intelligence/brand-voices/new'
+                        className='text-primary hover:underline'
+                      >
+                        Create new
+                      </Link>
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -69,10 +69,18 @@ const navItems = [
     href: '/dashboard/media',
     icon: Sparkles,
   },
+];
+
+const intelligenceSubItems = [
   {
-    title: 'Intelligence',
+    title: 'Bots',
     href: '/dashboard/intelligence/bots',
     icon: Bot,
+  },
+  {
+    title: 'Brand Voices',
+    href: '/dashboard/intelligence/brand-voices',
+    icon: SlidersHorizontal,
   },
 ];
 
@@ -112,6 +120,7 @@ export function AppSidebar() {
   const [credits, setCredits] = useState({ remaining: 0 });
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
   const isCreditsActive = pathname.startsWith('/dashboard/credits');
+  const isIntelligenceActive = pathname.startsWith('/dashboard/intelligence');
 
   const handleLogout = async () => {
     try {
@@ -196,6 +205,61 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* Intelligence Section */}
+              <Collapsible asChild defaultOpen={isIntelligenceActive}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isIntelligenceActive}
+                      className={cn(
+                        'h-10 w-full rounded-lg transition-all duration-200',
+                        isIntelligenceActive &&
+                          'bg-primary/10 text-primary font-medium shadow-sm'
+                      )}
+                    >
+                      <Bot
+                        className={cn(
+                          'h-4 w-4',
+                          isIntelligenceActive && 'text-primary'
+                        )}
+                      />
+                      <span>Intelligence</span>
+                      <ChevronDown
+                        className={cn(
+                          'ml-auto h-4 w-4 transition-transform duration-200',
+                          isIntelligenceActive && 'rotate-180'
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className='mt-1 ml-4 border-l border-border/50 pl-2'>
+                      {intelligenceSubItems.map(subItem => {
+                        const isSubActive = pathname === subItem.href;
+                        return (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isSubActive}
+                              className={cn(
+                                'h-9 rounded-md transition-all duration-200',
+                                isSubActive &&
+                                  'bg-primary/10 text-primary font-medium'
+                              )}
+                            >
+                              <Link href={subItem.href}>
+                                <subItem.icon className='h-4 w-4 mr-2' />
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
               {/* Credits Section */}
               <Collapsible asChild defaultOpen={isCreditsActive}>
