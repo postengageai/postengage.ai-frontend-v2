@@ -78,6 +78,10 @@ export interface AutomationFormData extends Partial<
     action_payload: AutomationActionPayload;
   }>;
 
+  // Step 5 (Bot Selection if needed)
+  bot_id?: string;
+  bot_name?: string;
+
   // Step 6
   name?: string;
   description?: string;
@@ -98,8 +102,8 @@ export function AutomationWizard({
   onCancel,
   isEditMode = false,
 }: AutomationWizardProps) {
-  // Start at step 3 (Trigger) when editing an existing automation
-  const [currentStep, setCurrentStep] = useState(isEditMode ? 3 : 1);
+  // Start at step 5 (Trigger) when editing an existing automation
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 5 : 1);
   const [formData, setFormData] = useState<AutomationFormData>(
     initialData || {
       platform: AutomationPlatform.INSTAGRAM,
@@ -188,6 +192,7 @@ export function AutomationWizard({
       name: formData.name || 'New Automation',
       description: formData.description,
       social_account_id: formData.social_account_id,
+      bot_id: formData.bot_id,
       platform: formData.platform,
       status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
       execution_mode: AutomationExecutionMode.REAL_TIME,

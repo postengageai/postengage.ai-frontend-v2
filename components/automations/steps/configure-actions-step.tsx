@@ -1,11 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import { IntelligenceApi } from '@/lib/api/intelligence';
+import type { Bot } from '@/lib/types/intelligence';
 import {
   ChevronLeft,
   Plus,
@@ -14,6 +24,7 @@ import {
   Mail,
   Send,
   Clock,
+  Bot as BotIcon,
   type LucideIcon,
 } from 'lucide-react';
 import type { AutomationFormData } from '../automation-wizard';
@@ -43,6 +54,23 @@ export function ConfigureActionsStep({
   prevStep,
 }: ConfigureActionsStepProps) {
   const [actions, setActions] = useState(formData.actions || []);
+  const [bots, setBots] = useState<Bot[]>([]);
+  const [selectedBotId, setSelectedBotId] = useState<string | undefined>(
+    formData.bot_id
+  );
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchBots = async () => {
+      try {
+        const response = await IntelligenceApi.getBots();
+        setBots(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch bots:', error);
+      }
+    };
+    fetchBots();
+  }, []);
 
   const getAvailableActions = (): {
     type: AutomationActionTypeType;
@@ -123,7 +151,23 @@ export function ConfigureActionsStep({
   };
 
   const handleNext = () => {
-    updateFormData({ actions });
+    // Check if any action uses AI
+    const useAi = actions.some(a => a.action_payload.use_ai_reply);
+
+    if (useAi && !selectedBotId) {
+      toast({
+        title: 'Bot Required',
+        description: 'Please select an AI Bot to handle the automated replies.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateFormData({
+      actions,
+      bot_id: selectedBotId,
+      bot_name: bots.find(b => b._id === selectedBotId)?.name,
+    });
     nextStep();
   };
 
@@ -291,6 +335,42 @@ export function ConfigureActionsStep({
           <p className='text-sm text-muted-foreground'>
             Add at least one action to continue
           </p>
+        </div>
+      )}
+
+      {actions.some(a => a.action_payload.use_ai_reply) && (
+        <div className='mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4'>
+          <div className='mb-2 flex items-center gap-2'>
+            <BotIcon className='h-5 w-5 text-primary' />
+            <h3 className='font-semibold text-primary'>AI Configuration</h3>
+          </div>
+          <p className='mb-4 text-sm text-muted-foreground'>
+            You have enabled AI replies. Please select which bot should handle
+            these responses.
+          </p>
+
+          <div className='max-w-md'>
+            <Label className='mb-2 block text-sm font-medium'>
+              Select AI Bot
+            </Label>
+            <Select value={selectedBotId} onValueChange={setSelectedBotId}>
+              <SelectTrigger>
+                <SelectValue placeholder='Select a bot...' />
+              </SelectTrigger>
+              <SelectContent>
+                {bots.map(bot => (
+                  <SelectItem key={bot._id} value={bot._id}>
+                    {bot.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {bots.length === 0 && (
+              <p className='mt-2 text-xs text-destructive'>
+                No bots found. Please create a bot first.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

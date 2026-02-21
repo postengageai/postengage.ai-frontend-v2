@@ -139,17 +139,17 @@ export interface AutomationConditionResponse extends AutomationCondition {
   created_at: string;
   updated_at: string;
 }
-
 export interface CreateAutomationRequest {
   name: string;
   description?: string;
   social_account_id: string;
+  bot_id?: string;
   platform: AutomationPlatform;
   status?: AutomationStatus;
   execution_mode: AutomationExecutionMode;
   trigger: AutomationTrigger;
+  conditions: AutomationCondition[];
   actions: AutomationAction[];
-  conditions?: AutomationCondition[];
   is_template?: boolean;
   template_category?: string;
   template_tags?: string[];
