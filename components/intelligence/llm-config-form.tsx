@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -41,41 +41,49 @@ import {
   ResponseLengthPreference,
 } from '@/lib/types/intelligence';
 
-const llmConfigSchema = z
-  .object({
-    mode: z.nativeEnum(LlmConfigMode),
-    byom_config: z
-      .object({
-        provider: z.nativeEnum(ByomProvider),
-        api_key: z.string().optional(),
-        preferred_model: z.string().optional(),
-        fallback_model: z.string().optional(),
-        max_tokens_per_request: z.number().min(1).optional(),
-        monthly_token_budget: z.number().min(1).optional(),
-      })
-      .optional(),
-    settings: z
-      .object({
-        temperature: z.number().min(0).max(2).optional(),
-        max_response_length: z.nativeEnum(ResponseLengthPreference).optional(),
-        language: z.string().optional(),
-      })
-      .optional(),
-  })
-  .refine(
-    data => {
-      if (data.mode === LlmConfigMode.BYOM) {
-        return !!data.byom_config?.api_key;
+const createLlmConfigSchema = (hasMaskedKey: boolean) =>
+  z
+    .object({
+      mode: z.nativeEnum(LlmConfigMode),
+      byom_config: z
+        .object({
+          provider: z.nativeEnum(ByomProvider),
+          api_key: z.string().optional(),
+          preferred_model: z.string().optional(),
+          fallback_model: z.string().optional(),
+          max_tokens_per_request: z.number().min(1).optional(),
+          monthly_token_budget: z.number().min(1).optional(),
+        })
+        .optional(),
+      settings: z
+        .object({
+          temperature: z.number().min(0).max(2).optional(),
+          max_response_length: z
+            .nativeEnum(ResponseLengthPreference)
+            .optional(),
+          language: z.string().optional(),
+        })
+        .optional(),
+    })
+    .refine(
+      data => {
+        if (data.mode === LlmConfigMode.BYOM) {
+          // If we have a masked key, empty input is allowed (means keep existing)
+          if (hasMaskedKey && !data.byom_config?.api_key) {
+            return true;
+          }
+          // Otherwise, key is required
+          return !!data.byom_config?.api_key;
+        }
+        return true;
+      },
+      {
+        message: 'API Key is required for BYOM mode',
+        path: ['byom_config', 'api_key'],
       }
-      return true;
-    },
-    {
-      message: 'API Key is required for BYOM mode',
-      path: ['byom_config', 'api_key'],
-    }
-  );
+    );
 
-type LlmConfigFormValues = z.infer<typeof llmConfigSchema>;
+type LlmConfigFormValues = z.infer<ReturnType<typeof createLlmConfigSchema>>;
 
 interface LlmConfigFormProps {
   initialConfig: UserLlmConfig;
@@ -108,8 +116,13 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
     },
   };
 
+  const formSchema = useMemo(
+    () => createLlmConfigSchema(!!maskedApiKey),
+    [maskedApiKey]
+  );
+
   const form = useForm<LlmConfigFormValues>({
-    resolver: zodResolver(llmConfigSchema),
+    resolver: zodResolver(formSchema),
     defaultValues,
   });
 
@@ -121,7 +134,13 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
       const payload = {
         ...data,
         byom_config:
-          data.mode === LlmConfigMode.BYOM ? data.byom_config : undefined,
+          data.mode === LlmConfigMode.BYOM && data.byom_config
+            ? {
+                ...data.byom_config,
+                // If api_key is empty string, send undefined to backend (keeps existing key)
+                api_key: data.byom_config.api_key || undefined,
+              }
+            : undefined,
       };
       await IntelligenceApi.updateUserConfig(payload);
       toast({

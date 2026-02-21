@@ -82,6 +82,11 @@ const intelligenceSubItems = [
     href: '/dashboard/intelligence/brand-voices',
     icon: SlidersHorizontal,
   },
+  {
+    title: 'AI Settings',
+    href: '/dashboard/intelligence/settings',
+    icon: Settings,
+  },
 ];
 
 const creditsSubItems = [
