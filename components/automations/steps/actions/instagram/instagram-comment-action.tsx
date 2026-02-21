@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +25,8 @@ export function InstagramCommentAction({
   payload,
   onUpdate,
 }: InstagramCommentActionProps) {
+  const switchId = useId();
+
   return (
     <div className='space-y-4'>
       <div className='flex items-center justify-between'>
@@ -32,13 +35,13 @@ export function InstagramCommentAction({
         </Label>
         <div className='flex items-center space-x-2'>
           <Label
-            htmlFor='comment-ai-reply'
+            htmlFor={switchId}
             className='cursor-pointer text-xs text-muted-foreground'
           >
             Auto-generate with AI
           </Label>
           <Switch
-            id='comment-ai-reply'
+            id={switchId}
             checked={payload.use_ai_reply || false}
             onCheckedChange={checked =>
               onUpdate({

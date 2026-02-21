@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -101,6 +101,7 @@ function DmTextPanel({
   payload: SendDmPayload;
   onUpdate: (updates: Partial<SendDmPayload>) => void;
 }) {
+  const switchId = useId();
   // Safe access to text property
   const textValue =
     payload.message?.type === 'text' ? payload.message.text : '';
@@ -113,13 +114,13 @@ function DmTextPanel({
         </Label>
         <div className='flex items-center space-x-2'>
           <Label
-            htmlFor='dm-ai-reply'
+            htmlFor={switchId}
             className='cursor-pointer text-xs text-muted-foreground'
           >
             Auto-generate with AI
           </Label>
           <Switch
-            id='dm-ai-reply'
+            id={switchId}
             checked={payload.use_ai_reply || false}
             onCheckedChange={checked =>
               onUpdate({
