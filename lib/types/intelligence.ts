@@ -11,9 +11,10 @@ export interface BotBehavior {
 }
 
 export enum BotStatus {
+  DRAFT = 'draft',
   ACTIVE = 'active',
   PAUSED = 'paused',
-  ERROR = 'error',
+  ARCHIVED = 'archived',
 }
 
 export interface Bot {
@@ -28,8 +29,10 @@ export interface Bot {
   is_active: boolean;
   stats: {
     total_replies: number;
+    total_escalations: number;
+    total_skipped: number;
     avg_confidence: number;
-    last_reply_at?: string;
+    last_active_at?: string;
   };
   created_at: string;
   updated_at: string;
@@ -62,13 +65,17 @@ export interface KnowledgeSource {
   _id: string;
   bot_id: string;
   title: string;
-  source_type: 'text' | 'url' | 'file';
+  source_type: 'pdf' | 'text' | 'docx' | 'url' | 'faq';
   content_preview?: string; // Optional as it might not be in the response
   raw_content?: string;
-  status: 'pending' | 'processing' | 'ready' | 'error';
+  original_filename?: string;
+  status: 'pending' | 'processing' | 'ready' | 'failed';
   processed_chunks: ProcessedChunk[];
+  processing_error?: string;
+  file_size_bytes?: number;
   last_synced_at?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface AddKnowledgeSourceDto {
@@ -77,7 +84,7 @@ export interface AddKnowledgeSourceDto {
 }
 
 export enum LlmConfigMode {
-  MANAGED = 'managed',
+  PLATFORM = 'platform',
   BYOM = 'byom',
 }
 
@@ -95,9 +102,18 @@ export enum ResponseLengthPreference {
 
 export interface ByomConfig {
   provider: ByomProvider;
-  api_key: string;
+  api_key?: string;
+  api_key_last_four?: string;
   preferred_model?: string;
   fallback_model?: string;
+  max_tokens_per_request?: number;
+  monthly_token_budget?: number;
+  tokens_used_this_month?: number;
+  last_validated_at?: string;
+  is_valid?: boolean;
+  validation_error?: string;
+  last_error_at?: string;
+  consecutive_errors?: number;
 }
 
 export interface BrandVoice {
@@ -113,7 +129,7 @@ export interface BrandVoice {
   keywords_to_avoid: string[];
   preferred_greetings: string[];
   preferred_closings: string[];
-  response_length: string;
+  response_length: ResponseLengthPreference;
   use_emojis: boolean;
   emoji_intensity: number;
   use_hashtags: boolean;
@@ -138,7 +154,7 @@ export interface CreateBrandVoiceDto {
   keywords_to_avoid?: string[];
   preferred_greetings?: string[];
   preferred_closings?: string[];
-  response_length?: string;
+  response_length?: ResponseLengthPreference;
   use_emojis?: boolean;
   emoji_intensity?: number;
   use_hashtags?: boolean;
@@ -153,9 +169,9 @@ export interface CreateBrandVoiceDto {
 export interface UpdateBrandVoiceDto extends Partial<CreateBrandVoiceDto> {}
 
 export interface LlmSettings {
-  temperature?: number;
-  max_response_length?: ResponseLengthPreference;
-  language?: string;
+  temperature: number;
+  max_response_length: ResponseLengthPreference;
+  language: string;
 }
 
 export interface UserLlmConfig {
@@ -163,12 +179,7 @@ export interface UserLlmConfig {
   user_id: string;
   mode: LlmConfigMode;
   byom_config?: ByomConfig;
-  settings?: LlmSettings;
-  usage_stats: {
-    total_tokens_used: number;
-    current_month_tokens: number;
-    last_reset_date: string;
-  };
+  settings: LlmSettings;
   updated_at: string;
 }
 

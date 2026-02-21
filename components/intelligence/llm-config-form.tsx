@@ -64,7 +64,7 @@ const llmConfigSchema = z
   })
   .refine(
     data => {
-      if (data.mode === 'byom') {
+      if (data.mode === LlmConfigMode.BYOM) {
         return !!data.byom_config?.api_key;
       }
       return true;
@@ -84,26 +84,27 @@ interface LlmConfigFormProps {
 export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const maskedApiKey = initialConfig.byom_config?.api_key_last_four;
 
   const defaultValues: Partial<LlmConfigFormValues> = {
     mode: initialConfig.mode,
     byom_config: {
       provider: initialConfig.byom_config?.provider || ByomProvider.OPENAI,
-      api_key: initialConfig.byom_config?.api_key || '',
+      api_key: '',
       preferred_model: initialConfig.byom_config?.preferred_model || 'gpt-4o',
       fallback_model:
         initialConfig.byom_config?.fallback_model || 'gpt-3.5-turbo',
       max_tokens_per_request:
-        initialConfig.byom_config?.max_tokens_per_request || 1000,
+        initialConfig.byom_config?.max_tokens_per_request || 500,
       monthly_token_budget:
         initialConfig.byom_config?.monthly_token_budget || 1000000,
     },
     settings: {
-      temperature: initialConfig.settings?.temperature || 0.7,
+      temperature: initialConfig.settings.temperature,
       max_response_length:
-        initialConfig.settings?.max_response_length ||
+        initialConfig.settings.max_response_length ||
         ResponseLengthPreference.MEDIUM,
-      language: initialConfig.settings?.language || 'en',
+      language: initialConfig.settings.language || 'en',
     },
   };
 
@@ -117,7 +118,12 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
   const onSubmit = async (data: LlmConfigFormValues) => {
     setIsLoading(true);
     try {
-      await IntelligenceApi.updateUserConfig(data);
+      const payload = {
+        ...data,
+        byom_config:
+          data.mode === LlmConfigMode.BYOM ? data.byom_config : undefined,
+      };
+      await IntelligenceApi.updateUserConfig(payload);
       toast({
         title: 'Success',
         description: 'Configuration updated successfully',
@@ -157,7 +163,7 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
                     >
                       <FormItem className='flex items-center space-x-3 space-y-0'>
                         <FormControl>
-                          <RadioGroupItem value={LlmConfigMode.MANAGED} />
+                          <RadioGroupItem value={LlmConfigMode.PLATFORM} />
                         </FormControl>
                         <FormLabel className='font-normal'>
                           <strong>Managed (Recommended)</strong> - Use
@@ -180,7 +186,7 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
               )}
             />
 
-            {watchMode === 'byom' && (
+            {watchMode === LlmConfigMode.BYOM && (
               <div className='space-y-4 pt-4 border-t'>
                 <Alert>
                   <AlertTriangle className='h-4 w-4' />
@@ -228,10 +234,20 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
                         <FormControl>
                           <Input
                             type='password'
-                            placeholder='sk-...'
+                            placeholder={
+                              maskedApiKey
+                                ? `Key ends with ${maskedApiKey}`
+                                : 'sk-...'
+                            }
                             {...field}
                           />
                         </FormControl>
+                        {maskedApiKey ? (
+                          <FormDescription>
+                            Saved key ends with {maskedApiKey}. Enter a new key
+                            to update.
+                          </FormDescription>
+                        ) : null}
                         <FormMessage />
                       </FormItem>
                     )}

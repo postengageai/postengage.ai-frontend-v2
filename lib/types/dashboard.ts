@@ -69,3 +69,12 @@ export interface PerformanceMetrics {
   conversion_rate: number;
   average_response_time: number;
 }
+
+export interface Activity {
+  id: string;
+  type: string;
+  description?: string;
+  timestamp: Date;
+  automationName?: string;
+  creditCost: number;
+}

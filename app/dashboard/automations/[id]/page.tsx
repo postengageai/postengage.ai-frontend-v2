@@ -9,7 +9,6 @@ import {
 import { automationsApi } from '@/lib/api/automations';
 import {
   AutomationStatus,
-  AutomationTriggerType,
   AutomationActionType,
   AutomationPlatform,
   AutomationTriggerScope,
@@ -18,32 +17,39 @@ import {
 } from '@/lib/constants/automations';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import type {
+import {
   AutomationActionResponse,
   ReplyCommentPayload,
   SendDmPayload,
   PrivateReplyPayload,
-  NotifyAdminPayload,
-  AddTagPayload,
+  SendDmTextMessage,
 } from '@/lib/api/automations';
 
 function getActionText(action: AutomationActionResponse): string {
+  let text = '';
   switch (action.action_type) {
-    case AutomationActionType.REPLY_COMMENT:
-      return (action.action_payload as ReplyCommentPayload).text || '';
-    case AutomationActionType.PRIVATE_REPLY:
-      return (action.action_payload as PrivateReplyPayload).text || '';
+    case AutomationActionType.REPLY_COMMENT: {
+      const payload = action.action_payload as ReplyCommentPayload;
+      text = payload.text || '';
+      if (payload.use_ai_reply) text += ' (AI Reply)';
+      return text;
+    }
+    case AutomationActionType.PRIVATE_REPLY: {
+      const payload = action.action_payload as PrivateReplyPayload;
+      text = payload.text || '';
+      if (payload.use_ai_reply) text += ' (AI Reply)';
+      return text;
+    }
     case AutomationActionType.SEND_DM: {
       const payload = action.action_payload as SendDmPayload;
-      if (payload.message.type === 'text') {
-        return payload.message.text;
+      if (payload.message?.type === 'text') {
+        text = (payload.message as SendDmTextMessage).text;
+      } else {
+        text = 'Media message';
       }
-      return 'Media message';
+      if (payload.use_ai_reply) text += ' (AI Reply)';
+      return text;
     }
-    case AutomationActionType.NOTIFY_ADMIN:
-      return (action.action_payload as NotifyAdminPayload).message || '';
-    case AutomationActionType.ADD_TAG:
-      return (action.action_payload as AddTagPayload).tag_name || '';
     default:
       return '';
   }
@@ -72,6 +78,8 @@ export default function AutomationDetailPage() {
       if (response && response.data) {
         const apiData = response.data;
         const historyData = historyResponse.data || [];
+        const triggerType: AutomationData['trigger']['type'] =
+          apiData.trigger.trigger_type;
 
         // Map API data to UI component data structure
         const mappedData: AutomationData = {
@@ -83,7 +91,9 @@ export default function AutomationDetailPage() {
               ? 'active'
               : apiData.status === AutomationStatus.DRAFT
                 ? 'draft'
-                : 'paused',
+                : apiData.status === AutomationStatus.ARCHIVED
+                  ? 'archived'
+                  : 'paused',
           platform:
             apiData.platform === AutomationPlatform.FACEBOOK
               ? 'facebook'
@@ -94,10 +104,7 @@ export default function AutomationDetailPage() {
             avatar: '/diverse-avatars.png', // Placeholder
           },
           trigger: {
-            type:
-              apiData.trigger.trigger_type === AutomationTriggerType.NEW_COMMENT
-                ? 'new_comment'
-                : 'new_dm',
+            type: triggerType,
             scope:
               apiData.trigger.trigger_scope === AutomationTriggerScope.SPECIFIC
                 ? 'specific'
@@ -117,12 +124,7 @@ export default function AutomationDetailPage() {
               }
             : undefined,
           actions: apiData.actions.map(action => ({
-            type:
-              action.action_type === AutomationActionType.REPLY_COMMENT
-                ? 'reply_comment'
-                : action.action_type === AutomationActionType.SEND_DM
-                  ? 'send_dm'
-                  : 'private_reply',
+            type: action.action_type as AutomationData['actions'][number]['type'],
             text: getActionText(action),
             delay_seconds: action.delay_seconds || 0,
           })),
@@ -161,8 +163,7 @@ export default function AutomationDetailPage() {
 
         setAutomation(mappedData);
       }
-    } catch (error) {
-      console.error('Failed to fetch automation:', error);
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -196,8 +197,7 @@ export default function AutomationDetailPage() {
         title: 'Status updated',
         description: `Automation ${status === 'active' ? 'activated' : 'paused'}`,
       });
-    } catch (error) {
-      console.error('Failed to update status:', error);
+    } catch (_error) {
       // Revert on failure (reload data)
       fetchAutomation(automation.id);
       toast({
@@ -225,8 +225,7 @@ export default function AutomationDetailPage() {
         description: 'Delete API not yet implemented in frontend client',
       });
       router.push('/dashboard/automations');
-    } catch (error) {
-      console.error('Failed to delete automation:', error);
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',

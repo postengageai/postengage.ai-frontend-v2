@@ -106,6 +106,24 @@ export default function BotsPage() {
     }
   };
 
+  const getStatusLabel = (bot: BotType) => {
+    switch (bot.status) {
+      case BotStatus.DRAFT:
+        return 'Draft';
+      case BotStatus.ACTIVE:
+        return 'Active';
+      case BotStatus.PAUSED:
+        return 'Paused';
+      case BotStatus.ARCHIVED:
+        return 'Archived';
+      default:
+        return bot.is_active ? 'Active' : 'Paused';
+    }
+  };
+
+  const getStatusVariant = (bot: BotType) =>
+    bot.status === BotStatus.ACTIVE && bot.is_active ? 'default' : 'secondary';
+
   if (isLoading) {
     return (
       <div className='p-6 space-y-6'>
@@ -204,8 +222,8 @@ export default function BotsPage() {
                 <div className='space-y-4 mt-4'>
                   <div className='flex justify-between items-center text-sm'>
                     <span className='text-muted-foreground'>Status</span>
-                    <Badge variant={bot.is_active ? 'default' : 'secondary'}>
-                      {bot.is_active ? 'Active' : 'Paused'}
+                    <Badge variant={getStatusVariant(bot)}>
+                      {getStatusLabel(bot)}
                     </Badge>
                   </div>
                   <div className='flex justify-between items-center text-sm'>

@@ -36,7 +36,11 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
-import { BrandVoice, CreateBrandVoiceDto } from '@/lib/types/intelligence';
+import {
+  BrandVoice,
+  CreateBrandVoiceDto,
+  ResponseLengthPreference,
+} from '@/lib/types/intelligence';
 
 const brandVoiceFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -49,7 +53,7 @@ const brandVoiceFormSchema = z.object({
   keywords_to_avoid: z.string().optional(),
   preferred_greetings: z.string().optional(),
   preferred_closings: z.string().optional(),
-  response_length: z.enum(['short', 'medium', 'long']),
+  response_length: z.nativeEnum(ResponseLengthPreference),
   use_emojis: z.boolean().default(true),
   emoji_intensity: z.number().min(1).max(5),
   use_hashtags: z.boolean().default(false),
@@ -84,10 +88,7 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
         keywords_to_avoid: initialData.keywords_to_avoid.join(', '),
         preferred_greetings: initialData.preferred_greetings.join(', '),
         preferred_closings: initialData.preferred_closings.join(', '),
-        response_length: initialData.response_length as
-          | 'short'
-          | 'medium'
-          | 'long',
+        response_length: initialData.response_length,
         use_emojis: initialData.use_emojis,
         emoji_intensity: initialData.emoji_intensity,
         use_hashtags: initialData.use_hashtags,
@@ -109,7 +110,7 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
         keywords_to_avoid: '',
         preferred_greetings: 'Hey!, Hi there!',
         preferred_closings: '',
-        response_length: 'medium',
+        response_length: ResponseLengthPreference.MEDIUM,
         use_emojis: true,
         emoji_intensity: 2,
         use_hashtags: false,
@@ -172,13 +173,12 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
         router.push('/dashboard/intelligence/brand-voices');
       }
       router.refresh();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -514,11 +514,15 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value='short'>Short (Concise)</SelectItem>
-                          <SelectItem value='medium'>
+                          <SelectItem value={ResponseLengthPreference.SHORT}>
+                            Short (Concise)
+                          </SelectItem>
+                          <SelectItem value={ResponseLengthPreference.MEDIUM}>
                             Medium (Balanced)
                           </SelectItem>
-                          <SelectItem value='long'>Long (Detailed)</SelectItem>
+                          <SelectItem value={ResponseLengthPreference.LONG}>
+                            Long (Detailed)
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

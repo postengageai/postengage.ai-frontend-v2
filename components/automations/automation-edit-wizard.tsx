@@ -26,6 +26,14 @@ import {
   automationsApi,
   type Automation,
   type CreateAutomationRequest,
+  type AutomationActionPayload,
+  type SendDmPayload,
+  type ReplyCommentPayload,
+  type PrivateReplyPayload,
+  type SendDmTextMessage,
+  type SendDmTextPayload,
+  type SendDmMediaMessage,
+  type SendDmMediaPayload,
 } from '@/lib/api/automations';
 import { toast } from '@/hooks/use-toast';
 
@@ -98,24 +106,51 @@ function apiToFormData(apiData: Automation): AutomationFormData {
         }
       : null,
     actions:
-      apiData.actions?.map((action, index) => ({
-        action_type: parseEnum<AutomationActionTypeType>(
+      apiData.actions?.map((action, index) => {
+        const actionType = parseEnum<AutomationActionTypeType>(
           action.action_type,
           AutomationActionType,
           AutomationActionType.REPLY_COMMENT
-        ),
-        execution_order: index + 1,
-        delay_seconds: action.delay_seconds || 0,
-        status: 'active',
-        action_payload: {
-          ...(action.action_payload || {}),
-          text: action.action_payload?.text || '',
-          message: action.action_payload?.message || {
+        );
+
+        let payload: AutomationActionPayload;
+
+        if (actionType === AutomationActionType.SEND_DM) {
+          const dmPayload = action.action_payload as SendDmPayload;
+          const message = dmPayload?.message || {
             type: 'text',
-            text: action.action_payload?.text || '',
-          },
-        },
-      })) || [],
+            text: '',
+          };
+
+          if (message.type === 'text') {
+            payload = {
+              ...dmPayload,
+              message: message as SendDmTextMessage,
+            } as SendDmTextPayload;
+          } else {
+            payload = {
+              ...dmPayload,
+              message: message as SendDmMediaMessage,
+            } as SendDmMediaPayload;
+          }
+        } else {
+          const textPayload = action.action_payload as
+            | ReplyCommentPayload
+            | PrivateReplyPayload;
+          payload = {
+            ...textPayload,
+            text: textPayload?.text || '',
+          };
+        }
+
+        return {
+          action_type: actionType,
+          execution_order: index + 1,
+          delay_seconds: action.delay_seconds || 0,
+          status: 'active',
+          action_payload: payload,
+        };
+      }) || [],
     name: apiData.name,
     description: apiData.description,
     status: parseEnum<AutomationStatusType>(
@@ -145,8 +180,7 @@ export function AutomationEditWizard({
           const formData = apiToFormData(response.data);
           setInitialData(formData);
         }
-      } catch (error) {
-        console.error('Failed to fetch automation:', error);
+      } catch (_error) {
         toast({
           variant: 'destructive',
           title: 'Error',

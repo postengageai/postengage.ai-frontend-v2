@@ -120,14 +120,14 @@ export function AutomationWizard({
 
       // If trigger_type changes, reset trigger-specific fields
       if (data.trigger_type && data.trigger_type !== prev.trigger_type) {
-        // Reset trigger scope and content_ids for DM triggers
-        if (data.trigger_type === AutomationTriggerType.DM_RECEIVED) {
+        const isCommentTrigger =
+          data.trigger_type === AutomationTriggerType.NEW_COMMENT;
+        if (isCommentTrigger) {
+          newData.trigger_scope = AutomationTriggerScope.ALL;
+        } else {
           delete newData.trigger_scope;
           delete newData.content_ids;
           delete newData.selected_media;
-        } else {
-          // Set default scope for comment triggers
-          newData.trigger_scope = AutomationTriggerScope.ALL;
         }
 
         // Reset condition source based on trigger
@@ -197,10 +197,15 @@ export function AutomationWizard({
           formData.trigger_source ||
           (formData.trigger_type === AutomationTriggerType.DM_RECEIVED
             ? AutomationTriggerSource.DIRECT_MESSAGE
-            : AutomationTriggerSource.POST),
-        trigger_scope: formData.trigger_scope || AutomationTriggerScope.ALL,
+            : formData.trigger_type === AutomationTriggerType.STORY_REPLY
+              ? AutomationTriggerSource.STORY
+              : formData.trigger_type === AutomationTriggerType.NEW_FOLLOWER
+                ? AutomationTriggerSource.PROFILE
+                : AutomationTriggerSource.POST),
         ...(formData.trigger_type === AutomationTriggerType.NEW_COMMENT
           ? {
+              trigger_scope:
+                formData.trigger_scope || AutomationTriggerScope.ALL,
               content_ids: formData.content_ids,
               trigger_config: {
                 include_reply_to_comments: true,

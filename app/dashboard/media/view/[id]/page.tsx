@@ -93,8 +93,8 @@ export default function MediaViewPage() {
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (error: any) {
-      if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+    } catch (error) {
+      if (axios.isCancel(error)) {
         toast({
           title: 'Cancelled',
           description: 'Download cancelled',

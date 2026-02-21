@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -48,7 +49,7 @@ export interface AutomationData {
   id: string;
   name: string;
   description?: string;
-  status: 'active' | 'paused' | 'draft';
+  status: 'active' | 'paused' | 'draft' | 'archived';
   paused_reason?: string;
   platform: 'instagram' | 'facebook';
   social_account: {
@@ -57,7 +58,12 @@ export interface AutomationData {
     avatar: string;
   };
   trigger: {
-    type: 'new_comment' | 'new_dm';
+    type:
+      | 'new_comment'
+      | 'dm_received'
+      | 'story_reply'
+      | 'mention'
+      | 'new_follower';
     scope?: 'all' | 'specific';
     content_count?: number;
   };
@@ -122,12 +128,22 @@ export function AutomationDetail({
   const trendIsPositive = automation.statistics.trend.change >= 0;
 
   function getTriggerLabel(type: string, scope?: string) {
-    if (type === 'new_comment') {
-      return scope === 'all'
-        ? 'New Comment (All Posts)'
-        : 'New Comment (Specific Posts)';
+    switch (type) {
+      case 'new_comment':
+        return scope === 'all'
+          ? 'New Comment (All Posts)'
+          : 'New Comment (Specific Posts)';
+      case 'dm_received':
+        return 'New DM Received';
+      case 'story_reply':
+        return 'Story Reply';
+      case 'mention':
+        return 'Mention';
+      case 'new_follower':
+        return 'New Follower';
+      default:
+        return type;
     }
-    return 'New DM Received';
   }
 
   function getActionLabel(type: string) {
@@ -142,20 +158,6 @@ export function AutomationDetail({
         return type;
     }
   }
-
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  // Use the function to avoid linter error
-
-  const _testDate = formatDate(new Date().toISOString());
 
   function formatTimeAgo(dateString: string) {
     const seconds = Math.floor(
@@ -214,11 +216,13 @@ export function AutomationDetail({
 
                 <div className='flex items-center gap-3 text-sm text-muted-foreground'>
                   <div className='flex items-center gap-1'>
-                    <img
+                    <Image
                       src={
                         automation.social_account.avatar || '/placeholder.svg'
                       }
                       alt=''
+                      width={16}
+                      height={16}
                       className='h-4 w-4 rounded-full'
                     />
                     <span>@{automation.social_account.username}</span>

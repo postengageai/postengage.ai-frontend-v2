@@ -82,7 +82,7 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
         setBrandVoices(response.data);
       }
     } catch (_error) {
-      console.error('Failed to fetch brand voices');
+      // Silent failure
     }
   };
 
@@ -110,10 +110,10 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
         social_account_id: '',
         behavior: {
           auto_reply_enabled: true,
-          max_replies_per_hour: 10,
-          max_replies_per_day: 50,
+          max_replies_per_hour: 3,
+          max_replies_per_day: 10,
           reply_delay_min_seconds: 30,
-          reply_delay_max_seconds: 120,
+          reply_delay_max_seconds: 300,
           escalation_threshold: 0.7,
           cta_aggressiveness: 'soft',
           should_reply_to_spam: false,

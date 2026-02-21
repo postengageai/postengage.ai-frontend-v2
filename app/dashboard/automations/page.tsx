@@ -174,10 +174,7 @@ export default function AutomationsPage() {
     const labels: Record<string, string> = {
       [AutomationActionType.REPLY_COMMENT]: 'Reply',
       [AutomationActionType.SEND_DM]: 'Send DM',
-      [AutomationActionType.LIKE_CONTENT]: 'Like Comment',
-      [AutomationActionType.ADD_TAG]: 'Add Tag',
       [AutomationActionType.PRIVATE_REPLY]: 'Private Reply',
-      [AutomationActionType.NOTIFY_ADMIN]: 'Notify Admin',
     };
     return (
       labels[type] ||
