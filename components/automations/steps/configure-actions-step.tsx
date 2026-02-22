@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -160,8 +161,52 @@ export function ConfigureActionsStep({
   };
 
   const handleNext = () => {
-    // Check if any action uses AI
-    const useAi = actions.some(a => a.action_payload.use_ai_reply);
+    const useAi = actions.some(action => {
+      const payload = action.action_payload as
+        | ReplyCommentPayload
+        | PrivateReplyPayload
+        | SendDmPayload;
+
+      return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+    });
+
+    if (useAi) {
+      const missingFallback = actions.filter(action => {
+        const payload = action.action_payload as
+          | ReplyCommentPayload
+          | PrivateReplyPayload
+          | SendDmPayload;
+
+        if (!('use_ai_reply' in payload) || !payload.use_ai_reply) {
+          return false;
+        }
+
+        if (action.action_type === AutomationActionType.SEND_DM) {
+          const dmPayload = payload as SendDmPayload;
+          const message =
+            dmPayload.message && dmPayload.message.type === 'text'
+              ? dmPayload.message
+              : null;
+
+          return !message || !message.text || !message.text.trim();
+        }
+
+        const textPayload = payload as
+          | ReplyCommentPayload
+          | PrivateReplyPayload;
+        return !textPayload.text || !textPayload.text.trim();
+      });
+
+      if (missingFallback.length > 0) {
+        toast({
+          title: 'Fallback message required',
+          description:
+            'When AI replies are enabled, each action must have a fallback message.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
 
     if (useAi && !selectedBotId) {
       toast({
@@ -254,9 +299,33 @@ export function ConfigureActionsStep({
                       {action.action_type === AutomationActionType.SEND_DM &&
                         'Send DM Reply'}
                     </p>
-                    <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-                      <Clock className='h-3 w-3' />
-                      <span>{action.delay_seconds}s delay</span>
+                    <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                      <div className='flex items-center gap-1.5'>
+                        <Clock className='h-3 w-3' />
+                        <span>{action.delay_seconds}s delay</span>
+                      </div>
+                      {(() => {
+                        const payload = action.action_payload as
+                          | ReplyCommentPayload
+                          | PrivateReplyPayload
+                          | SendDmPayload;
+                        const hasAi =
+                          'use_ai_reply' in payload &&
+                          Boolean(payload.use_ai_reply);
+                        if (!hasAi) return null;
+                        const selectedBot = bots.find(
+                          bot => bot._id === selectedBotId
+                        );
+                        return (
+                          <div className='flex items-center gap-1.5'>
+                            <BotIcon className='h-3 w-3 text-primary' />
+                            <span className='font-medium text-primary'>
+                              AI
+                              {selectedBot ? ` · ${selectedBot.name}` : ''}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -347,15 +416,22 @@ export function ConfigureActionsStep({
         </div>
       )}
 
-      {actions.some(a => a.action_payload.use_ai_reply) && (
+      {actions.some(action => {
+        const payload = action.action_payload as
+          | ReplyCommentPayload
+          | PrivateReplyPayload
+          | SendDmPayload;
+
+        return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+      }) && (
         <div className='mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4'>
           <div className='mb-2 flex items-center gap-2'>
             <BotIcon className='h-5 w-5 text-primary' />
             <h3 className='font-semibold text-primary'>AI Configuration</h3>
           </div>
           <p className='mb-4 text-sm text-muted-foreground'>
-            You have enabled AI replies. Please select which bot should handle
-            these responses.
+            You have enabled AI replies. Select which bot should handle these
+            responses.
           </p>
 
           <div className='max-w-md'>
@@ -379,6 +455,32 @@ export function ConfigureActionsStep({
                 No bots found. Please create a bot first.
               </p>
             )}
+            {selectedBotId && (
+              <p className='mt-2 text-xs text-muted-foreground'>
+                Responses will use bot{' '}
+                <span className='font-medium'>
+                  {bots.find(b => b._id === selectedBotId)?.name}
+                </span>
+                {bots.find(b => b._id === selectedBotId)?.brand_voice_id
+                  ? ' with its configured brand voice.'
+                  : ' with your default brand voice.'}
+              </p>
+            )}
+            <div className='mt-3 flex flex-wrap gap-3 text-xs'>
+              <Link
+                href='/dashboard/intelligence/bots'
+                className='text-primary hover:underline'
+              >
+                Manage bots
+              </Link>
+              <span className='text-muted-foreground'>•</span>
+              <Link
+                href='/dashboard/intelligence/brand-voices'
+                className='text-primary hover:underline'
+              >
+                Manage brand voices
+              </Link>
+            </div>
           </div>
         </div>
       )}

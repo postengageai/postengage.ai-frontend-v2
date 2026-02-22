@@ -11,6 +11,7 @@ import {
   CreateBrandVoiceDto,
   UpdateBrandVoiceDto,
 } from '../types/intelligence';
+import { AnalyticsPeriod, IntelligenceAnalyticsItem } from '../types/analytics';
 
 const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
 
@@ -169,6 +170,47 @@ export class IntelligenceApi {
     const response = await httpClient.delete<void>(
       `${INTELLIGENCE_BASE_URL}/brand-voices/${id}`
     );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Analytics
+  static async getIntelligenceAnalytics(params: {
+    period?: AnalyticsPeriod;
+    page?: number;
+    limit?: number;
+  }): Promise<
+    SuccessResponse<{
+      period: {
+        start: string;
+        end: string;
+        type?: AnalyticsPeriod;
+      };
+      items: IntelligenceAnalyticsItem[];
+    }>
+  > {
+    const searchParams = new URLSearchParams();
+    if (params.period) {
+      searchParams.set('period', params.period);
+    }
+    if (params.page) {
+      searchParams.set('page', String(params.page));
+    }
+    if (params.limit) {
+      searchParams.set('limit', String(params.limit));
+    }
+    const query = searchParams.toString();
+    const url = query
+      ? `/api/v1/analytics/intelligence?${query}`
+      : `/api/v1/analytics/intelligence`;
+    const response = await httpClient.get<{
+      period: {
+        start: string;
+        end: string;
+        type?: AnalyticsPeriod;
+      };
+      items: IntelligenceAnalyticsItem[];
+    }>(url);
     if (response.error) throw response.error;
     return response.data;
   }

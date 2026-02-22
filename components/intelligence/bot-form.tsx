@@ -37,25 +37,65 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
-import { Bot, CreateBotDto, BrandVoice } from '@/lib/types/intelligence';
+import {
+  Bot,
+  BotBehavior,
+  CreateBotDto,
+  BrandVoice,
+} from '@/lib/types/intelligence';
 import { SocialAccount } from '@/lib/api/social-accounts';
 
-const botFormSchema = z.object({
+const DEFAULT_BOT_BEHAVIOR: BotBehavior = {
+  auto_reply_enabled: true,
+  max_replies_per_hour: 3,
+  max_replies_per_day: 10,
+  reply_delay_min_seconds: 30,
+  reply_delay_max_seconds: 300,
+  escalation_threshold: 0.7,
+  cta_aggressiveness: 'soft',
+  should_reply_to_spam: false,
+  stop_after_escalation: true,
+};
+
+export const botFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   social_account_id: z.string().min(1, 'Social account is required'),
   brand_voice_id: z.string().optional(),
-  behavior: z.object({
-    auto_reply_enabled: z.boolean().default(true),
-    max_replies_per_hour: z.number().min(0),
-    max_replies_per_day: z.number().min(0),
-    reply_delay_min_seconds: z.number().min(0),
-    reply_delay_max_seconds: z.number().min(0),
-    escalation_threshold: z.number().min(0).max(1),
-    cta_aggressiveness: z.enum(['none', 'soft', 'moderate', 'aggressive']),
-    should_reply_to_spam: z.boolean().default(false),
-    stop_after_escalation: z.boolean().default(true),
-  }),
+  behavior: z
+    .object({
+      auto_reply_enabled: z.boolean().default(true),
+      max_replies_per_hour: z
+        .number()
+        .min(0)
+        .max(500, 'Keep under 500 replies per hour for safety'),
+      max_replies_per_day: z
+        .number()
+        .min(0)
+        .max(5000, 'Keep under 5000 replies per day for safety'),
+      reply_delay_min_seconds: z
+        .number()
+        .min(0)
+        .max(3600, 'Delay must be less than 1 hour'),
+      reply_delay_max_seconds: z
+        .number()
+        .min(0)
+        .max(3600, 'Delay must be less than 1 hour'),
+      escalation_threshold: z.number().min(0).max(1),
+      cta_aggressiveness: z.enum(['none', 'soft', 'moderate', 'aggressive']),
+      should_reply_to_spam: z.boolean().default(false),
+      stop_after_escalation: z.boolean().default(true),
+    })
+    .refine(
+      values =>
+        values.reply_delay_max_seconds === 0 ||
+        values.reply_delay_min_seconds === 0 ||
+        values.reply_delay_max_seconds >= values.reply_delay_min_seconds,
+      {
+        message: 'Max delay must be greater than or equal to min delay',
+        path: ['reply_delay_max_seconds'],
+      }
+    ),
 });
 
 type BotFormValues = z.infer<typeof botFormSchema>;
@@ -108,17 +148,7 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
         name: '',
         description: '',
         social_account_id: '',
-        behavior: {
-          auto_reply_enabled: true,
-          max_replies_per_hour: 3,
-          max_replies_per_day: 10,
-          reply_delay_min_seconds: 30,
-          reply_delay_max_seconds: 300,
-          escalation_threshold: 0.7,
-          cta_aggressiveness: 'soft',
-          should_reply_to_spam: false,
-          stop_after_escalation: true,
-        },
+        behavior: DEFAULT_BOT_BEHAVIOR,
       };
 
   const form = useForm<BotFormValues>({
@@ -338,11 +368,17 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
                         <Input
                           type='number'
                           {...field}
-                          onChange={e =>
-                            field.onChange(parseInt(e.target.value))
-                          }
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === '' ? 0 : parseInt(value, 10)
+                            );
+                          }}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Helps avoid rate limits. Typical range: 0-60 per hour.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -357,11 +393,70 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
                         <Input
                           type='number'
                           {...field}
-                          onChange={e =>
-                            field.onChange(parseInt(e.target.value))
-                          }
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === '' ? 0 : parseInt(value, 10)
+                            );
+                          }}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Total automatic replies per day across this bot.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className='grid grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='behavior.reply_delay_min_seconds'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Min Reply Delay (seconds)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          {...field}
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === '' ? 0 : parseInt(value, 10)
+                            );
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Minimum delay before sending an auto-reply.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='behavior.reply_delay_max_seconds'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max Reply Delay (seconds)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          {...field}
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === '' ? 0 : parseInt(value, 10)
+                            );
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Upper bound for random reply delay window.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -387,6 +482,48 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
                       Confidence score below which the bot escalates to a human.
                     </FormDescription>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='behavior.should_reply_to_spam'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                    <div className='space-y-0.5'>
+                      <FormLabel>Reply To Suspected Spam</FormLabel>
+                      <FormDescription>
+                        May reply even on low-quality messages.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='behavior.stop_after_escalation'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                    <div className='space-y-0.5'>
+                      <FormLabel>Stop After Escalation</FormLabel>
+                      <FormDescription>
+                        Stops replying after escalation to a human.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

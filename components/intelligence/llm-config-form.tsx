@@ -41,7 +41,7 @@ import {
   ResponseLengthPreference,
 } from '@/lib/types/intelligence';
 
-const createLlmConfigSchema = (hasMaskedKey: boolean) =>
+export const createLlmConfigSchema = (hasMaskedKey: boolean) =>
   z
     .object({
       mode: z.nativeEnum(LlmConfigMode),
@@ -211,8 +211,9 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
                   <AlertTriangle className='h-4 w-4' />
                   <AlertTitle>BYOM Configuration</AlertTitle>
                   <AlertDescription>
-                    You are responsible for your own API costs and rate limits
-                    when using BYOM.
+                    Usage is billed by your provider based on tokens. Configure
+                    models and token budgets carefully to control costs and
+                    avoid rate limits.
                   </AlertDescription>
                 </Alert>
 
@@ -289,6 +290,47 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
                   />
                   <FormField
                     control={form.control}
+                    name='byom_config.fallback_model'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fallback Model</FormLabel>
+                        <FormControl>
+                          <Input placeholder='gpt-3.5-turbo' {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className='grid gap-4 md:grid-cols-2'>
+                  <FormField
+                    control={form.control}
+                    name='byom_config.max_tokens_per_request'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Max Tokens per Request</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='number'
+                            {...field}
+                            onChange={e => {
+                              const value = e.target.value;
+                              field.onChange(
+                                value === '' ? undefined : parseInt(value, 10)
+                              );
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Upper limit for tokens used in a single request.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name='byom_config.monthly_token_budget'
                     render={({ field }) => (
                       <FormItem>
@@ -297,11 +339,17 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
                           <Input
                             type='number'
                             {...field}
-                            onChange={e =>
-                              field.onChange(parseInt(e.target.value))
-                            }
+                            onChange={e => {
+                              const value = e.target.value;
+                              field.onChange(
+                                value === '' ? undefined : parseInt(value, 10)
+                              );
+                            }}
                           />
                         </FormControl>
+                        <FormDescription>
+                          Approximate monthly token allowance for this account.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

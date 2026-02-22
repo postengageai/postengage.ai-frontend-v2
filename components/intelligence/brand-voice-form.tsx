@@ -42,7 +42,7 @@ import {
   ResponseLengthPreference,
 } from '@/lib/types/intelligence';
 
-const brandVoiceFormSchema = z.object({
+export const brandVoiceFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   tone_primary: z.string().min(1, 'Tone is required'),
