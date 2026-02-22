@@ -63,14 +63,23 @@ export function ConfigureActionsStep({
   useEffect(() => {
     const fetchBots = async () => {
       try {
-        const response = await IntelligenceApi.getBots();
+        const response = await IntelligenceApi.getBots(
+          formData.social_account_id
+            ? { social_account_id: formData.social_account_id }
+            : undefined
+        );
         setBots(response.data || []);
       } catch (error) {
         console.error('Failed to fetch bots:', error);
       }
     };
-    fetchBots();
-  }, []);
+
+    if (formData.social_account_id) {
+      fetchBots();
+    } else {
+      setBots([]);
+    }
+  }, [formData.social_account_id]);
 
   const getAvailableActions = (): {
     type: AutomationActionTypeType;

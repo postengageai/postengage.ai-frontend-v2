@@ -11,8 +11,8 @@ const nextConfig = {
       source: '/',
       destination: '/dashboard',
       permanent: false,
-    }
-  ]
+    },
+  ],
 };
 
 export default nextConfig;

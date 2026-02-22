@@ -16,10 +16,20 @@ const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
 
 export class IntelligenceApi {
   // Bots
-  static async getBots(): Promise<SuccessResponse<Bot[]>> {
-    const response = await httpClient.get<Bot[]>(
-      `${INTELLIGENCE_BASE_URL}/bots`
-    );
+  static async getBots(params?: {
+    social_account_id?: string;
+  }): Promise<SuccessResponse<Bot[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.social_account_id) {
+      searchParams.set('social_account_id', params.social_account_id);
+    }
+
+    const query = searchParams.toString();
+    const url = query
+      ? `${INTELLIGENCE_BASE_URL}/bots?${query}`
+      : `${INTELLIGENCE_BASE_URL}/bots`;
+
+    const response = await httpClient.get<Bot[]>(url);
     if (response.error) throw response.error;
     return response.data;
   }
