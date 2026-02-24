@@ -4,15 +4,18 @@
  */
 
 export const CREDIT_COSTS = {
-  // Basic actions
-  REPLY_COMMENT: 2, // 1 base + 1 reply
-  PRIVATE_REPLY: 2, // 1 base + 1 private reply
-  SEND_DM: 2, // 1 base + 1 send DM
+  // Manual Actions (Free)
+  REPLY_COMMENT: 0,
+  PRIVATE_REPLY: 0,
+  SEND_DM: 0,
 
-  // AI-powered actions (adds +2 credits)
-  AI_REPLY_COMMENT: 4, // 2 base + 2 AI
-  AI_PRIVATE_REPLY: 4, // 2 base + 2 AI
-  AI_SEND_DM: 4, // 2 base + 2 AI
+  // AI Actions (Tiered)
+  AI_STANDARD: 5, // Standard AI response
+  AI_KNOWLEDGE: 8, // With knowledge base context
+  AI_FULL_CONTEXT: 12, // Full conversation history + knowledge
+
+  // BYOM (Infrastructure Cost)
+  BYOM_INFRA: 1, // Using own API key
 } as const;
 
 export const CREDIT_PACKS = [
@@ -50,10 +53,11 @@ export const CREDIT_PACKS = [
 
 /**
  * Calculate actions from credits based on average action cost
- * Most users use a mix of basic (2 credits) and AI (4 credits) actions
- * We assume 70% basic, 30% AI = average 2.6 credits per action
+ * Most users use a mix of free manual actions and paid AI actions
+ * We assume mostly AI usage for estimation
  */
-export function calculateActions(credits: number, withAI = false): number {
-  const costPerAction = withAI ? 4 : 2;
-  return Math.floor(credits / costPerAction);
+export function calculateActions(credits: number, withAI = true): number {
+  if (!withAI) return Infinity; // Manual actions are free
+  const averageAiCost = 5; // Standard tier
+  return Math.floor(credits / averageAiCost);
 }

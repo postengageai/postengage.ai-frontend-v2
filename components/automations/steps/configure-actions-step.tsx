@@ -16,7 +16,12 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
-import type { Bot } from '@/lib/types/intelligence';
+import {
+  type Bot,
+  type UserLlmConfig,
+  LlmConfigMode,
+} from '@/lib/types/intelligence';
+import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
 import {
   ChevronLeft,
   Plus,
@@ -56,27 +61,32 @@ export function ConfigureActionsStep({
 }: ConfigureActionsStepProps) {
   const [actions, setActions] = useState(formData.actions || []);
   const [bots, setBots] = useState<Bot[]>([]);
+  const [userConfig, setUserConfig] = useState<UserLlmConfig | null>(null);
   const [selectedBotId, setSelectedBotId] = useState<string | undefined>(
     formData.bot_id
   );
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchBots = async () => {
+    const fetchData = async () => {
       try {
-        const response = await IntelligenceApi.getBots(
-          formData.social_account_id
-            ? { social_account_id: formData.social_account_id }
-            : undefined
-        );
-        setBots(response.data || []);
-      } catch (error) {
-        console.error('Failed to fetch bots:', error);
+        const [botsResponse, configResponse] = await Promise.all([
+          IntelligenceApi.getBots(
+            formData.social_account_id
+              ? { social_account_id: formData.social_account_id }
+              : undefined
+          ),
+          IntelligenceApi.getUserConfig(),
+        ]);
+        setBots(botsResponse.data || []);
+        setUserConfig(configResponse.data);
+      } catch (_error) {
+        // failed to fetch data
       }
     };
 
     if (formData.social_account_id) {
-      fetchBots();
+      fetchData();
     } else {
       setBots([]);
     }
@@ -262,7 +272,7 @@ export function ConfigureActionsStep({
                         variant='secondary'
                         className='bg-primary/10 text-xs text-primary'
                       >
-                        2 credits
+                        Free
                       </Badge>
                     </div>
                     <p className='mt-1 text-xs text-muted-foreground'>
@@ -304,28 +314,70 @@ export function ConfigureActionsStep({
                         <Clock className='h-3 w-3' />
                         <span>{action.delay_seconds}s delay</span>
                       </div>
-                      {(() => {
-                        const payload = action.action_payload as
-                          | ReplyCommentPayload
-                          | PrivateReplyPayload
-                          | SendDmPayload;
-                        const hasAi =
-                          'use_ai_reply' in payload &&
-                          Boolean(payload.use_ai_reply);
-                        if (!hasAi) return null;
-                        const selectedBot = bots.find(
-                          bot => bot._id === selectedBotId
-                        );
-                        return (
-                          <div className='flex items-center gap-1.5'>
-                            <BotIcon className='h-3 w-3 text-primary' />
-                            <span className='font-medium text-primary'>
-                              AI
-                              {selectedBot ? ` · ${selectedBot.name}` : ''}
-                            </span>
-                          </div>
-                        );
-                      })()}
+                      <div className='flex items-center gap-1.5'>
+                        {(() => {
+                          const payload = action.action_payload as
+                            | ReplyCommentPayload
+                            | PrivateReplyPayload
+                            | SendDmPayload;
+                          const hasAi =
+                            'use_ai_reply' in payload &&
+                            Boolean(payload.use_ai_reply);
+
+                          if (hasAi) {
+                            const selectedBot = bots.find(
+                              bot => bot._id === selectedBotId
+                            );
+
+                            // Calculate credit cost
+                            let creditCost = 0;
+                            const isByom =
+                              userConfig?.mode === LlmConfigMode.BYOM;
+                            const infraCost = CREDIT_COSTS.BYOM_INFRA;
+
+                            if (isByom) {
+                              creditCost = infraCost;
+                            } else {
+                              // Platform mode: Infra + AI Tier
+                              const hasKnowledge =
+                                selectedBot?.knowledge_sources &&
+                                selectedBot.knowledge_sources.length > 0;
+
+                              const aiTierCost = hasKnowledge
+                                ? CREDIT_COSTS.AI_KNOWLEDGE
+                                : CREDIT_COSTS.AI_STANDARD;
+
+                              creditCost = infraCost + aiTierCost;
+                            }
+
+                            return (
+                              <>
+                                <Badge
+                                  variant='secondary'
+                                  className='bg-primary/10 text-[10px] text-primary h-5 px-1.5'
+                                >
+                                  {creditCost} credits
+                                </Badge>
+                                <BotIcon className='h-3 w-3 text-primary ml-1' />
+                                <span className='font-medium text-primary'>
+                                  AI
+                                  {selectedBot ? ` · ${selectedBot.name}` : ''}
+                                  {isByom && ' (BYOM)'}
+                                </span>
+                              </>
+                            );
+                          }
+
+                          return (
+                            <Badge
+                              variant='secondary'
+                              className='bg-muted text-[10px] text-muted-foreground h-5 px-1.5'
+                            >
+                              Free
+                            </Badge>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>

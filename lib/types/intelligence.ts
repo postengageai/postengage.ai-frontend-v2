@@ -24,6 +24,7 @@ export interface Bot {
   name: string;
   description: string;
   brand_voice_id?: string;
+  knowledge_sources?: { source_id: string; weight: number }[];
   behavior: BotBehavior;
   status: BotStatus;
   is_active: boolean;

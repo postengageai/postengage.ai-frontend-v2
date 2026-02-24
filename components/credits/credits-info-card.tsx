@@ -12,10 +12,33 @@ export function CreditsInfoCard() {
           <p className='text-sm font-medium text-foreground'>
             How credits work
           </p>
-          <p className='text-sm text-muted-foreground'>
-            Credits are only deducted after a successful action. Failed or
-            cancelled operations are automatically refunded.
-          </p>
+          <div className='text-sm text-muted-foreground space-y-1'>
+            <p>
+              •{' '}
+              <span className='font-medium text-foreground'>
+                Manual actions are free
+              </span>{' '}
+              (0 credits).
+            </p>
+            <p>
+              •{' '}
+              <span className='font-medium text-foreground'>
+                AI actions cost 6-13 credits
+              </span>{' '}
+              depending on complexity (Standard vs. Full Context).
+            </p>
+            <p>
+              •{' '}
+              <span className='font-medium text-foreground'>
+                BYOM mode costs only 1 credit
+              </span>{' '}
+              (infrastructure fee).
+            </p>
+            <p>
+              • Credits are only deducted for successful AI replies. Failed,
+              escalated, or empty responses are refunded.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
