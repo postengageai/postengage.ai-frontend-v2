@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -92,6 +92,11 @@ interface LlmConfigFormProps {
 export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [llmDefaults, setLlmDefaults] = useState<{
+    provider: string;
+    model: string;
+    max_tokens: number;
+  } | null>(null);
   const maskedApiKey = initialConfig.byom_config?.api_key_last_four;
 
   const defaultValues: Partial<LlmConfigFormValues> = {
@@ -127,6 +132,21 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
   });
 
   const watchMode = form.watch('mode');
+
+  useEffect(() => {
+    let isMounted = true;
+    IntelligenceApi.getLlmDefaults()
+      .then(response => {
+        if (!isMounted) return;
+        setLlmDefaults(response.data);
+      })
+      .catch(() => {
+        // Silently ignore; form still works without defaults
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const onSubmit = async (data: LlmConfigFormValues) => {
     setIsLoading(true);
@@ -214,6 +234,14 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
                     Usage is billed by your provider based on tokens. Configure
                     models and token budgets carefully to control costs and
                     avoid rate limits.
+                    {llmDefaults ? (
+                      <span className='block mt-2'>
+                        Platform defaults:{' '}
+                        <strong>{llmDefaults.provider}</strong> —{' '}
+                        <strong>{llmDefaults.model}</strong> (max{' '}
+                        {llmDefaults.max_tokens} tokens per request).
+                      </span>
+                    ) : null}
                   </AlertDescription>
                 </Alert>
 

@@ -10,6 +10,7 @@ import {
   BrandVoice,
   CreateBrandVoiceDto,
   UpdateBrandVoiceDto,
+  LlmDefaults,
 } from '../types/intelligence';
 import { AnalyticsPeriod, IntelligenceAnalyticsItem } from '../types/analytics';
 
@@ -121,6 +122,14 @@ export class IntelligenceApi {
     const response = await httpClient.patch<UserLlmConfig>(
       `${INTELLIGENCE_BASE_URL}/config`,
       data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async getLlmDefaults(): Promise<SuccessResponse<LlmDefaults>> {
+    const response = await httpClient.get<LlmDefaults>(
+      `${INTELLIGENCE_BASE_URL}/llm-defaults`
     );
     if (response.error) throw response.error;
     return response.data;

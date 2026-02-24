@@ -188,3 +188,9 @@ export interface UpdateUserLlmConfigDto {
   byom_config?: Partial<ByomConfig>;
   settings?: Partial<LlmSettings>;
 }
+
+export interface LlmDefaults {
+  provider: string;
+  model: string;
+  max_tokens: number;
+}
