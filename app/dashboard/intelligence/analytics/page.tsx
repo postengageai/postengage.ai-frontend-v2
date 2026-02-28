@@ -16,6 +16,7 @@ import {
   AnalyticsPeriod,
   IntelligenceAnalyticsItem,
 } from '@/lib/types/analytics';
+import type { IntelligenceQualityAnalytics } from '@/lib/types/quality';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -24,17 +25,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { QualityScorecard } from '@/components/intelligence/analytics/quality-scorecard';
+import { ResponseActions } from '@/components/intelligence/analytics/response-actions';
+import { IntentBreakdown } from '@/components/intelligence/analytics/intent-breakdown';
+import { ConfidenceDistribution } from '@/components/intelligence/analytics/confidence-distribution';
+import { DiversityChart } from '@/components/intelligence/analytics/diversity-chart';
 
 interface IntelligenceAnalyticsState {
   periodLabel: string;
@@ -57,30 +58,41 @@ export default function IntelligenceAnalyticsPage() {
     AnalyticsPeriod.LAST_7_DAYS
   );
   const [filterAccount, setFilterAccount] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [state, setState] = useState<IntelligenceAnalyticsState>({
     periodLabel: '',
     items: [],
   });
+  const [qualityData, setQualityData] =
+    useState<IntelligenceQualityAnalytics | null>(null);
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const response = await IntelligenceApi.getIntelligenceAnalytics({
-          period,
-        });
+        const [response, qualityResponse] = await Promise.all([
+          IntelligenceApi.getIntelligenceAnalytics({ period }),
+          IntelligenceApi.getQualityAnalytics({
+            period: 'weekly',
+            include_quality: true,
+            include_diversity: true,
+            include_intents: true,
+          }).catch(() => null),
+        ]);
+
         const data = response.data;
         const label =
           data.period && data.period.start && data.period.end
-            ? `${data.period.start.slice(0, 10)} → ${data.period.end.slice(
-                0,
-                10
-              )}`
+            ? `${data.period.start.slice(0, 10)} → ${data.period.end.slice(0, 10)}`
             : '';
         setState({
           periodLabel: label,
           items: data.items || [],
         });
+
+        if (qualityResponse?.data) {
+          setQualityData(qualityResponse.data);
+        }
       } catch (_error) {
         toast({
           variant: 'destructive',
@@ -121,7 +133,7 @@ export default function IntelligenceAnalyticsPage() {
             Intelligence Analytics
           </h2>
           <p className='text-muted-foreground'>
-            Monitor AI usage, tokens and fallback behaviour over time.
+            Monitor AI quality, response actions, and intent patterns.
           </p>
           {state.periodLabel && (
             <p className='text-xs text-muted-foreground mt-1'>
@@ -130,6 +142,16 @@ export default function IntelligenceAnalyticsPage() {
           )}
         </div>
         <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-2'>
+            <Switch
+              id='advanced-toggle'
+              checked={showAdvanced}
+              onCheckedChange={setShowAdvanced}
+            />
+            <Label htmlFor='advanced-toggle' className='text-xs'>
+              Advanced
+            </Label>
+          </div>
           <Select
             value={period}
             onValueChange={value => setPeriod(value as AnalyticsPeriod)}
@@ -157,11 +179,44 @@ export default function IntelligenceAnalyticsPage() {
       <div className='flex-1 p-6 space-y-6'>
         {isLoading ? (
           <div className='space-y-4'>
-            <Skeleton className='h-48 w-full' />
+            <div className='grid gap-4 md:grid-cols-3'>
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className='h-28 w-full' />
+              ))}
+            </div>
+            <Skeleton className='h-64 w-full' />
             <Skeleton className='h-64 w-full' />
           </div>
         ) : (
           <>
+            {/* Quality Scorecard */}
+            {qualityData && (
+              <>
+                <QualityScorecard
+                  quality={qualityData.quality}
+                  showAdvanced={showAdvanced}
+                />
+
+                {/* Response Actions */}
+                <ResponseActions actions={qualityData.response_actions} />
+
+                {/* Intent Analytics */}
+                <IntentBreakdown intents={qualityData.intents} />
+
+                {/* Advanced: Confidence Distribution + Diversity */}
+                {showAdvanced && (
+                  <>
+                    <Separator />
+                    <ConfidenceDistribution quality={qualityData.quality} />
+                    <DiversityChart diversity={qualityData.diversity} />
+                  </>
+                )}
+
+                <Separator />
+              </>
+            )}
+
+            {/* Original Usage Charts */}
             <Card>
               <CardHeader>
                 <CardTitle>AI Calls & Tokens Over Time</CardTitle>
@@ -192,74 +247,6 @@ export default function IntelligenceAnalyticsPage() {
                         />
                       </BarChart>
                     </ResponsiveContainer>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Daily Breakdown by Social Account</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {filteredItems.length === 0 ? (
-                  <p className='text-sm text-muted-foreground'>
-                    No analytics data to display.
-                  </p>
-                ) : (
-                  <div className='border rounded-lg overflow-x-auto'>
-                    <Table>
-                      <TableHeader>
-                        <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Social Account</TableHead>
-                          <TableHead className='text-right'>AI Calls</TableHead>
-                          <TableHead className='text-right'>
-                            Prompt Tokens
-                          </TableHead>
-                          <TableHead className='text-right'>
-                            Completion Tokens
-                          </TableHead>
-                          <TableHead className='text-right'>
-                            Total Tokens
-                          </TableHead>
-                          <TableHead className='text-right'>
-                            Fallback Rate
-                          </TableHead>
-                          <TableHead className='text-right'>
-                            Escalation Rate
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredItems.map(item => (
-                          <TableRow
-                            key={`${item.date}-${item.social_account_id}`}
-                          >
-                            <TableCell>{item.date}</TableCell>
-                            <TableCell>{item.social_account_id}</TableCell>
-                            <TableCell className='text-right'>
-                              {item.ai_calls}
-                            </TableCell>
-                            <TableCell className='text-right'>
-                              {item.prompt_tokens}
-                            </TableCell>
-                            <TableCell className='text-right'>
-                              {item.completion_tokens}
-                            </TableCell>
-                            <TableCell className='text-right'>
-                              {item.total_tokens}
-                            </TableCell>
-                            <TableCell className='text-right'>
-                              {(item.fallback_rate * 100).toFixed(1)}%
-                            </TableCell>
-                            <TableCell className='text-right'>
-                              {(item.escalation_rate * 100).toFixed(1)}%
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
                   </div>
                 )}
               </CardContent>

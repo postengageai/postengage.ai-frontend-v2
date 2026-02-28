@@ -3,7 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Brain, Users, Database } from 'lucide-react';
+import {
+  ArrowLeft,
+  Brain,
+  Users,
+  Database,
+  BarChart3,
+  Gauge,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SocialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
@@ -11,6 +18,7 @@ import { IntelligenceApi } from '@/lib/api/intelligence';
 import { MemoryApi } from '@/lib/api/memory';
 import { Bot } from '@/lib/types/intelligence';
 import type { MemoryStats } from '@/lib/types/memory';
+import { Badge } from '@/components/ui/badge';
 import { BotForm } from '@/components/intelligence/bot-form';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -129,6 +137,55 @@ export default function EditBotPage() {
               users.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Performance Quick Stats */}
+      <Card>
+        <CardHeader className='flex flex-row items-center justify-between pb-2'>
+          <CardTitle className='text-base font-semibold flex items-center gap-2'>
+            <BarChart3 className='h-4 w-4' />
+            Performance
+          </CardTitle>
+          <Link href='/dashboard/intelligence/analytics'>
+            <Button variant='outline' size='sm'>
+              View Full Analytics
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className='flex gap-6 flex-wrap'>
+            <div className='flex items-center gap-2'>
+              <Gauge className='h-4 w-4 text-muted-foreground' />
+              <span className='text-sm'>
+                Confidence:{' '}
+                <span className='font-medium'>
+                  {(bot.stats.avg_confidence * 100).toFixed(0)}%
+                </span>
+              </span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <span className='text-sm'>
+                Replies:{' '}
+                <span className='font-medium'>{bot.stats.total_replies}</span>
+              </span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <span className='text-sm'>
+                Escalations:{' '}
+                <Badge
+                  variant={
+                    bot.stats.total_escalations > 0
+                      ? 'destructive'
+                      : 'secondary'
+                  }
+                  className='text-xs'
+                >
+                  {bot.stats.total_escalations}
+                </Badge>
+              </span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

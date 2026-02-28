@@ -56,6 +56,39 @@ export interface IntelligenceQualityAnalytics {
   };
 }
 
+// === Bot Health (Phase 4) ===
+export type BotHealthLevel = 'good' | 'fair' | 'poor';
+
+export interface BotHealthScore {
+  level: BotHealthLevel;
+  score: number;
+  factors: {
+    label: string;
+    status: 'good' | 'warning' | 'issue';
+  }[];
+  last_updated_at: string;
+}
+
+// === Flagged Reply (Phase 4) ===
+export interface FlaggedReply {
+  _id: string;
+  bot_id: string;
+  original_message: string;
+  generated_reply: string;
+  confidence_score: number;
+  flag_reason: string;
+  action_taken: 'held_for_approval' | 'safe_template_used';
+  reviewed: boolean;
+  reviewed_at?: string;
+  created_at: string;
+}
+
+export interface FlaggedRepliesParams {
+  page?: number;
+  limit?: number;
+  reviewed?: boolean;
+}
+
 // === Query Params ===
 export interface QualityAnalyticsParams {
   period?: 'daily' | 'weekly' | 'monthly';
