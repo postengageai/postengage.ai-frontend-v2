@@ -16,6 +16,9 @@ import { AnalyticsPeriod, IntelligenceAnalyticsItem } from '../types/analytics';
 import type {
   IntelligenceQualityAnalytics,
   QualityAnalyticsParams,
+  BotHealthScore,
+  FlaggedReply,
+  FlaggedRepliesParams,
 } from '../types/quality';
 
 const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
@@ -250,6 +253,69 @@ export class IntelligenceApi {
       : `${INTELLIGENCE_BASE_URL}/analytics/quality`;
 
     const response = await httpClient.get<IntelligenceQualityAnalytics>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Bot Health & Flagged Replies (Phase 4)
+  static async getBotHealth(
+    botId: string
+  ): Promise<SuccessResponse<BotHealthScore>> {
+    const response = await httpClient.get<BotHealthScore>(
+      `${INTELLIGENCE_BASE_URL}/bots/${botId}/health`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async getFlaggedReplies(
+    botId: string,
+    params?: FlaggedRepliesParams
+  ): Promise<SuccessResponse<FlaggedReply[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.reviewed !== undefined)
+      searchParams.set('reviewed', String(params.reviewed));
+
+    const query = searchParams.toString();
+    const url = query
+      ? `${INTELLIGENCE_BASE_URL}/bots/${botId}/flagged-replies?${query}`
+      : `${INTELLIGENCE_BASE_URL}/bots/${botId}/flagged-replies`;
+
+    const response = await httpClient.get<FlaggedReply[]>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async approveReply(replyId: string): Promise<SuccessResponse<void>> {
+    const response = await httpClient.post<void>(
+      `${INTELLIGENCE_BASE_URL}/flagged-replies/${replyId}/approve`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async rejectReply(
+    replyId: string,
+    reason?: string
+  ): Promise<SuccessResponse<void>> {
+    const response = await httpClient.post<void>(
+      `${INTELLIGENCE_BASE_URL}/flagged-replies/${replyId}/reject`,
+      reason ? { reason } : undefined
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async editAndApproveReply(
+    replyId: string,
+    editedReply: string
+  ): Promise<SuccessResponse<void>> {
+    const response = await httpClient.post<void>(
+      `${INTELLIGENCE_BASE_URL}/flagged-replies/${replyId}/edit`,
+      { edited_reply: editedReply }
+    );
     if (response.error) throw response.error;
     return response.data;
   }
