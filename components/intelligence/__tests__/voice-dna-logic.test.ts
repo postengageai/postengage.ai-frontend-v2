@@ -19,65 +19,70 @@ import type {
  */
 
 const sampleFingerprint: VoiceDnaFingerprint = {
-  language: {
-    primary_language: 'en',
-    code_switching: true,
-    script: 'latin',
-    formality_level: 0.4,
+  style_metrics: {
+    avg_sentence_length: 10,
+    vocabulary_complexity: 'simple',
+    emoji_patterns: ['🔥', '💪', '🙌'],
+    emoji_frequency: 0.6,
+    punctuation_style: {
+      exclamation_frequency: 0.5,
+      ellipsis_usage: false,
+      caps_emphasis: false,
+    },
   },
-  tone: {
+  language_patterns: {
+    primary_language: 'en',
+    code_switching_frequency: 0.4,
+    slang_patterns: ['yo', 'bro'],
+    filler_words: [],
+  },
+  tone_markers: {
     humor_level: 0.7,
     directness: 0.8,
     warmth: 0.6,
     assertiveness: 0.5,
   },
-  style: {
-    avg_sentence_length: 10,
-    vocabulary_richness: 0.55,
-    punctuation_style: 'minimal',
-    capitalization_style: 'lowercase',
-  },
-  structural: {
-    greeting_pattern: 'yo!',
-    closing_pattern: 'later',
-    paragraph_tendency: 'short',
-    list_usage: false,
-  },
-  emoji: {
-    frequency: 0.6,
-    preferred_emojis: ['🔥', '💪', '🙌'],
-    placement: 'inline',
+  structural_patterns: {
+    starts_with_patterns: ['yo!'],
+    ends_with_patterns: ['later'],
+    question_response_style: 'direct_answer',
   },
 };
 
 describe('VoiceDna types', () => {
   describe('VoiceDnaFingerprint', () => {
     it('has all required tone dimensions', () => {
-      const { tone } = sampleFingerprint;
-      expect(tone).toHaveProperty('humor_level');
-      expect(tone).toHaveProperty('directness');
-      expect(tone).toHaveProperty('warmth');
-      expect(tone).toHaveProperty('assertiveness');
+      const { tone_markers } = sampleFingerprint;
+      expect(tone_markers).toHaveProperty('humor_level');
+      expect(tone_markers).toHaveProperty('directness');
+      expect(tone_markers).toHaveProperty('warmth');
+      expect(tone_markers).toHaveProperty('assertiveness');
     });
 
     it('tone values are within 0-1 range', () => {
-      const { tone } = sampleFingerprint;
-      for (const [, value] of Object.entries(tone)) {
+      const { tone_markers } = sampleFingerprint;
+      for (const [, value] of Object.entries(tone_markers)) {
         expect(value).toBeGreaterThanOrEqual(0);
         expect(value).toBeLessThanOrEqual(1);
       }
     });
 
-    it('formality_level is within 0-1 range', () => {
-      expect(sampleFingerprint.language.formality_level).toBeGreaterThanOrEqual(
-        0
-      );
-      expect(sampleFingerprint.language.formality_level).toBeLessThanOrEqual(1);
+    it('code_switching_frequency is within 0-1 range', () => {
+      expect(
+        sampleFingerprint.language_patterns.code_switching_frequency
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        sampleFingerprint.language_patterns.code_switching_frequency
+      ).toBeLessThanOrEqual(1);
     });
 
     it('emoji frequency is within 0-1 range', () => {
-      expect(sampleFingerprint.emoji.frequency).toBeGreaterThanOrEqual(0);
-      expect(sampleFingerprint.emoji.frequency).toBeLessThanOrEqual(1);
+      expect(
+        sampleFingerprint.style_metrics.emoji_frequency
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        sampleFingerprint.style_metrics.emoji_frequency
+      ).toBeLessThanOrEqual(1);
     });
   });
 
@@ -87,18 +92,24 @@ describe('VoiceDna types', () => {
         context: 'User asks about return policy',
         reply: 'Hey! Yeah we do 30-day returns, no questions asked 🔥',
         tags: ['returns', 'policy'],
+        source: 'creator_manual',
+        added_at: '2026-01-15T00:00:00Z',
       };
       expect(example.context).toBeTruthy();
       expect(example.reply).toBeTruthy();
       expect(example.tags).toHaveLength(2);
     });
 
-    it('tags are optional', () => {
+    it('has required source and added_at', () => {
       const example: FewShotExample = {
         context: 'General greeting',
         reply: 'Yo! What can I help with?',
+        tags: [],
+        source: 'ai_approved',
+        added_at: '2026-01-15T00:00:00Z',
       };
-      expect(example.tags).toBeUndefined();
+      expect(example.source).toBe('ai_approved');
+      expect(example.added_at).toBeTruthy();
     });
   });
 
@@ -128,7 +139,7 @@ describe('VoiceDna types', () => {
         _id: 'test',
         brand_voice_id: 'bv-1',
         user_id: 'u-1',
-        source: 'manual_samples',
+        source: 'user_configured',
         status: 'ready',
         fingerprint: sampleFingerprint,
         few_shot_examples: [],

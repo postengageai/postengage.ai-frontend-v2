@@ -4,6 +4,7 @@ import type {
   AutoInferResult,
   VoiceDna,
 } from '@/lib/types/voice-dna';
+import { BotStatus } from '@/lib/types/intelligence';
 import type { CreateBotDto, Bot, BotBehavior } from '@/lib/types/intelligence';
 
 /**
@@ -57,12 +58,14 @@ const mockBot: Bot = {
   social_account_id: 'sa-1',
   brand_voice_id: 'bv-1',
   behavior: mockBehavior,
+  status: BotStatus.ACTIVE,
   is_active: true,
   stats: {
     total_replies: 0,
     total_escalations: 0,
+    total_skipped: 0,
     avg_confidence: 0,
-    last_active: null,
+    last_active_at: undefined,
   },
   created_at: '2026-01-01',
   updated_at: '2026-01-01',
@@ -141,7 +144,6 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
     const readyVdna: Partial<VoiceDna> = {
       _id: 'vdna-new',
       status: 'ready',
-      confidence_score: 0.88,
     };
 
     // First poll: still analyzing

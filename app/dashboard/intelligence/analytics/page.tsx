@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -126,14 +126,6 @@ export default function IntelligenceAnalyticsPage() {
 
     load();
   }, [period, toast]);
-
-  const filteredItems = useMemo(() => {
-    if (!filterAccount) return state.items;
-    const q = filterAccount.toLowerCase();
-    return state.items.filter(item =>
-      item.social_account_id.toLowerCase().includes(q)
-    );
-  }, [state.items, filterAccount]);
 
   return (
     <div className='space-y-6 p-6'>
@@ -291,34 +283,36 @@ export default function IntelligenceAnalyticsPage() {
             </Card>
           </div>
 
-          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
-            <Card className='col-span-4'>
-              <CardHeader>
-                <CardTitle>Response Actions</CardTitle>
-              </CardHeader>
-              <CardContent className='pl-2'>
-                <Suspense fallback={<ChartFallback />}>
-                  <ResponseActions data={filteredItems} />
-                </Suspense>
-              </CardContent>
-            </Card>
-            <Card className='col-span-3'>
-              <CardHeader>
-                <CardTitle>Confidence Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<ChartFallback />}>
-                  <ConfidenceDistribution data={filteredItems} />
-                </Suspense>
-              </CardContent>
-            </Card>
-          </div>
+          {qualityData && (
+            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
+              <Card className='col-span-4'>
+                <CardHeader>
+                  <CardTitle>Response Actions</CardTitle>
+                </CardHeader>
+                <CardContent className='pl-2'>
+                  <Suspense fallback={<ChartFallback />}>
+                    <ResponseActions actions={qualityData.response_actions} />
+                  </Suspense>
+                </CardContent>
+              </Card>
+              <Card className='col-span-3'>
+                <CardHeader>
+                  <CardTitle>Confidence Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Suspense fallback={<ChartFallback />}>
+                    <ConfidenceDistribution quality={qualityData.quality} />
+                  </Suspense>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value='quality' className='space-y-4'>
           {qualityData ? (
             <Suspense fallback={<ChartFallback />}>
-              <QualityScorecard data={qualityData} />
+              <QualityScorecard quality={qualityData.quality} />
             </Suspense>
           ) : (
             <Alert>
@@ -339,7 +333,7 @@ export default function IntelligenceAnalyticsPage() {
             <CardContent>
               {qualityData?.diversity ? (
                 <Suspense fallback={<ChartFallback />}>
-                  <DiversityChart data={qualityData.diversity} />
+                  <DiversityChart diversity={qualityData.diversity} />
                 </Suspense>
               ) : (
                 <div className='flex h-[300px] items-center justify-center text-muted-foreground'>
@@ -358,7 +352,7 @@ export default function IntelligenceAnalyticsPage() {
             <CardContent>
               {qualityData?.intents ? (
                 <Suspense fallback={<ChartFallback />}>
-                  <IntentBreakdown data={qualityData.intents} />
+                  <IntentBreakdown intents={qualityData.intents} />
                 </Suspense>
               ) : (
                 <div className='flex h-[300px] items-center justify-center text-muted-foreground'>

@@ -30,37 +30,36 @@ const mockVoiceDna: VoiceDna = {
   _id: 'vdna-1',
   brand_voice_id: 'bv-1',
   user_id: 'user-1',
-  source: 'manual_samples',
+  source: 'user_configured',
   status: 'ready',
   fingerprint: {
-    language: {
-      primary_language: 'en',
-      code_switching: false,
-      script: 'latin',
-      formality_level: 0.6,
+    style_metrics: {
+      avg_sentence_length: 12,
+      vocabulary_complexity: 'moderate',
+      emoji_patterns: ['👍'],
+      emoji_frequency: 0.3,
+      punctuation_style: {
+        exclamation_frequency: 0.3,
+        ellipsis_usage: false,
+        caps_emphasis: false,
+      },
     },
-    tone: {
+    language_patterns: {
+      primary_language: 'en',
+      code_switching_frequency: 0,
+      slang_patterns: [],
+      filler_words: [],
+    },
+    tone_markers: {
       humor_level: 0.5,
       directness: 0.7,
       warmth: 0.8,
       assertiveness: 0.6,
     },
-    style: {
-      avg_sentence_length: 12,
-      vocabulary_richness: 0.6,
-      punctuation_style: 'standard',
-      capitalization_style: 'sentence_case',
-    },
-    structural: {
-      greeting_pattern: 'Hey!',
-      closing_pattern: 'Cheers',
-      paragraph_tendency: 'short',
-      list_usage: false,
-    },
-    emoji: {
-      frequency: 0.3,
-      preferred_emojis: ['👍'],
-      placement: 'end',
+    structural_patterns: {
+      starts_with_patterns: ['Hey!'],
+      ends_with_patterns: ['Cheers'],
+      question_response_style: 'direct_answer',
     },
   },
   few_shot_examples: [],
