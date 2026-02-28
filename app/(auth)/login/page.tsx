@@ -4,7 +4,7 @@ import type React from 'react';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,17 +17,21 @@ import {
 import { FormError } from '@/components/auth/form-error';
 import { AuthApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/auth/store';
-import { useUserActions } from '@/lib/user/store';
+import { useUserStore } from '@/lib/user/store';
 import { ApiError } from '@/lib/http/errors';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { actions, errors } = useAuthStore();
-  const userActions = useUserActions();
+  const searchParams = useSearchParams();
+  const { actions, errorActions, errors } = useAuthStore();
+  const userStoreActions = useUserStore(state => state.actions);
   const [isLoading, setIsLoading] = useState(false);
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Support redirect back to intended page after login
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   const isFormValid = email.includes('@') && password.length > 0;
 
@@ -37,24 +41,21 @@ export default function LoginPage() {
 
     setIsLoading(true);
     actions.setLoading(true);
-    errors.clearErrors();
+    errorActions.clearErrors();
     setShowResendVerification(false);
 
     try {
-      // Use the AuthApi class for proper API integration
       const response = await AuthApi.login({ email, password });
 
-      // Update auth store with user data
-      userActions.setUser(response.data.user);
+      // Update both auth store and legacy user store
+      actions.setUser(response.data.user);
+      userStoreActions.setUser(response.data.user);
       actions.setIsAuthenticated(true);
 
-      // Redirect to dashboard on success
-      router.push('/dashboard');
-      router.refresh(); // Refresh to update auth state
+      // Redirect to intended page or dashboard
+      router.push(redirectTo);
+      router.refresh();
     } catch (error: unknown) {
-      // console.error('Login error:', error);
-
-      // Handle specific error cases
       if (
         error instanceof ApiError &&
         error.code === 'AUTH_EMAIL_NOT_VERIFIED_000008'
@@ -62,7 +63,7 @@ export default function LoginPage() {
         setShowResendVerification(true);
       }
 
-      errors.setError('loginError', error as ApiError);
+      errorActions.setError('loginError', error as ApiError);
     } finally {
       setIsLoading(false);
       actions.setLoading(false);
@@ -101,7 +102,7 @@ export default function LoginPage() {
             value={email}
             onChange={e => {
               setEmail(e.target.value);
-              errors.clearErrors();
+              errorActions.clearErrors();
             }}
             placeholder='you@example.com'
             disabled={isLoading}
@@ -124,7 +125,7 @@ export default function LoginPage() {
             value={password}
             onChange={e => {
               setPassword(e.target.value);
-              errors.clearErrors();
+              errorActions.clearErrors();
             }}
             placeholder='Enter your password'
             disabled={isLoading}

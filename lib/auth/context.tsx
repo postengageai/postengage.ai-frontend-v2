@@ -1,227 +1,146 @@
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useReducer,
-  useEffect,
-  useRef,
-} from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { AuthSession, AuthActions } from '../schemas/auth';
-import { ApiError } from '../http/errors';
 import { AuthApi } from '../api/auth';
+import {
+  useAuthStore,
+  initActivityTracking,
+  cleanupActivityTracking,
+  setSessionWarningCallback,
+  setSessionExpiredCallback,
+} from './store';
 import { useUserStore } from '../user/store';
-import { useAuthStore } from './store';
 import { setLogoutHandler } from '../http/setup';
+import { useToast } from '@/hooks/use-toast';
 
-// Omit user from AuthState as it is managed by UserStore
-interface AuthState extends Omit<AuthSession, 'user'> {
-  errors: {
-    loginError?: ApiError;
-    signupError?: ApiError;
-    verificationError?: ApiError;
-    resetPasswordError?: ApiError;
-  };
-}
-
-type AuthAction =
-  | { type: 'SET_AUTHENTICATED'; payload: boolean }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'UPDATE_LAST_ACTIVITY' }
-  | { type: 'CLEAR_AUTH' }
-  | { type: 'CLEAR_ERRORS' }
-  | {
-      type: 'SET_ERROR';
-      payload: { type: keyof AuthState['errors']; error: ApiError };
-    };
-
-const initialState: AuthState = {
-  isAuthenticated: false,
-  isLoading: true, // Start loading by default
-  lastActivity: undefined,
-  errors: {},
-};
-
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'SET_AUTHENTICATED':
-      return {
-        ...state,
-        isAuthenticated: action.payload,
-        lastActivity: action.payload ? Date.now() : undefined,
-      };
-
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
-
-    case 'UPDATE_LAST_ACTIVITY':
-      return {
-        ...state,
-        lastActivity: Date.now(),
-      };
-
-    case 'CLEAR_AUTH':
-      return {
-        ...initialState,
-        isLoading: false,
-      };
-
-    case 'CLEAR_ERRORS':
-      return {
-        ...state,
-        errors: {},
-      };
-
-    case 'SET_ERROR':
-      return {
-        ...state,
-        errors: {
-          ...state.errors,
-          [action.payload.type]: action.payload.error,
-        },
-      };
-
-    default:
-      return state;
-  }
-}
-
-interface AuthContextType extends AuthState {
-  actions: AuthActions;
-  dispatch: React.Dispatch<AuthAction>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const PUBLIC_ROUTES = [
-  '/login',
-  '/signup',
-  '/verify-email',
-  '/forgot-password',
-  '/reset-password',
-  '/resend-verification',
-  '/', // Landing page often public
-];
+// OAuth routes should not trigger auth redirects (they're popups)
+const OAUTH_ROUTES = ['/oauth/success', '/oauth/error'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
   const pathname = usePathname();
-  const { setUser } = useUserStore(state => state.actions);
-  const { setIsAuthenticated, setLoading: setAuthLoading } = useAuthStore(
-    state => state.actions
-  );
-
-  // Use ref to track initialization without affecting dependency array
+  const { toast } = useToast();
+  const { actions } = useAuthStore();
+  const userStoreActions = useUserStore(state => state.actions);
   const isInitializedRef = useRef(false);
+  const activityTrackingInitRef = useRef(false);
 
-  // Setup logout handler for HTTP client
-  useEffect(() => {
-    setLogoutHandler(() => {
-      // Clear auth state and redirect to login
-      setUser(null);
-      setIsAuthenticated(false);
-      dispatch({ type: 'CLEAR_AUTH' });
+  const isOAuthRoute = OAUTH_ROUTES.some(route => pathname?.startsWith(route));
+
+  // Logout handler — called by HTTP interceptor on unrecoverable 401
+  const handleForceLogout = useCallback(() => {
+    actions.clearAuth();
+    userStoreActions.setUser(null); // Sync legacy user store
+    cleanupActivityTracking();
+    if (!isOAuthRoute) {
       router.push('/login');
-    });
-  }, [setUser, setIsAuthenticated, router]);
+    }
+  }, [actions, userStoreActions, router, isOAuthRoute]);
 
-  // Initialize auth state by checking session with backend
+  // Setup HTTP client logout handler
   useEffect(() => {
+    setLogoutHandler(handleForceLogout);
+  }, [handleForceLogout]);
+
+  // Session warning & expiry callbacks
+  useEffect(() => {
+    setSessionWarningCallback(() => {
+      toast({
+        title: 'Session Expiring',
+        description:
+          'Your session will expire in 5 minutes due to inactivity. Click anywhere to stay logged in.',
+        duration: 30000,
+      });
+    });
+
+    setSessionExpiredCallback(async () => {
+      try {
+        await AuthApi.logout();
+      } catch {
+        // Best effort
+      }
+      actions.clearAuth();
+      userStoreActions.setUser(null);
+      cleanupActivityTracking();
+      router.push('/login');
+      toast({
+        variant: 'destructive',
+        title: 'Session Expired',
+        description:
+          'You were logged out due to inactivity. Please log in again.',
+      });
+    });
+  }, [actions, router, toast]);
+
+  // Initialize auth — verify user session on first load
+  useEffect(() => {
+    if (isInitializedRef.current || isOAuthRoute) return;
+
     const initAuth = async () => {
-      // Only check auth if not already initialized
-      if (!isInitializedRef.current) {
-        setAuthLoading(true);
-        try {
-          const user = await AuthApi.checkAuth();
-          if (user) {
-            setUser(user);
-            setIsAuthenticated(true);
-            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+      try {
+        const user = await AuthApi.checkAuth();
+        if (user) {
+          actions.setUser(user);
+          userStoreActions.setUser(user); // Sync legacy user store
+          actions.setIsAuthenticated(true);
 
-            // Redirect authenticated users from public routes to dashboard
-            if (PUBLIC_ROUTES.includes(pathname) && pathname !== '/') {
-              router.push('/dashboard');
-            }
-          } else {
-            setUser(null);
-            setIsAuthenticated(false);
-            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-            // Redirect if not on a public route
-            if (!PUBLIC_ROUTES.includes(pathname)) {
-              router.push('/login');
-            }
+          // Start activity tracking for session timeout
+          if (!activityTrackingInitRef.current) {
+            initActivityTracking();
+            activityTrackingInitRef.current = true;
           }
-        } catch (_error) {
-          // console.warn('Failed to check auth status:', _error);
-          setUser(null);
-          setIsAuthenticated(false);
-          dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-          if (!PUBLIC_ROUTES.includes(pathname)) {
-            router.push('/login');
-          }
-        } finally {
-          dispatch({ type: 'SET_LOADING', payload: false });
-          setAuthLoading(false);
-          isInitializedRef.current = true; // Mark as initialized
+        } else {
+          actions.setIsAuthenticated(false);
+          actions.setUser(null);
+          userStoreActions.setUser(null);
         }
+      } catch {
+        actions.setIsAuthenticated(false);
+        actions.setUser(null);
+        userStoreActions.setUser(null);
+      } finally {
+        actions.setLoading(false);
+        actions.setInitialized(true);
+        isInitializedRef.current = true;
       }
     };
 
     initAuth();
-  }, [dispatch, pathname, router, setUser, setIsAuthenticated, setAuthLoading]);
 
-  const value: AuthContextType = {
-    ...state,
-    actions: {
-      login: async () => {},
-      signup: async () => {},
-      logout: async () => {},
-      verifyEmail: async () => {},
-      resendVerification: async () => {},
-      forgotPassword: async () => {},
-      resetPassword: async () => {},
-      refreshSession: async () => {},
-    },
-    dispatch,
-  };
+    return () => {
+      cleanupActivityTracking();
+      activityTrackingInitRef.current = false;
+    };
+  }, []);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <>{children}</>;
 }
 
+// ─── Re-export all hooks from store for convenience ─────────────────
+
+export {
+  useUser,
+  useIsAuthenticated,
+  useIsLoading,
+  useAuthActions,
+  useAuthErrors,
+  useAuthErrorActions,
+} from './store';
+
+/**
+ * Legacy useAuth hook — returns store state for backward compatibility.
+ * New code should use specific hooks: useUser(), useIsAuthenticated(), useAuthActions(), etc.
+ */
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
-
-// Re-export user hook from store for backward compatibility and convenience
-export { useUser } from '../user/store';
-
-export function useIsAuthenticated() {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated;
-}
-
-export function useIsLoading() {
-  const { isLoading } = useAuth();
-  return isLoading;
-}
-
-export function useAuthActions() {
-  const { actions } = useAuth();
-  return actions;
-}
-
-export function useAuthErrors() {
-  const { errors } = useAuth();
-  return errors;
+  const store = useAuthStore();
+  return {
+    user: store.user,
+    isAuthenticated: store.isAuthenticated,
+    isLoading: store.isLoading,
+    isInitialized: store.isInitialized,
+    lastActivity: store.lastActivity,
+    errors: store.errors,
+    actions: store.actions,
+  };
 }

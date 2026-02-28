@@ -130,7 +130,7 @@ export class HttpClient {
         }
         return response;
       },
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
         if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
           console.error('❌ Response Error:', {
@@ -140,11 +140,49 @@ export class HttpClient {
           });
         }
 
-        // Handle 401 Unauthorized responses
+        // Handle 401 Unauthorized responses — try token refresh first
         if (error.response?.status === 401) {
-          // Call the unauthorized handler if set
-          if (onUnauthorized) {
-            onUnauthorized();
+          const originalRequest = error.config;
+
+          // Don't retry refresh/login/signup endpoints (prevents infinite loop)
+          const isAuthEndpoint =
+            originalRequest?.url?.includes('/auth/refresh') ||
+            originalRequest?.url?.includes('/auth/login') ||
+            originalRequest?.url?.includes('/auth/signup') ||
+            originalRequest?.url?.includes('/users/profile');
+
+          // Only attempt refresh once per request
+          const alreadyRetried = (
+            originalRequest as InternalAxiosRequestConfig & {
+              _retried?: boolean;
+            }
+          )?._retried;
+
+          if (!isAuthEndpoint && !alreadyRetried && originalRequest) {
+            try {
+              // Mark request as retried to prevent infinite loop
+              (
+                originalRequest as InternalAxiosRequestConfig & {
+                  _retried?: boolean;
+                }
+              )._retried = true;
+
+              // Attempt token refresh
+              await this.axiosInstance.post('/api/v1/auth/refresh');
+
+              // Retry the original request with refreshed token
+              return this.axiosInstance.request(originalRequest);
+            } catch {
+              // Refresh also failed — user is truly unauthenticated
+              if (onUnauthorized) {
+                onUnauthorized();
+              }
+            }
+          } else {
+            // Auth endpoint failed or already retried — force logout
+            if (onUnauthorized && !isAuthEndpoint) {
+              onUnauthorized();
+            }
           }
         }
 

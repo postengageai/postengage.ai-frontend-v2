@@ -4,6 +4,12 @@ import { CreateOrderResponse } from '@/lib/types/payment';
 import { useToast } from '@/hooks/use-toast';
 import { useCreditsStore } from '@/lib/credits/store';
 
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 interface RazorpayOptions {
   key: string;
   amount: number;
@@ -11,7 +17,7 @@ interface RazorpayOptions {
   name: string;
   description: string;
   order_id: string;
-  handler: (response: unknown) => void;
+  handler: (response: RazorpayResponse) => void;
   prefill?: {
     name?: string;
     email?: string;
@@ -24,8 +30,7 @@ interface RazorpayOptions {
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Razorpay: new (options: RazorpayOptions) => any;
+    Razorpay: new (options: RazorpayOptions) => { open: () => void };
   }
 }
 
@@ -35,7 +40,7 @@ export function useRazorpay() {
   const { actions: creditActions } = useCreditsStore();
 
   const loadScript = () => {
-    return new Promise(resolve => {
+    return new Promise<boolean>(resolve => {
       if (window.Razorpay) {
         resolve(true);
         return;
@@ -53,7 +58,9 @@ export function useRazorpay() {
     try {
       const isLoaded = await loadScript();
       if (!isLoaded) {
-        throw new Error('Razorpay SDK failed to load');
+        throw new Error(
+          'Payment system failed to load. Please refresh and try again.'
+        );
       }
 
       // 1. Create Order
@@ -69,29 +76,44 @@ export function useRazorpay() {
         name: 'PostEngageAI',
         description: 'Credits Purchase',
         order_id: order.order_id,
-        handler: async () => {
+        handler: async (response: RazorpayResponse) => {
+          // Show verifying state
+          toast({
+            title: 'Verifying Payment...',
+            description: 'Please wait while we confirm your payment.',
+          });
+
           try {
+            // 3. Verify payment with backend BEFORE showing success
+            const result = await PaymentsApi.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            // Only show success AFTER backend confirms
             toast({
-              title: 'Success',
-              description:
-                'Payment successful! Credits have been added to your account.',
+              title: 'Payment Successful!',
+              description: `${result.data.credits_added} credits have been added to your account.`,
             });
 
             // Refresh credits balance and transactions
-            // fetch them with delay of 5s
+            creditActions.fetchBalance();
+            creditActions.fetchTransactions();
+          } catch {
+            toast({
+              variant: 'destructive',
+              title: 'Payment Verification Failed',
+              description:
+                'Your payment was received but verification failed. Credits will be added shortly. If not, please contact support.',
+              duration: 10000,
+            });
+
+            // Still try to refresh — webhook might have processed it
             setTimeout(() => {
               creditActions.fetchBalance();
               creditActions.fetchTransactions();
             }, 5000);
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Payment verification failed:', error);
-            toast({
-              variant: 'destructive',
-              title: 'Verification Failed',
-              description:
-                'Payment verification failed. Please contact support.',
-            });
           }
         },
         theme: {
@@ -99,9 +121,8 @@ export function useRazorpay() {
         },
       };
 
-      const rzp1 = new window.Razorpay(options);
-
-      rzp1.open();
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (error) {
       toast({
         variant: 'destructive',

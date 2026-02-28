@@ -2,9 +2,30 @@
 import { io, Socket } from 'socket.io-client';
 import { Notification } from '@/lib/types/notifications';
 
+// Connection state change listener type
+type ConnectionStateListener = (connected: boolean) => void;
+
 class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
+  private connectionListeners: ConnectionStateListener[] = [];
+
+  /**
+   * Subscribe to connection state changes (for UI indicators)
+   */
+  onConnectionChange(listener: ConnectionStateListener): () => void {
+    this.connectionListeners.push(listener);
+    // Return unsubscribe function
+    return () => {
+      this.connectionListeners = this.connectionListeners.filter(
+        l => l !== listener
+      );
+    };
+  }
+
+  private notifyConnectionChange(connected: boolean) {
+    this.connectionListeners.forEach(listener => listener(connected));
+  }
 
   connect(): Socket | null {
     if (this.socket && this.isConnected) {
@@ -12,28 +33,44 @@ class SocketService {
     }
 
     try {
-      // Use environment variable or default to development URL
       const socketUrl =
         process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3005';
 
       this.socket = io(socketUrl + '/events', {
-        withCredentials: true, // Use cookies for authentication
+        withCredentials: true,
         transports: ['websocket', 'polling'],
+        // Reconnection config — critical for production reliability
+        reconnection: true,
+        reconnectionAttempts: 15,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 30000,
+        timeout: 20000,
       });
 
       this.socket.on('connect', () => {
         console.log('Socket connected:', this.socket?.id);
         this.isConnected = true;
+        this.notifyConnectionChange(true);
       });
 
-      this.socket.on('disconnect', () => {
-        console.log('Socket disconnected');
+      this.socket.on('disconnect', reason => {
+        console.log('Socket disconnected:', reason);
         this.isConnected = false;
+        this.notifyConnectionChange(false);
       });
 
       this.socket.on('connect_error', error => {
-        console.error('Socket connection error:', error);
+        console.error('Socket connection error:', error.message);
         this.isConnected = false;
+        this.notifyConnectionChange(false);
+      });
+
+      this.socket.io.on('reconnect', attempt => {
+        console.log('Socket reconnected after', attempt, 'attempts');
+      });
+
+      this.socket.io.on('reconnect_failed', () => {
+        console.error('Socket reconnection failed after all attempts');
       });
 
       return this.socket;

@@ -1,18 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     unoptimized: true,
   },
-  redirects: async () => [
-    {
-      source: '/',
-      destination: '/dashboard',
-      permanent: false,
-    },
-  ],
+  // "/" redirect is now handled by middleware.ts with auth awareness
 };
 
 export default nextConfig;

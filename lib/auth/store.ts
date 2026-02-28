@@ -1,45 +1,78 @@
 import { create } from 'zustand';
-import { AuthSession } from '../schemas/auth';
+import { User } from '../schemas/auth';
 import { ApiError } from '../http/errors';
-import { useUserStore } from '../user/store';
 
-export interface AuthStore extends Omit<AuthSession, 'user'> {
-  actions: {
-    setLoading: (isLoading: boolean) => void;
-    setIsAuthenticated: (isAuthenticated: boolean) => void;
-    updateLastActivity: () => void;
-    clearAuth: () => void;
-  };
+// ─── Types ──────────────────────────────────────────────────────────
+
+export interface AuthStore {
+  // State
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isInitialized: boolean;
+  lastActivity: number | undefined;
+
+  // Errors
   errors: {
     loginError?: ApiError;
     signupError?: ApiError;
     verificationError?: ApiError;
     resetPasswordError?: ApiError;
+  };
+
+  // Actions
+  actions: {
+    setUser: (user: User | null) => void;
+    setIsAuthenticated: (isAuthenticated: boolean) => void;
+    setLoading: (isLoading: boolean) => void;
+    setInitialized: (initialized: boolean) => void;
+    updateLastActivity: () => void;
+    clearAuth: () => void;
+    updateUser: (updates: Partial<User>) => void;
+  };
+
+  // Error actions
+  errorActions: {
     clearErrors: () => void;
     setError: (
-      type: keyof Omit<AuthStore['errors'], 'clearErrors' | 'setError'>,
+      type: keyof AuthStore['errors'],
       error: ApiError | undefined
     ) => void;
   };
 }
 
+// ─── Store ──────────────────────────────────────────────────────────
+
 const initialState = {
+  user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start true — we check auth on mount
   isInitialized: false,
   lastActivity: undefined,
+  errors: {},
 };
 
 export const useAuthStore = create<AuthStore>()((set, get) => ({
   ...initialState,
 
   actions: {
+    setUser: (user: User | null) => {
+      set({ user });
+    },
+
+    setIsAuthenticated: (isAuthenticated: boolean) => {
+      set({
+        isAuthenticated,
+        lastActivity: isAuthenticated ? Date.now() : undefined,
+      });
+    },
+
     setLoading: (isLoading: boolean) => {
       set({ isLoading });
     },
 
-    setIsAuthenticated: (isAuthenticated: boolean) => {
-      set({ isAuthenticated });
+    setInitialized: (initialized: boolean) => {
+      set({ isInitialized: initialized });
     },
 
     updateLastActivity: () => {
@@ -47,26 +80,26 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
     },
 
     clearAuth: () => {
-      set(initialState);
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        lastActivity: undefined,
+        errors: {},
+      });
+    },
+
+    updateUser: (updates: Partial<User>) => {
+      const current = get().user;
+      if (current) {
+        set({ user: { ...current, ...updates } });
+      }
     },
   },
 
-  errors: {
-    loginError: undefined,
-    signupError: undefined,
-    verificationError: undefined,
-    resetPasswordError: undefined,
-
+  errorActions: {
     clearErrors: () => {
-      set({
-        errors: {
-          ...get().errors,
-          loginError: undefined,
-          signupError: undefined,
-          verificationError: undefined,
-          resetPasswordError: undefined,
-        },
-      });
+      set({ errors: {} });
     },
 
     setError: (type, error) => {
@@ -80,55 +113,100 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
   },
 }));
 
-// Session timeout management (30 minutes inactivity)
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+// ─── Session Timeout Management ─────────────────────────────────────
 
-let inactivityTimer: NodeJS.Timeout | null = null;
+const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+const SESSION_WARNING = 25 * 60 * 1000; // 25 minutes — warn 5 min before
+
+let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+let warningTimer: ReturnType<typeof setTimeout> | null = null;
+let sessionWarningCallback: (() => void) | null = null;
+let sessionExpiredCallback: (() => void) | null = null;
+
+// Store event listener references for proper cleanup
+const activityListenerRefs: Array<{
+  event: string;
+  handler: () => void;
+}> = [];
+
+export const setSessionWarningCallback = (cb: () => void) => {
+  sessionWarningCallback = cb;
+};
+
+export const setSessionExpiredCallback = (cb: () => void) => {
+  sessionExpiredCallback = cb;
+};
 
 const resetInactivityTimer = () => {
-  if (inactivityTimer) {
-    clearTimeout(inactivityTimer);
-  }
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  if (warningTimer) clearTimeout(warningTimer);
 
+  // Warning at 25 minutes
+  warningTimer = setTimeout(() => {
+    const { isAuthenticated } = useAuthStore.getState();
+    if (isAuthenticated && sessionWarningCallback) {
+      sessionWarningCallback();
+    }
+  }, SESSION_WARNING);
+
+  // Expire at 30 minutes
   inactivityTimer = setTimeout(() => {
     const { isAuthenticated } = useAuthStore.getState();
     if (isAuthenticated) {
-      // console.log('Session expired due to inactivity');
-      useAuthStore.getState().actions.clearAuth();
-      // Note: We don't call logout API here since cookies will be cleared naturally
+      if (sessionExpiredCallback) {
+        sessionExpiredCallback();
+      } else {
+        // Fallback: just clear auth state
+        useAuthStore.getState().actions.clearAuth();
+      }
     }
   }, SESSION_TIMEOUT);
 };
 
-// Initialize activity tracking
 export const initActivityTracking = () => {
   const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
 
-  events.forEach(event => {
-    document.addEventListener(event, () => {
+  events.forEach(eventName => {
+    const handler = () => {
       const { isAuthenticated } = useAuthStore.getState();
       if (isAuthenticated) {
         useAuthStore.getState().actions.updateLastActivity();
         resetInactivityTimer();
       }
-    });
+    };
+
+    // Store reference for cleanup
+    activityListenerRefs.push({ event: eventName, handler });
+    document.addEventListener(eventName, handler, { passive: true });
   });
 
   resetInactivityTimer();
 };
 
-// Cleanup function
 export const cleanupActivityTracking = () => {
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
     inactivityTimer = null;
   }
+  if (warningTimer) {
+    clearTimeout(warningTimer);
+    warningTimer = null;
+  }
+
+  // Remove all event listeners using stored references
+  activityListenerRefs.forEach(({ event, handler }) => {
+    document.removeEventListener(event, handler);
+  });
+  activityListenerRefs.length = 0;
 };
 
-// Helper hooks
-export const useUser = () => useUserStore(state => state.user);
+// ─── Selector Hooks ─────────────────────────────────────────────────
+
+export const useUser = () => useAuthStore(state => state.user);
 export const useIsAuthenticated = () =>
   useAuthStore(state => state.isAuthenticated);
 export const useIsLoading = () => useAuthStore(state => state.isLoading);
 export const useAuthActions = () => useAuthStore(state => state.actions);
 export const useAuthErrors = () => useAuthStore(state => state.errors);
+export const useAuthErrorActions = () =>
+  useAuthStore(state => state.errorActions);
