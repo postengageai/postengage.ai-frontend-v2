@@ -40,6 +40,7 @@ import {
   CreditCard,
   HelpCircle,
   ChevronUp,
+  Dna,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -81,6 +82,11 @@ const intelligenceSubItems = [
     title: 'Brand Voices',
     href: '/dashboard/intelligence/brand-voices',
     icon: SlidersHorizontal,
+  },
+  {
+    title: 'Voice DNA',
+    href: '/dashboard/intelligence/voice-dna',
+    icon: Dna,
   },
   {
     title: 'AI Settings',

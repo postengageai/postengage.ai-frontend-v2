@@ -80,6 +80,29 @@ class SocketService {
     this.socket.off('notification', callback);
   }
 
+  // Voice DNA specific methods
+  subscribeToVoiceDnaStatus(
+    callback: (data: {
+      voice_dna_id: string;
+      status: string;
+      brand_voice_id?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:status-changed', callback);
+  }
+
+  unsubscribeFromVoiceDnaStatus(
+    callback: (data: {
+      voice_dna_id: string;
+      status: string;
+      brand_voice_id?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:status-changed', callback);
+  }
+
   // Join user-specific rooms
   joinUserRoom(userId: string): void {
     if (!this.socket) {

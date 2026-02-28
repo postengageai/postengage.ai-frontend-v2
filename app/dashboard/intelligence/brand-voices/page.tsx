@@ -9,6 +9,7 @@ import {
   Pencil,
   MessageSquare,
   Search,
+  Dna,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,12 +29,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { IntelligenceApi } from '@/lib/api/intelligence';
+import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { BrandVoice } from '@/lib/types/intelligence';
+import type { VoiceDna } from '@/lib/types/voice-dna';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BrandVoicesPage() {
   const [voices, setVoices] = useState<BrandVoice[]>([]);
+  const [voiceDnaMap, setVoiceDnaMap] = useState<Record<string, VoiceDna>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -44,9 +48,20 @@ export default function BrandVoicesPage() {
 
   const fetchVoices = async () => {
     try {
-      const response = await IntelligenceApi.getBrandVoices();
-      if (response && response.data) {
-        setVoices(response.data);
+      const [voicesResponse, voiceDnaResponse] = await Promise.all([
+        IntelligenceApi.getBrandVoices(),
+        VoiceDnaApi.listVoiceDna(),
+      ]);
+
+      if (voicesResponse?.data) {
+        setVoices(voicesResponse.data);
+      }
+      if (voiceDnaResponse?.data) {
+        const map: Record<string, VoiceDna> = {};
+        for (const vd of voiceDnaResponse.data) {
+          map[vd.brand_voice_id] = vd;
+        }
+        setVoiceDnaMap(map);
       }
     } catch (_error) {
       toast({
@@ -57,6 +72,39 @@ export default function BrandVoicesPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getDnaBadge = (brandVoiceId: string) => {
+    const dna = voiceDnaMap[brandVoiceId];
+    if (!dna)
+      return (
+        <Badge variant='outline' className='text-xs gap-1'>
+          <Dna className='h-3 w-3' /> No DNA
+        </Badge>
+      );
+    if (dna.status === 'ready')
+      return (
+        <Badge variant='default' className='text-xs gap-1 bg-green-600'>
+          <Dna className='h-3 w-3' /> Ready
+        </Badge>
+      );
+    if (dna.status === 'analyzing')
+      return (
+        <Badge variant='secondary' className='text-xs gap-1'>
+          <Dna className='h-3 w-3 animate-spin' /> Analyzing
+        </Badge>
+      );
+    if (dna.status === 'failed')
+      return (
+        <Badge variant='destructive' className='text-xs gap-1'>
+          <Dna className='h-3 w-3' /> Failed
+        </Badge>
+      );
+    return (
+      <Badge variant='outline' className='text-xs gap-1'>
+        <Dna className='h-3 w-3' /> {dna.status}
+      </Badge>
+    );
   };
 
   const deleteVoice = async (id: string) => {
@@ -168,6 +216,7 @@ export default function BrandVoicesPage() {
                   <TableHead>Tone</TableHead>
                   <TableHead>Formality</TableHead>
                   <TableHead>Keywords</TableHead>
+                  <TableHead>Voice DNA</TableHead>
                   <TableHead className='text-right'>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -218,6 +267,7 @@ export default function BrandVoicesPage() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>{getDnaBadge(voice._id)}</TableCell>
                     <TableCell className='text-right'>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -238,6 +288,25 @@ export default function BrandVoicesPage() {
                               Edit
                             </DropdownMenuItem>
                           </Link>
+                          {voiceDnaMap[voice._id] ? (
+                            <Link
+                              href={`/dashboard/intelligence/voice-dna/${voiceDnaMap[voice._id]._id}`}
+                            >
+                              <DropdownMenuItem>
+                                <Dna className='mr-2 h-4 w-4' />
+                                View Voice DNA
+                              </DropdownMenuItem>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/dashboard/intelligence/voice-dna?create=true&brand_voice_id=${voice._id}`}
+                            >
+                              <DropdownMenuItem>
+                                <Dna className='mr-2 h-4 w-4' />
+                                Generate Voice DNA
+                              </DropdownMenuItem>
+                            </Link>
+                          )}
                           <DropdownMenuItem
                             className='text-destructive focus:text-destructive'
                             onClick={() => deleteVoice(voice._id)}
