@@ -175,7 +175,19 @@ export default function BotsPage() {
             <Card key={bot._id}>
               <CardHeader className='flex flex-row items-start justify-between space-y-0 pb-2'>
                 <div className='space-y-1'>
-                  <CardTitle className='text-xl'>{bot.name}</CardTitle>
+                  <CardTitle className='text-xl flex items-center gap-2'>
+                    {bot.name}
+                    <span
+                      className={`inline-block h-2.5 w-2.5 rounded-full ${
+                        bot.stats.avg_confidence >= 0.7
+                          ? 'bg-green-500'
+                          : bot.stats.avg_confidence >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                      }`}
+                      title={`Health: ${(bot.stats.avg_confidence * 100).toFixed(0)}%`}
+                    />
+                  </CardTitle>
                   <CardDescription className='line-clamp-1'>
                     {bot.description || 'No description'}
                   </CardDescription>

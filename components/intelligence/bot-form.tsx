@@ -103,9 +103,18 @@ type BotFormValues = z.infer<typeof botFormSchema>;
 interface BotFormProps {
   initialData?: Bot;
   socialAccounts: SocialAccount[];
+  onCreated?: (info: {
+    botId: string;
+    socialAccountId: string;
+    brandVoiceId?: string;
+  }) => void;
 }
 
-export function BotForm({ initialData, socialAccounts }: BotFormProps) {
+export function BotForm({
+  initialData,
+  socialAccounts,
+  onCreated,
+}: BotFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -166,11 +175,22 @@ export function BotForm({ initialData, socialAccounts }: BotFormProps) {
           description: 'Bot updated successfully',
         });
       } else {
-        await IntelligenceApi.createBot(data as CreateBotDto);
+        const createResponse = await IntelligenceApi.createBot(
+          data as CreateBotDto
+        );
         toast({
           title: 'Success',
           description: 'Bot created successfully',
         });
+        // If onCreated callback provided, hand off to voice setup instead of redirecting
+        if (onCreated && createResponse?.data) {
+          onCreated({
+            botId: createResponse.data._id,
+            socialAccountId: data.social_account_id,
+            brandVoiceId: data.brand_voice_id,
+          });
+          return;
+        }
       }
       router.push('/dashboard/intelligence/bots');
       router.refresh();

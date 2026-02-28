@@ -6,14 +6,25 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SocialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
 import { BotForm } from '@/components/intelligence/bot-form';
+import { VoiceSetupStep } from '@/components/intelligence/voice-dna/voice-setup-step';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+
+type PageStep = 'config' | 'voice-setup';
+
+interface CreatedBotInfo {
+  botId: string;
+  socialAccountId: string;
+  brandVoiceId?: string;
+}
 
 export default function NewBotPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [pageStep, setPageStep] = useState<PageStep>('config');
+  const [createdBot, setCreatedBot] = useState<CreatedBotInfo | null>(null);
 
   useEffect(() => {
     fetchSocialAccounts();
@@ -36,6 +47,16 @@ export default function NewBotPage() {
     }
   };
 
+  const handleBotCreated = (botInfo: CreatedBotInfo) => {
+    setCreatedBot(botInfo);
+    setPageStep('voice-setup');
+  };
+
+  const handleVoiceComplete = () => {
+    router.push('/dashboard/intelligence/bots');
+    router.refresh();
+  };
+
   if (isLoading) {
     return (
       <div className='p-6 space-y-6'>
@@ -52,14 +73,30 @@ export default function NewBotPage() {
           <ArrowLeft className='h-4 w-4' />
         </Button>
         <div>
-          <h1 className='text-2xl font-bold tracking-tight'>Create New Bot</h1>
+          <h1 className='text-2xl font-bold tracking-tight'>
+            {pageStep === 'config' ? 'Create New Bot' : 'Voice Setup'}
+          </h1>
           <p className='text-muted-foreground'>
-            Configure a new AI assistant for your social account.
+            {pageStep === 'config'
+              ? 'Configure a new AI assistant for your social account.'
+              : 'Set up your voice profile so the bot sounds like you.'}
           </p>
         </div>
       </div>
 
-      <BotForm socialAccounts={socialAccounts} />
+      {pageStep === 'config' && (
+        <BotForm socialAccounts={socialAccounts} onCreated={handleBotCreated} />
+      )}
+
+      {pageStep === 'voice-setup' && createdBot && (
+        <VoiceSetupStep
+          botId={createdBot.botId}
+          socialAccountId={createdBot.socialAccountId}
+          brandVoiceId={createdBot.brandVoiceId}
+          onComplete={handleVoiceComplete}
+          onSkip={handleVoiceComplete}
+        />
+      )}
     </div>
   );
 }

@@ -94,3 +94,95 @@ export interface AddNegativeExampleDto {
   reason: string;
   tags?: string[];
 }
+
+// === Auto-Inference (Phase 5) ===
+export interface TriggerAutoInferDto {
+  bot_id: string;
+  social_account_id: string;
+  brand_voice_id?: string;
+  source?: 'onboarding' | 'manual_trigger' | 'settings';
+}
+
+export interface AutoInferResult {
+  voice_dna_id: string;
+  status: 'queued' | 'analyzing' | 'ready' | 'failed';
+  estimated_time_seconds?: number;
+  samples_found: {
+    instagram_posts: number;
+    manual_replies: number;
+    total: number;
+  };
+}
+
+// === Voice Review ===
+export interface VoiceReview {
+  voice_dna: VoiceDna;
+  summary: {
+    language_description: string;
+    tone_description: string;
+    style_description: string;
+    emoji_description: string;
+    overall: string;
+  };
+  sample_generated_reply: {
+    context: string;
+    reply: string;
+  };
+  confidence_level: 'high' | 'medium' | 'low';
+  recommended_adjustments?: string[];
+}
+
+// === Voice Feedback ===
+export interface VoiceFeedbackDto {
+  voice_dna_id: string;
+  bot_id: string;
+  feedback_type: 'approve' | 'edit' | 'reject';
+  original_reply?: string;
+  edited_reply?: string;
+  context?: string;
+  reason?: string;
+}
+
+// === Voice Adjustment ===
+export interface AdjustVoiceDto {
+  add_few_shot?: { context: string; reply: string; tags?: string[] }[];
+  remove_few_shot_indices?: number[];
+  add_negative?: { reply: string; reason: string }[];
+  remove_negative_indices?: number[];
+  adjust_tone?: Partial<{
+    humor_level: number;
+    directness: number;
+    warmth: number;
+    assertiveness: number;
+  }>;
+  trigger_reanalysis?: boolean;
+}
+
+// === Continuous Learning Stats ===
+export interface ContinuousLearningStats {
+  voice_dna_id: string;
+  total_feedback_processed: number;
+  feedback_breakdown: {
+    approved: number;
+    edited: number;
+    rejected: number;
+  };
+  few_shot_examples_count: number;
+  negative_examples_count: number;
+  auto_refinement_count: number;
+  last_refinement_at?: string;
+  next_refinement_at_signals: number;
+  learning_velocity: 'fast' | 'moderate' | 'slow';
+}
+
+// === Sample Reply Generation ===
+export interface GenerateSampleReplyDto {
+  voice_dna_id: string;
+  user_message: string;
+}
+
+export interface SampleReplyResult {
+  user_message: string;
+  generated_reply: string;
+  confidence: number;
+}

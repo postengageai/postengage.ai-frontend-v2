@@ -1,23 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import {
   AnalyticsPeriod,
   IntelligenceAnalyticsItem,
 } from '@/lib/types/analytics';
 import type { IntelligenceQualityAnalytics } from '@/lib/types/quality';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -27,15 +22,40 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { QualityScorecard } from '@/components/intelligence/analytics/quality-scorecard';
-import { ResponseActions } from '@/components/intelligence/analytics/response-actions';
-import { IntentBreakdown } from '@/components/intelligence/analytics/intent-breakdown';
-import { ConfidenceDistribution } from '@/components/intelligence/analytics/confidence-distribution';
-import { DiversityChart } from '@/components/intelligence/analytics/diversity-chart';
+
+// Lazy-loaded chart components for code-splitting
+const QualityScorecard = lazy(() =>
+  import('@/components/intelligence/analytics/quality-scorecard').then(m => ({
+    default: m.QualityScorecard,
+  }))
+);
+const ResponseActions = lazy(() =>
+  import('@/components/intelligence/analytics/response-actions').then(m => ({
+    default: m.ResponseActions,
+  }))
+);
+const IntentBreakdown = lazy(() =>
+  import('@/components/intelligence/analytics/intent-breakdown').then(m => ({
+    default: m.IntentBreakdown,
+  }))
+);
+const ConfidenceDistribution = lazy(() =>
+  import('@/components/intelligence/analytics/confidence-distribution').then(
+    m => ({ default: m.ConfidenceDistribution })
+  )
+);
+const DiversityChart = lazy(() =>
+  import('@/components/intelligence/analytics/diversity-chart').then(m => ({
+    default: m.DiversityChart,
+  }))
+);
+
+// Fallback component for charts
+function ChartFallback() {
+  return <Skeleton className='h-[300px] w-full rounded-lg' />;
+}
 
 interface IntelligenceAnalyticsState {
   periodLabel: string;
@@ -115,145 +135,240 @@ export default function IntelligenceAnalyticsPage() {
     );
   }, [state.items, filterAccount]);
 
-  const chartRows = useMemo(
-    () =>
-      filteredItems.map(item => ({
-        label: `${item.date} · ${item.social_account_id}`,
-        ai_calls: item.ai_calls,
-        total_tokens: item.total_tokens,
-      })),
-    [filteredItems]
-  );
-
   return (
-    <div className='h-full flex flex-col'>
-      <div className='flex items-center justify-between p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10'>
+    <div className='space-y-6 p-6'>
+      <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
         <div>
-          <h2 className='text-2xl font-bold tracking-tight'>
+          <h1 className='text-3xl font-bold tracking-tight'>
             Intelligence Analytics
-          </h2>
+          </h1>
           <p className='text-muted-foreground'>
-            Monitor AI quality, response actions, and intent patterns.
+            Monitor AI performance, response quality, and automation impact.
           </p>
-          {state.periodLabel && (
-            <p className='text-xs text-muted-foreground mt-1'>
-              Period: {state.periodLabel}
-            </p>
-          )}
         </div>
-        <div className='flex items-center gap-3'>
-          <div className='flex items-center gap-2'>
-            <Switch
-              id='advanced-toggle'
-              checked={showAdvanced}
-              onCheckedChange={setShowAdvanced}
-            />
-            <Label htmlFor='advanced-toggle' className='text-xs'>
-              Advanced
-            </Label>
-          </div>
+        <div className='flex items-center gap-2'>
           <Select
             value={period}
-            onValueChange={value => setPeriod(value as AnalyticsPeriod)}
+            onValueChange={(v: AnalyticsPeriod) => setPeriod(v)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select period' />
             </SelectTrigger>
             <SelectContent>
-              {periodOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
+              {periodOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Input
-            className='w-52'
-            placeholder='Filter by social account id'
-            value={filterAccount}
-            onChange={e => setFilterAccount(e.target.value)}
-          />
+          <Button
+            variant='outline'
+            size='icon'
+            onClick={() => setPeriod(period)} // Trigger reload
+            disabled={isLoading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+            />
+          </Button>
         </div>
       </div>
 
-      <div className='flex-1 p-6 space-y-6'>
-        {isLoading ? (
-          <div className='space-y-4'>
-            <div className='grid gap-4 md:grid-cols-3'>
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className='h-28 w-full' />
-              ))}
-            </div>
-            <Skeleton className='h-64 w-full' />
-            <Skeleton className='h-64 w-full' />
-          </div>
-        ) : (
-          <>
-            {/* Quality Scorecard */}
-            {qualityData && (
-              <>
-                <QualityScorecard
-                  quality={qualityData.quality}
-                  showAdvanced={showAdvanced}
-                />
+      <div className='flex flex-col gap-4 md:flex-row md:items-center'>
+        <div className='flex-1'>
+          <Input
+            placeholder='Filter by account ID...'
+            value={filterAccount}
+            onChange={e => setFilterAccount(e.target.value)}
+            className='max-w-sm'
+          />
+        </div>
+        <div className='flex items-center space-x-2'>
+          <Switch
+            id='advanced-mode'
+            checked={showAdvanced}
+            onCheckedChange={setShowAdvanced}
+          />
+          <Label htmlFor='advanced-mode'>Show Advanced Metrics</Label>
+        </div>
+      </div>
 
-                {/* Response Actions */}
-                <ResponseActions actions={qualityData.response_actions} />
+      <Tabs defaultValue='overview' className='space-y-4'>
+        <TabsList>
+          <TabsTrigger value='overview'>Overview</TabsTrigger>
+          <TabsTrigger value='quality'>Quality & Safety</TabsTrigger>
+          <TabsTrigger value='diversity'>Response Diversity</TabsTrigger>
+          <TabsTrigger value='intents'>Intent Analysis</TabsTrigger>
+        </TabsList>
 
-                {/* Intent Analytics */}
-                <IntentBreakdown intents={qualityData.intents} />
-
-                {/* Advanced: Confidence Distribution + Diversity */}
-                {showAdvanced && (
-                  <>
-                    <Separator />
-                    <ConfidenceDistribution quality={qualityData.quality} />
-                    <DiversityChart diversity={qualityData.diversity} />
-                  </>
-                )}
-
-                <Separator />
-              </>
-            )}
-
-            {/* Original Usage Charts */}
+        <TabsContent value='overview' className='space-y-4'>
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
             <Card>
-              <CardHeader>
-                <CardTitle>AI Calls & Tokens Over Time</CardTitle>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium'>
+                  Total Processed
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {chartRows.length === 0 ? (
-                  <p className='text-sm text-muted-foreground'>
-                    No analytics data for the selected period.
-                  </p>
-                ) : (
-                  <div className='h-80'>
-                    <ResponsiveContainer width='100%' height='100%'>
-                      <BarChart data={chartRows}>
-                        <CartesianGrid strokeDasharray='3 3' />
-                        <XAxis dataKey='label' />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar
-                          dataKey='ai_calls'
-                          name='AI calls'
-                          fill='#3b82f6'
-                        />
-                        <Bar
-                          dataKey='total_tokens'
-                          name='Total tokens'
-                          fill='#10b981'
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+                <div className='text-2xl font-bold'>
+                  {state.items.reduce(
+                    (acc, item) => acc + item.total_processed,
+                    0
+                  )}
+                </div>
+                <p className='text-xs text-muted-foreground'>
+                  Across all accounts
+                </p>
               </CardContent>
             </Card>
-          </>
-        )}
-      </div>
+            <Card>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium'>
+                  Response Rate
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className='text-2xl font-bold'>
+                  {state.items.length > 0
+                    ? Math.round(
+                        (state.items.reduce(
+                          (acc, item) => acc + item.replied_count,
+                          0
+                        ) /
+                          state.items.reduce(
+                            (acc, item) => acc + item.total_processed,
+                            0
+                          )) *
+                          100
+                      )
+                    : 0}
+                  %
+                </div>
+                <p className='text-xs text-muted-foreground'>
+                  Replied vs Processed
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium'>
+                  Avg. Latency
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className='text-2xl font-bold'>
+                  {state.items.length > 0
+                    ? Math.round(
+                        state.items.reduce(
+                          (acc, item) => acc + item.avg_latency_ms,
+                          0
+                        ) / state.items.length
+                      )
+                    : 0}
+                  ms
+                </div>
+                <p className='text-xs text-muted-foreground'>Per interaction</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium'>
+                  Actions Taken
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className='text-2xl font-bold'>
+                  {state.items.reduce(
+                    (acc, item) => acc + item.actions_taken,
+                    0
+                  )}
+                </div>
+                <p className='text-xs text-muted-foreground'>
+                  Total actions executed
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
+            <Card className='col-span-4'>
+              <CardHeader>
+                <CardTitle>Response Actions</CardTitle>
+              </CardHeader>
+              <CardContent className='pl-2'>
+                <Suspense fallback={<ChartFallback />}>
+                  <ResponseActions data={filteredItems} />
+                </Suspense>
+              </CardContent>
+            </Card>
+            <Card className='col-span-3'>
+              <CardHeader>
+                <CardTitle>Confidence Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Suspense fallback={<ChartFallback />}>
+                  <ConfidenceDistribution data={filteredItems} />
+                </Suspense>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value='quality' className='space-y-4'>
+          {qualityData ? (
+            <Suspense fallback={<ChartFallback />}>
+              <QualityScorecard data={qualityData} />
+            </Suspense>
+          ) : (
+            <Alert>
+              <AlertCircle className='h-4 w-4' />
+              <AlertTitle>No Quality Data</AlertTitle>
+              <AlertDescription>
+                Quality metrics are not available for this period.
+              </AlertDescription>
+            </Alert>
+          )}
+        </TabsContent>
+
+        <TabsContent value='diversity' className='space-y-4'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Response Diversity Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {qualityData?.diversity ? (
+                <Suspense fallback={<ChartFallback />}>
+                  <DiversityChart data={qualityData.diversity} />
+                </Suspense>
+              ) : (
+                <div className='flex h-[300px] items-center justify-center text-muted-foreground'>
+                  No diversity data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value='intents' className='space-y-4'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Intent Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {qualityData?.intents ? (
+                <Suspense fallback={<ChartFallback />}>
+                  <IntentBreakdown data={qualityData.intents} />
+                </Suspense>
+              ) : (
+                <div className='flex h-[300px] items-center justify-center text-muted-foreground'>
+                  No intent data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

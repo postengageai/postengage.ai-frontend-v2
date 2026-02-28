@@ -10,6 +10,7 @@ import {
   Loader2,
   AlertTriangle,
   ChevronRight,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +50,15 @@ import { FingerprintRadar } from '@/components/intelligence/voice-dna/fingerprin
 import { FingerprintDetail } from '@/components/intelligence/voice-dna/fingerprint-detail';
 import { FewShotManager } from '@/components/intelligence/voice-dna/few-shot-manager';
 import { NegativeExamples } from '@/components/intelligence/voice-dna/negative-examples';
-import type { VoiceDna, VoiceDnaStatus } from '@/lib/types/voice-dna';
+import { VoiceReviewPanel } from '@/components/intelligence/voice-dna/voice-review-panel';
+import { SampleReplyGenerator } from '@/components/intelligence/voice-dna/sample-reply-generator';
+import { ContinuousLearningDashboard } from '@/components/intelligence/voice-dna/continuous-learning-dashboard';
+import { VoiceAdjustmentPanel } from '@/components/intelligence/voice-dna/voice-adjustment-panel';
+import type {
+  VoiceDna,
+  VoiceDnaStatus,
+  VoiceReview,
+} from '@/lib/types/voice-dna';
 
 const STATUS_CONFIG: Record<
   VoiceDnaStatus,
@@ -72,9 +88,11 @@ export default function VoiceDnaDetailPage() {
 
   const [voiceDna, setVoiceDna] = useState<VoiceDna | null>(null);
   const [brandVoiceName, setBrandVoiceName] = useState('');
+  const [voiceReview, setVoiceReview] = useState<VoiceReview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [adjustSheetOpen, setAdjustSheetOpen] = useState(false);
 
   useEffect(() => {
     fetchVoiceDna();
@@ -98,6 +116,7 @@ export default function VoiceDnaDetailPage() {
                   title: 'Analysis Complete',
                   description: 'Your Voice DNA is ready!',
                 });
+                fetchReview();
               }
             }
           }
@@ -125,6 +144,10 @@ export default function VoiceDnaDetailPage() {
         } catch {
           // Brand voice might not exist
         }
+        // Fetch review if ready
+        if (response.data.status === 'ready') {
+          fetchReview();
+        }
       }
     } catch {
       toast({
@@ -134,6 +157,17 @@ export default function VoiceDnaDetailPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchReview = async () => {
+    try {
+      const reviewResponse = await VoiceDnaApi.getVoiceReview(id);
+      if (reviewResponse?.data) {
+        setVoiceReview(reviewResponse.data);
+      }
+    } catch {
+      // Review endpoint may not exist yet
     }
   };
 
@@ -200,6 +234,11 @@ export default function VoiceDnaDetailPage() {
   const handleDeleteNegative = async (index: number) => {
     const response = await VoiceDnaApi.deleteNegativeExample(id, index);
     if (response?.data) setVoiceDna(response.data);
+  };
+
+  const handleAdjustUpdate = (updated: VoiceDna) => {
+    setVoiceDna(updated);
+    setAdjustSheetOpen(false);
   };
 
   if (isLoading) {
@@ -283,6 +322,13 @@ export default function VoiceDnaDetailPage() {
               Advanced
             </Label>
           </div>
+
+          {voiceDna.status === 'ready' && (
+            <Button variant='outline' onClick={() => setAdjustSheetOpen(true)}>
+              <SlidersHorizontal className='mr-2 h-4 w-4' />
+              Adjust Voice
+            </Button>
+          )}
 
           <Button
             variant='outline'
@@ -387,6 +433,11 @@ export default function VoiceDnaDetailPage() {
         </Card>
       )}
 
+      {/* Voice Review Panel (Phase 5) */}
+      {voiceDna.status === 'ready' && voiceReview && (
+        <VoiceReviewPanel review={voiceReview} showFingerprint={false} />
+      )}
+
       {/* Main Content — Tabs */}
       {voiceDna.status === 'ready' && voiceDna.fingerprint && (
         <Tabs defaultValue='overview' className='space-y-6'>
@@ -395,6 +446,10 @@ export default function VoiceDnaDetailPage() {
             <TabsTrigger value='examples'>
               Examples ({voiceDna.few_shot_examples.length})
             </TabsTrigger>
+            <TabsTrigger value='test'>Test Voice</TabsTrigger>
+            {showAdvanced && (
+              <TabsTrigger value='learning'>Learning</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Overview Tab */}
@@ -546,10 +601,22 @@ export default function VoiceDnaDetailPage() {
               </Card>
             )}
           </TabsContent>
+
+          {/* Test Voice Tab (Phase 5) */}
+          <TabsContent value='test' className='space-y-6'>
+            <SampleReplyGenerator voiceDnaId={voiceDna._id} />
+          </TabsContent>
+
+          {/* Learning Tab — ADVANCED (Phase 5) */}
+          {showAdvanced && (
+            <TabsContent value='learning' className='space-y-6'>
+              <ContinuousLearningDashboard voiceDnaId={voiceDna._id} />
+            </TabsContent>
+          )}
         </Tabs>
       )}
 
-      {/* Show examples tab even when not ready (for pending/failed/stale) */}
+      {/* Show examples tab even when not ready */}
       {voiceDna.status !== 'ready' && voiceDna.few_shot_examples.length > 0 && (
         <Card>
           <CardHeader>
@@ -564,6 +631,24 @@ export default function VoiceDnaDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Voice Adjustment Sheet (Phase 5) */}
+      <Sheet open={adjustSheetOpen} onOpenChange={setAdjustSheetOpen}>
+        <SheetContent className='sm:max-w-lg w-full p-0'>
+          <SheetHeader className='px-6 pt-6 pb-4 border-b'>
+            <SheetTitle>Adjust Voice</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className='h-[calc(100vh-5rem)]'>
+            <div className='px-6 py-4'>
+              <VoiceAdjustmentPanel
+                voiceDna={voiceDna}
+                onUpdate={handleAdjustUpdate}
+                onClose={() => setAdjustSheetOpen(false)}
+              />
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -17,4 +17,10 @@ export interface IntelligenceAnalyticsItem {
   total_tokens: number;
   fallback_rate: number;
   escalation_rate: number;
+  // Added fields for UI compatibility
+  total_processed: number;
+  replied_count: number;
+  avg_latency_ms: number;
+  actions_taken: number;
+  confidence_score: number;
 }
