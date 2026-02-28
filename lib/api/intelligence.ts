@@ -13,6 +13,10 @@ import {
   LlmDefaults,
 } from '../types/intelligence';
 import { AnalyticsPeriod, IntelligenceAnalyticsItem } from '../types/analytics';
+import type {
+  IntelligenceQualityAnalytics,
+  QualityAnalyticsParams,
+} from '../types/quality';
 
 const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
 
@@ -220,6 +224,32 @@ export class IntelligenceApi {
       };
       items: IntelligenceAnalyticsItem[];
     }>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Quality Analytics (Phase 3)
+  static async getQualityAnalytics(
+    params?: QualityAnalyticsParams
+  ): Promise<SuccessResponse<IntelligenceQualityAnalytics>> {
+    const searchParams = new URLSearchParams();
+    if (params?.period) searchParams.set('period', params.period);
+    if (params?.bot_id) searchParams.set('bot_id', params.bot_id);
+    if (params?.from) searchParams.set('from', params.from);
+    if (params?.to) searchParams.set('to', params.to);
+    if (params?.include_quality !== undefined)
+      searchParams.set('include_quality', String(params.include_quality));
+    if (params?.include_diversity !== undefined)
+      searchParams.set('include_diversity', String(params.include_diversity));
+    if (params?.include_intents !== undefined)
+      searchParams.set('include_intents', String(params.include_intents));
+
+    const query = searchParams.toString();
+    const url = query
+      ? `${INTELLIGENCE_BASE_URL}/analytics/quality?${query}`
+      : `${INTELLIGENCE_BASE_URL}/analytics/quality`;
+
+    const response = await httpClient.get<IntelligenceQualityAnalytics>(url);
     if (response.error) throw response.error;
     return response.data;
   }

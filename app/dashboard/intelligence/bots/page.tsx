@@ -11,6 +11,7 @@ import {
   Play,
   Pause,
   Brain,
+  Users,
 } from 'lucide-react';
 import {
   Card,
@@ -207,6 +208,13 @@ export default function BotsPage() {
                         href={`/dashboard/intelligence/bots/${bot._id}/knowledge`}
                       >
                         <Brain className='mr-2 h-4 w-4' /> Knowledge
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={`/dashboard/intelligence/bots/${bot._id}/memory`}
+                      >
+                        <Users className='mr-2 h-4 w-4' /> Memory
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
