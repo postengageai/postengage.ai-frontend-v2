@@ -3,13 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthApi } from '../api/auth';
-import {
-  useAuthStore,
-  initActivityTracking,
-  cleanupActivityTracking,
-  setSessionWarningCallback,
-  setSessionExpiredCallback,
-} from './store';
+import { useAuthStore } from './store';
 import { useUserStore } from '../user/store';
 import { setLogoutHandler } from '../http/setup';
 import { useToast } from '@/hooks/use-toast';
@@ -21,10 +15,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const { actions } = useAuthStore();
+  const { actions, sessionActions } = useAuthStore();
   const userStoreActions = useUserStore(state => state.actions);
   const isInitializedRef = useRef(false);
-  const activityTrackingInitRef = useRef(false);
 
   const isOAuthRoute = OAUTH_ROUTES.some(route => pathname?.startsWith(route));
 
@@ -32,7 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleForceLogout = useCallback(() => {
     actions.clearAuth();
     userStoreActions.setUser(null); // Sync legacy user store
-    cleanupActivityTracking();
     if (!isOAuthRoute) {
       router.push('/login');
     }
@@ -45,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Session warning & expiry callbacks
   useEffect(() => {
-    setSessionWarningCallback(() => {
+    sessionActions.setWarningCallback(() => {
       toast({
         title: 'Session Expiring',
         description:
@@ -54,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
-    setSessionExpiredCallback(async () => {
+    sessionActions.setExpiredCallback(async () => {
       try {
         await AuthApi.logout();
       } catch {
@@ -62,7 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       actions.clearAuth();
       userStoreActions.setUser(null);
-      cleanupActivityTracking();
       router.push('/login');
       toast({
         variant: 'destructive',
@@ -71,7 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'You were logged out due to inactivity. Please log in again.',
       });
     });
-  }, [actions, router, toast]);
+
+    return () => {
+      sessionActions.setWarningCallback(null);
+      sessionActions.setExpiredCallback(null);
+    };
+  }, [actions, sessionActions, userStoreActions, router, toast]);
 
   // Initialize auth — verify user session on first load
   useEffect(() => {
@@ -85,11 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userStoreActions.setUser(user); // Sync legacy user store
           actions.setIsAuthenticated(true);
 
-          // Start activity tracking for session timeout
-          if (!activityTrackingInitRef.current) {
-            initActivityTracking();
-            activityTrackingInitRef.current = true;
-          }
+          // Start activity tracking for session timeout (store handles double-init guard)
+          sessionActions.initActivityTracking();
         } else {
           actions.setIsAuthenticated(false);
           actions.setUser(null);
@@ -109,8 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     return () => {
-      cleanupActivityTracking();
-      activityTrackingInitRef.current = false;
+      sessionActions.cleanupActivityTracking();
     };
   }, []);
 
@@ -126,6 +118,7 @@ export {
   useAuthActions,
   useAuthErrors,
   useAuthErrorActions,
+  useSessionActions,
 } from './store';
 
 /**
