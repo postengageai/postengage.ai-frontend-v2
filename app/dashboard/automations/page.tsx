@@ -40,7 +40,6 @@ import {
   AutomationListParams,
 } from '@/lib/api/automations';
 import {
-  AutomationStatus,
   AutomationTriggerType,
   AutomationActionType,
 } from '@/lib/constants/automations';
@@ -68,7 +67,7 @@ export default function AutomationsPage() {
 
       const response = await automationsApi.list(params);
 
-      if (response && response.data) {
+      if (response?.data && Array.isArray(response.data)) {
         setAutomations(response.data);
       }
     } catch (_error) {
@@ -90,39 +89,21 @@ export default function AutomationsPage() {
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
     if (sortBy === 'executions')
-      return (b.execution_count || 0) - (a.execution_count || 0);
+      return (b.total_runs || 0) - (a.total_runs || 0);
     if (sortBy === 'name') return a.name.localeCompare(b.name);
     return 0;
   });
 
-  const toggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus =
-      currentStatus === AutomationStatus.ACTIVE
-        ? AutomationStatus.INACTIVE
-        : AutomationStatus.ACTIVE;
-
-    // Optimistic update
-    setAutomations(prev =>
-      prev.map(a =>
-        a.id === id ? { ...a, status: newStatus as Automation['status'] } : a
-      )
-    );
-
+  const toggleStatus = async (id: string, _currentStatus: string) => {
     try {
-      await automationsApi.update(id, { status: newStatus });
+      await automationsApi.toggle(id);
+      // Refresh automations to get latest status
+      await fetchAutomations();
       toast({
         title: 'Status updated',
-        description: `Automation ${newStatus === AutomationStatus.ACTIVE ? 'activated' : 'deactivated'}`,
+        description: 'Automation status has been toggled',
       });
     } catch {
-      // Revert on failure
-      setAutomations(prev =>
-        prev.map(a =>
-          a.id === id
-            ? { ...a, status: currentStatus as Automation['status'] }
-            : a
-        )
-      );
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -131,11 +112,9 @@ export default function AutomationsPage() {
     }
   };
 
-  const activeCount = automations.filter(
-    a => a.status === AutomationStatus.ACTIVE
-  ).length;
+  const activeCount = automations.filter(a => a.status === 'active').length;
   const totalExecutions = automations.reduce(
-    (sum, a) => sum + (a.execution_count || 0),
+    (sum, a) => sum + (a.total_runs || 0),
     0
   );
 
@@ -276,11 +255,9 @@ export default function AutomationsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>All Status</SelectItem>
-              <SelectItem value={AutomationStatus.ACTIVE}>Active</SelectItem>
-              <SelectItem value={AutomationStatus.INACTIVE}>
-                Inactive
-              </SelectItem>
-              <SelectItem value={AutomationStatus.DRAFT}>Draft</SelectItem>
+              <SelectItem value='active'>Active</SelectItem>
+              <SelectItem value='inactive'>Inactive</SelectItem>
+              <SelectItem value='error'>Error</SelectItem>
             </SelectContent>
           </Select>
 
@@ -307,15 +284,7 @@ export default function AutomationsPage() {
         ) : filteredAutomations.length > 0 ? (
           <div className='space-y-3'>
             {filteredAutomations.map(automation => {
-              const isActive = automation.status === AutomationStatus.ACTIVE;
-              const successRate =
-                (automation.execution_count || 0) > 0
-                  ? Math.round(
-                      ((automation.success_count || 0) /
-                        (automation.execution_count || 0)) *
-                        100
-                    )
-                  : 0;
+              const isActive = automation.status === 'active';
 
               return (
                 <Card
@@ -332,10 +301,7 @@ export default function AutomationsPage() {
                         <Switch
                           checked={isActive}
                           onCheckedChange={() =>
-                            toggleStatus(
-                              automation.id,
-                              automation.status || AutomationStatus.DRAFT
-                            )
+                            toggleStatus(automation.id, automation.status)
                           }
                           className='data-[state=checked]:bg-emerald-500'
                         />
@@ -357,32 +323,33 @@ export default function AutomationsPage() {
                               'shrink-0 text-[10px] h-5 px-1.5',
                               isActive
                                 ? 'bg-emerald-500/10 text-emerald-500'
-                                : automation.status === AutomationStatus.DRAFT
-                                  ? 'bg-muted text-muted-foreground'
+                                : automation.status === 'error'
+                                  ? 'bg-red-500/10 text-red-500'
                                   : 'bg-amber-500/10 text-amber-500'
                             )}
                           >
-                            {automation.status === AutomationStatus.ACTIVE
+                            {automation.status === 'active'
                               ? 'Active'
-                              : automation.status === AutomationStatus.DRAFT
-                                ? 'Draft'
-                                : 'Paused'}
+                              : automation.status === 'error'
+                                ? 'Error'
+                                : 'Inactive'}
                           </Badge>
                         </div>
 
                         {/* Metadata Row: Social Account | Created | Last Run */}
                         <div className='flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground'>
-                          {/* Social Account */}
-                          {automation.social_account && (
-                            <div className='flex items-center gap-1.5 text-foreground/80'>
-                              <div className='w-5 h-5 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
-                                <Instagram className='h-3 w-3 text-white' />
+                          {/* Platform */}
+                          {automation.triggers &&
+                            automation.triggers.length > 0 && (
+                              <div className='flex items-center gap-1.5 text-foreground/80'>
+                                <div className='w-5 h-5 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
+                                  <Instagram className='h-3 w-3 text-white' />
+                                </div>
+                                <span className='font-medium'>
+                                  {automation.triggers[0].platform}
+                                </span>
                               </div>
-                              <span className='font-medium'>
-                                @{automation.social_account.username}
-                              </span>
-                            </div>
-                          )}
+                            )}
 
                           {/* Created Date */}
                           <div className='flex items-center gap-1.5'>
@@ -397,13 +364,13 @@ export default function AutomationsPage() {
                           </div>
 
                           {/* Last Run */}
-                          {automation.last_executed_at && (
+                          {automation.last_run_at && (
                             <div className='flex items-center gap-1.5'>
                               <Clock className='h-3.5 w-3.5' />
                               <span>
                                 Run{' '}
                                 {formatDistanceToNow(
-                                  new Date(automation.last_executed_at),
+                                  new Date(automation.last_run_at),
                                   { addSuffix: true }
                                 )}
                               </span>
@@ -418,7 +385,7 @@ export default function AutomationsPage() {
                         >
                           <div className='flex items-center gap-1.5 text-sm font-medium'>
                             {getTriggerTypeLabel(
-                              automation.trigger.trigger_type
+                              automation.triggers?.[0]?.type ?? 'unknown'
                             )}
                           </div>
 
@@ -427,21 +394,23 @@ export default function AutomationsPage() {
                           </span>
 
                           <div className='flex items-center gap-1.5'>
-                            {automation.actions.slice(0, 3).map(action => (
+                            {(automation.actions ?? [])
+                              .slice(0, 3)
+                              .map((action, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant='outline'
+                                  className='bg-background/50 border-border text-xs font-normal shadow-sm'
+                                >
+                                  {getActionTypeLabel(action.type)}
+                                </Badge>
+                              ))}
+                            {(automation.actions?.length ?? 0) > 3 && (
                               <Badge
-                                key={action.id}
                                 variant='outline'
                                 className='bg-background/50 border-border text-xs font-normal shadow-sm'
                               >
-                                {getActionTypeLabel(action.action_type)}
-                              </Badge>
-                            ))}
-                            {automation.actions.length > 3 && (
-                              <Badge
-                                variant='outline'
-                                className='bg-background/50 border-border text-xs font-normal shadow-sm'
-                              >
-                                +{automation.actions.length - 3} more
+                                +{(automation.actions?.length ?? 0) - 3} more
                               </Badge>
                             )}
                           </div>
@@ -452,27 +421,10 @@ export default function AutomationsPage() {
                       <div className='hidden sm:flex flex-col items-end justify-center gap-1 min-w-[100px] border-l border-border pl-6 py-2 self-stretch'>
                         <div className='text-right mb-1'>
                           <p className='text-xl font-bold'>
-                            {(automation.execution_count || 0).toLocaleString()}
+                            {(automation.total_runs || 0).toLocaleString()}
                           </p>
                           <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
-                            executions
-                          </p>
-                        </div>
-                        <div className='text-right'>
-                          <p
-                            className={cn(
-                              'font-semibold text-sm',
-                              successRate >= 90
-                                ? 'text-emerald-500'
-                                : successRate >= 70
-                                  ? 'text-amber-500'
-                                  : 'text-red-500'
-                            )}
-                          >
-                            {successRate}%
-                          </p>
-                          <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
-                            success rate
+                            total runs
                           </p>
                         </div>
                       </div>

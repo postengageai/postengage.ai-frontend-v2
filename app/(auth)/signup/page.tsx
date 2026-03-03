@@ -67,7 +67,7 @@ export default function SignupPage() {
     setError(null);
 
     try {
-      await AuthApi.signup({
+      await AuthApi.register({
         email: formData.email,
         first_name: formData.firstName,
         last_name: formData.lastName,

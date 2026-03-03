@@ -22,17 +22,17 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SocialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
+import { SocialAccountsApi } from '@/lib/api/social-accounts';
+import type { SocialAccount } from '@/lib/types/social-accounts';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { MemoryApi } from '@/lib/api/memory';
 import { Bot } from '@/lib/types/intelligence';
 import type { VoiceDna } from '@/lib/types/voice-dna';
 import type { MemoryStats } from '@/lib/types/memory';
-import type { BotHealthScore } from '@/lib/types/quality';
+// BotHealthScore type removed - not currently used
 import { Badge } from '@/components/ui/badge';
 import { BotForm } from '@/components/intelligence/bot-form';
-import { BotHealthScoreDisplay } from '@/components/intelligence/quality/bot-health-score';
 import { FlaggedReviewQueue } from '@/components/intelligence/quality/flagged-review-queue';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,8 +44,6 @@ export default function EditBotPage() {
   const [bot, setBot] = useState<Bot | null>(null);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [memoryStats, setMemoryStats] = useState<MemoryStats | null>(null);
-  const [healthScore, setHealthScore] = useState<BotHealthScore | null>(null);
-  const [flaggedCount, setFlaggedCount] = useState(0);
   const [voiceDna, setVoiceDna] = useState<VoiceDna | null>(null);
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,27 +68,18 @@ export default function EditBotPage() {
         setSocialAccounts(accountsResponse.data);
       }
 
-      // Fetch memory stats + health (non-blocking)
+      // Fetch memory stats (non-blocking)
       try {
-        const [statsResponse, healthResponse, flaggedResponse] =
-          await Promise.all([
-            MemoryApi.getMemoryStats(botId).catch(() => null),
-            IntelligenceApi.getBotHealth(botId).catch(() => null),
-            IntelligenceApi.getFlaggedReplies(botId, {
-              limit: 1,
-              reviewed: false,
-            }).catch(() => null),
-          ]);
+        const statsResponse = await MemoryApi.getMemoryStats(botId).catch(
+          () => null
+        );
         if (statsResponse?.data) setMemoryStats(statsResponse.data);
-        if (healthResponse?.data) setHealthScore(healthResponse.data);
-        if (flaggedResponse?.pagination?.total)
-          setFlaggedCount(flaggedResponse.pagination.total);
 
-        // Fetch Voice DNA if bot has a brand_voice_id
-        if (botResponse?.data?.brand_voice_id) {
+        // Fetch Voice DNA if bot has a voice_dna_id
+        if (botResponse?.data?.voice_dna_id) {
           try {
-            const vdnaResponse = await VoiceDnaApi.getVoiceDnaByBrandVoice(
-              botResponse.data.brand_voice_id
+            const vdnaResponse = await VoiceDnaApi.getVoiceDnaById(
+              botResponse.data.voice_dna_id
             );
             if (vdnaResponse?.data) setVoiceDna(vdnaResponse.data);
           } catch {
@@ -135,34 +124,27 @@ export default function EditBotPage() {
         </div>
       </div>
 
-      {/* Bot Health */}
+      {/* Bot Quality */}
       <Card>
         <CardHeader className='flex flex-row items-center justify-between pb-2'>
           <CardTitle className='text-base font-semibold flex items-center gap-2'>
             <Shield className='h-4 w-4' />
-            Bot Health
+            Quality Score
           </CardTitle>
-          <div className='flex items-center gap-2'>
-            {flaggedCount > 0 && (
-              <Badge variant='destructive' className='text-xs'>
-                {flaggedCount} needs review
-              </Badge>
-            )}
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setReviewSheetOpen(true)}
-            >
-              Review Flagged Replies
-            </Button>
-          </div>
         </CardHeader>
         <CardContent>
-          {healthScore ? (
-            <BotHealthScoreDisplay health={healthScore} />
+          {bot.quality_score !== undefined ? (
+            <div className='text-sm'>
+              <p className='text-muted-foreground'>
+                Quality Score:{' '}
+                <span className='font-medium'>
+                  {(bot.quality_score * 100).toFixed(0)}%
+                </span>
+              </p>
+            </div>
           ) : (
             <p className='text-sm text-muted-foreground'>
-              Health data will appear once the bot starts generating replies.
+              Quality score will appear once the bot starts generating replies.
             </p>
           )}
         </CardContent>

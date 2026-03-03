@@ -7,7 +7,6 @@ import {
   Bot,
   MoreHorizontal,
   Settings,
-  Trash,
   Play,
   Pause,
   Brain,
@@ -29,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { IntelligenceApi } from '@/lib/api/intelligence';
-import { Bot as BotType, BotStatus } from '@/lib/types/intelligence';
+import { Bot as BotType } from '@/lib/types/intelligence';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -61,23 +60,18 @@ export default function BotsPage() {
 
   const toggleBotStatus = async (bot: BotType) => {
     try {
-      const newStatus = bot.is_active ? BotStatus.PAUSED : BotStatus.ACTIVE;
-      await IntelligenceApi.updateBot(bot._id, {
-        is_active: !bot.is_active,
+      const newStatus = bot.status === 'active' ? 'inactive' : 'active';
+      await IntelligenceApi.updateBot(bot.id, {
         status: newStatus,
       });
 
       setBots(
-        bots.map(b =>
-          b._id === bot._id
-            ? { ...b, is_active: !bot.is_active, status: newStatus }
-            : b
-        )
+        bots.map(b => (b.id === bot.id ? { ...b, status: newStatus } : b))
       );
 
       toast({
         title: 'Success',
-        description: `Bot ${!bot.is_active ? 'activated' : 'paused'} successfully`,
+        description: `Bot ${newStatus === 'active' ? 'activated' : 'paused'} successfully`,
       });
     } catch (_error) {
       toast({
@@ -93,7 +87,7 @@ export default function BotsPage() {
 
     try {
       await IntelligenceApi.deleteBot(id);
-      setBots(bots.filter(b => b._id !== id));
+      setBots(bots.filter(b => b.id !== id));
       toast({
         title: 'Success',
         description: 'Bot deleted successfully',
@@ -109,21 +103,19 @@ export default function BotsPage() {
 
   const getStatusLabel = (bot: BotType) => {
     switch (bot.status) {
-      case BotStatus.DRAFT:
-        return 'Draft';
-      case BotStatus.ACTIVE:
+      case 'active':
         return 'Active';
-      case BotStatus.PAUSED:
-        return 'Paused';
-      case BotStatus.ARCHIVED:
-        return 'Archived';
+      case 'inactive':
+        return 'Inactive';
+      case 'training':
+        return 'Training';
       default:
-        return bot.is_active ? 'Active' : 'Paused';
+        return 'Unknown';
     }
   };
 
   const getStatusVariant = (bot: BotType) =>
-    bot.status === BotStatus.ACTIVE && bot.is_active ? 'default' : 'secondary';
+    bot.status === 'active' ? 'default' : 'secondary';
 
   if (isLoading) {
     return (
@@ -172,20 +164,20 @@ export default function BotsPage() {
       ) : (
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {bots.map(bot => (
-            <Card key={bot._id}>
+            <Card key={bot.id}>
               <CardHeader className='flex flex-row items-start justify-between space-y-0 pb-2'>
                 <div className='space-y-1'>
                   <CardTitle className='text-xl flex items-center gap-2'>
                     {bot.name}
                     <span
                       className={`inline-block h-2.5 w-2.5 rounded-full ${
-                        bot.stats.avg_confidence >= 0.7
+                        bot.quality_score && bot.quality_score >= 0.7
                           ? 'bg-green-500'
-                          : bot.stats.avg_confidence >= 0.5
+                          : bot.quality_score && bot.quality_score >= 0.5
                             ? 'bg-yellow-500'
                             : 'bg-red-500'
                       }`}
-                      title={`Health: ${(bot.stats.avg_confidence * 100).toFixed(0)}%`}
+                      title={`Quality Score: ${(bot.quality_score ? bot.quality_score * 100 : 0).toFixed(0)}%`}
                     />
                   </CardTitle>
                   <CardDescription className='line-clamp-1'>
@@ -200,7 +192,7 @@ export default function BotsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align='end'>
                     <DropdownMenuItem onClick={() => toggleBotStatus(bot)}>
-                      {bot.is_active ? (
+                      {bot.status === 'active' ? (
                         <>
                           <Pause className='mr-2 h-4 w-4' /> Pause
                         </>
@@ -211,27 +203,27 @@ export default function BotsPage() {
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href={`/dashboard/intelligence/bots/${bot._id}`}>
+                      <Link href={`/dashboard/intelligence/bots/${bot.id}`}>
                         <Settings className='mr-2 h-4 w-4' /> Settings
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link
-                        href={`/dashboard/intelligence/bots/${bot._id}/knowledge`}
+                        href={`/dashboard/intelligence/bots/${bot.id}/knowledge`}
                       >
                         <Brain className='mr-2 h-4 w-4' /> Knowledge
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link
-                        href={`/dashboard/intelligence/bots/${bot._id}/memory`}
+                        href={`/dashboard/intelligence/bots/${bot.id}/memory`}
                       >
                         <Users className='mr-2 h-4 w-4' /> Memory
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className='text-destructive focus:text-destructive'
-                      onClick={() => deleteBot(bot._id)}
+                      onClick={() => deleteBot(bot.id)}
                     >
                       <Trash className='mr-2 h-4 w-4' /> Delete
                     </DropdownMenuItem>
@@ -246,21 +238,27 @@ export default function BotsPage() {
                       {getStatusLabel(bot)}
                     </Badge>
                   </div>
+                  {bot.quality_score !== undefined && (
+                    <div className='flex justify-between items-center text-sm'>
+                      <span className='text-muted-foreground'>
+                        Quality Score
+                      </span>
+                      <span className='font-medium'>
+                        {(bot.quality_score * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
                   <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Confidence</span>
-                    <span className='font-medium'>
-                      {(bot.stats.avg_confidence * 100).toFixed(0)}%
+                    <span className='text-muted-foreground'>
+                      Total Interactions
                     </span>
-                  </div>
-                  <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Total Replies</span>
                     <span className='font-medium'>
-                      {bot.stats.total_replies}
+                      {bot.total_interactions}
                     </span>
                   </div>
                   <div className='pt-4 flex gap-2'>
                     <Link
-                      href={`/dashboard/intelligence/bots/${bot._id}`}
+                      href={`/dashboard/intelligence/bots/${bot.id}`}
                       className='flex-1'
                     >
                       <Button variant='outline' className='w-full'>
@@ -268,7 +266,7 @@ export default function BotsPage() {
                       </Button>
                     </Link>
                     <Link
-                      href={`/dashboard/intelligence/bots/${bot._id}/knowledge`}
+                      href={`/dashboard/intelligence/bots/${bot.id}/knowledge`}
                       className='flex-1'
                     >
                       <Button variant='secondary' className='w-full'>

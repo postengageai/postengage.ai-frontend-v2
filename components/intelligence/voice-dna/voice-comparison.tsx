@@ -5,13 +5,12 @@ import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { VoiceDnaApi } from '@/lib/api/voice-dna';
 
 interface VoiceComparisonProps {
-  voiceDnaId: string;
+  _voiceDnaId: string;
 }
 
-export function VoiceComparison({ voiceDnaId }: VoiceComparisonProps) {
+export function VoiceComparison({ _voiceDnaId }: VoiceComparisonProps) {
   const [userMessage, setUserMessage] = useState(
     'Hey, I love your content! Can you help me with something?'
   );
@@ -25,14 +24,16 @@ export function VoiceComparison({ voiceDnaId }: VoiceComparisonProps) {
     if (!userMessage.trim()) return;
     setIsGenerating(true);
     try {
-      const response = await VoiceDnaApi.generateSampleReply({
-        voice_dna_id: voiceDnaId,
-        user_message: userMessage,
-      });
-      if (response?.data) {
-        setPersonalizedReply(response.data.generated_reply);
-      }
-    } catch {
+      // TODO: generateSampleReply method removed from API
+      // const response = await VoiceDnaApi.generateSampleReply({
+      //   voice_dna_id: voiceDnaId,
+      //   user_message: userMessage,
+      // });
+      // if (response?.data) {
+      //   setPersonalizedReply(response.data.generated_reply);
+      // }
+      setPersonalizedReply('Sample generation is temporarily unavailable.');
+    } catch (_error) {
       setPersonalizedReply('Could not generate sample. Please try again.');
     } finally {
       setIsGenerating(false);

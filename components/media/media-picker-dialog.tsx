@@ -42,7 +42,7 @@ export function MediaPickerDialog({
   const { toast } = useToast();
 
   const fetchMedia = useCallback(
-    async (isLoadMore = false, currentPage = 1) => {
+    async (isLoadMore = false, _currentPage = 1) => {
       if (!open) return;
 
       if (!isLoadMore) {
@@ -53,9 +53,7 @@ export function MediaPickerDialog({
       }
 
       try {
-        const nextPage = isLoadMore ? currentPage + 1 : 1;
         const response = await MediaApi.list({
-          page: nextPage,
           limit: 20,
           search: debouncedSearch,
           sort_by: sortBy,
@@ -67,8 +65,8 @@ export function MediaPickerDialog({
         const newItems = response.data || [];
         setItems(prev => (isLoadMore ? [...prev, ...newItems] : newItems));
         setHasMore(newItems.length === 20);
-        if (isLoadMore) setPage(nextPage);
-      } catch {
+        if (isLoadMore) setPage(p => p + 1);
+      } catch (_error) {
         toast({
           variant: 'destructive',
           title: 'Error',

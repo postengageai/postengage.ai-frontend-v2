@@ -41,8 +41,8 @@ export default function EditBrandVoicePage() {
   const fetchVoice = async () => {
     try {
       const response = await IntelligenceApi.getBrandVoice(voiceId);
-      if (response && response.data) {
-        setVoice(response.data);
+      if (response) {
+        setVoice(response);
       }
       // Also fetch linked Voice DNA
       try {

@@ -21,8 +21,6 @@ import {
   useCreditsActions,
 } from '@/lib/credits/store';
 
-import { DateRange } from '@/lib/types/credits';
-
 export default function CreditsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -41,28 +39,25 @@ export default function CreditsPage() {
   // Fetch data on component mount
   useEffect(() => {
     fetchBalance();
-    fetchUsage();
+    fetchUsage('month');
     fetchInvoices();
   }, [fetchBalance, fetchUsage, fetchInvoices]);
 
   // Fetch transactions when page changes
   useEffect(() => {
-    fetchTransactions(pageSize, (currentPage - 1) * pageSize);
+    fetchTransactions(pageSize, currentPage);
   }, [fetchTransactions, currentPage]);
 
-  const handleDateRangeChange = (range: DateRange) => {
-    const days = range === '7d' ? 7 : 30;
-    fetchUsage(days);
+  const handleDateRangeChange = (period: 'today' | 'week' | 'month') => {
+    fetchUsage(period);
   };
 
   // Handle loading and null states
-  const displayBalance = balance?.available_credits ?? 0;
+  const displayBalance = balance?.balance ?? 0;
   const displayUsage = usage ?? {
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    to: new Date().toISOString(),
-    totals: { purchases: 0, consumption: 0, adjustments: 0 },
-    daily: [],
-    total_transactions: 0,
+    period: 'month',
+    total_used: 0,
+    breakdown: [],
   };
 
   return (
@@ -92,18 +87,21 @@ export default function CreditsPage() {
 
       {/* Usage Summary Cards */}
       <UsageSummaryCards
-        consumed={displayUsage.totals.consumption}
-        purchased={displayUsage.totals.purchases}
-        totalTransactions={displayUsage.total_transactions}
+        consumed={displayUsage.total_used}
+        purchased={0}
+        totalTransactions={displayUsage.breakdown.reduce(
+          (sum, item) => sum + item.count,
+          0
+        )}
         isLoading={isLoading}
       />
 
       {/* Usage Chart */}
       <UsageChart
-        data={displayUsage.daily.map(d => ({
-          date: d.date,
-          consumption: d.consumption,
-          purchases: d.purchases,
+        data={displayUsage.breakdown.map(item => ({
+          date: item.feature,
+          consumption: item.credits_used,
+          purchases: 0,
         }))}
         isLoading={isUsageLoading}
         onDateRangeChange={handleDateRangeChange}

@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -108,12 +107,14 @@ interface BotFormProps {
     socialAccountId: string;
     brandVoiceId?: string;
   }) => void;
+  _onUpdate?: () => void;
 }
 
 export function BotForm({
   initialData,
   socialAccounts,
   onCreated,
+  _onUpdate,
 }: BotFormProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -127,8 +128,8 @@ export function BotForm({
   const fetchBrandVoices = async () => {
     try {
       const response = await IntelligenceApi.getBrandVoices();
-      if (response && response.data) {
-        setBrandVoices(response.data);
+      if (response) {
+        setBrandVoices(response);
       }
     } catch (_error) {
       // Silent failure

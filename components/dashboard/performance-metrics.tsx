@@ -7,10 +7,10 @@ import {
   MousePointerClick,
   Clock,
 } from 'lucide-react';
-import type { PerformanceMetrics as IPerformanceMetrics } from '@/lib/types/dashboard';
+import type { PerformanceMetrics as PerformanceMetricsType } from '@/lib/types/dashboard';
 
 interface PerformanceMetricsProps {
-  metrics: IPerformanceMetrics;
+  metrics: PerformanceMetricsType;
 }
 
 export function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {

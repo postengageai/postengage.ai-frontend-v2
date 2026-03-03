@@ -1,74 +1,60 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import { CreditTransaction, CreditUsage } from '../types/credits';
+import {
+  CreditBalance,
+  CreditTransaction,
+  UsageBreakdown,
+} from '../types/credits';
 
-const CREDITS_BASE_URL = '/api/v1/credits';
+const CREDITS_BASE_URL = '/api/credits';
 
-export interface GetCreditUsageDto {
-  days?: number;
-  from?: string;
-  to?: string;
-}
-
-export interface PaginationDto {
-  limit?: number;
-  skip?: number;
+export interface TransactionParams {
   page?: number;
+  limit?: number;
+  type?: 'allocation' | 'purchase' | 'usage' | 'refund' | 'adjustment';
+  date_from?: string;
+  date_to?: string;
 }
 
-export interface TransactionsResponse {
-  transactions: CreditTransaction[];
-  meta: {
-    total: number;
-    limit: number;
-    skip: number;
-    page: number;
-    totalPages: number;
-  };
-}
-
-export interface BalanceResponse {
-  available_credits: number;
+export interface UsageParams {
+  period?: 'today' | 'week' | 'month';
 }
 
 export class CreditsApi {
-  // Get current credit balance
-  static async getBalance(): Promise<SuccessResponse<BalanceResponse>> {
-    const response = await httpClient.get<BalanceResponse>(
+  /**
+   * Get user's current credit balance and plan information
+   */
+  static async getBalance(): Promise<SuccessResponse<CreditBalance>> {
+    const response = await httpClient.get<CreditBalance>(
       `${CREDITS_BASE_URL}/balance`
     );
     return response.data!;
   }
 
-  // Get credit transactions with pagination
+  /**
+   * Get credit transaction history with pagination
+   */
   static async getTransactions(
-    query?: PaginationDto
+    params?: TransactionParams
   ): Promise<SuccessResponse<CreditTransaction[]>> {
     const response = await httpClient.get<CreditTransaction[]>(
       `${CREDITS_BASE_URL}/transactions`,
-      { params: query }
+      { params }
     );
     return response.data!;
   }
 
-  // Get credit usage analytics
+  /**
+   * Get detailed credit usage breakdown by feature
+   */
   static async getUsage(
-    query?: GetCreditUsageDto
-  ): Promise<SuccessResponse<CreditUsage>> {
-    const response = await httpClient.get<CreditUsage>(
+    params?: UsageParams
+  ): Promise<SuccessResponse<UsageBreakdown>> {
+    const response = await httpClient.get<UsageBreakdown>(
       `${CREDITS_BASE_URL}/usage`,
-      { params: query }
-    );
-    return response.data!;
-  }
-
-  // Get invoices (if available)
-  static async getInvoices(
-    query?: PaginationDto
-  ): Promise<SuccessResponse<CreditTransaction[]>> {
-    const response = await httpClient.get<CreditTransaction[]>(
-      `${CREDITS_BASE_URL}/invoices`,
-      { params: query }
+      { params }
     );
     return response.data!;
   }
 }
+
+export const creditsApi = CreditsApi;

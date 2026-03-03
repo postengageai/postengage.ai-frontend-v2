@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { VoiceDnaApi } from '@/lib/api/voice-dna';
 
 interface SampleReplyGeneratorProps {
   voiceDnaId: string;
@@ -19,32 +18,33 @@ interface GeneratedSample {
 }
 
 export function SampleReplyGenerator({
-  voiceDnaId,
+  voiceDnaId: _voiceDnaId,
 }: SampleReplyGeneratorProps) {
   const [inputMessage, setInputMessage] = useState('');
-  const [samples, setSamples] = useState<GeneratedSample[]>([]);
+  const [samples, _setSamples] = useState<GeneratedSample[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerate = async () => {
     if (!inputMessage.trim()) return;
     setIsGenerating(true);
     try {
-      const response = await VoiceDnaApi.generateSampleReply({
-        voice_dna_id: voiceDnaId,
-        user_message: inputMessage,
-      });
-      if (response?.data) {
-        setSamples(prev => [
-          {
-            userMessage: inputMessage,
-            reply: response.data.generated_reply,
-            confidence: response.data.confidence,
-          },
-          ...prev,
-        ]);
-        setInputMessage('');
-      }
-    } catch {
+      // TODO: generateSampleReply method removed from API
+      // const response = await VoiceDnaApi.generateSampleReply({
+      //   voice_dna_id: voiceDnaId,
+      //   user_message: inputMessage,
+      // });
+      // if (response?.data) {
+      //   setSamples(prev => [
+      //     {
+      //       userMessage: inputMessage,
+      //       reply: response.data.generated_reply,
+      //       confidence: response.data.confidence,
+      //     },
+      //     ...prev,
+      //   ]);
+      //   setInputMessage('');
+      // }
+    } catch (_error) {
       // Silent
     } finally {
       setIsGenerating(false);

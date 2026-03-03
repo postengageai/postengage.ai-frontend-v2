@@ -1,166 +1,59 @@
-// Automation Builder Types - Based on real API structure
-
-export type Platform = 'instagram' | 'facebook' | 'twitter' | 'linkedin';
+// Automation Builder Types - Based on API contract
 
 export type TriggerType =
-  | 'new_comment'
-  | 'keyword_mention'
-  | 'new_dm'
+  | 'comment_received'
+  | 'direct_message'
+  | 'story_mention'
   | 'story_reply'
-  | 'new_follower';
-
-export type TriggerScope =
-  | 'all_posts'
-  | 'specific_posts'
-  | 'reels_only'
-  | 'stories_only';
-
-export type ConditionOperator =
-  | 'contains'
-  | 'equals'
-  | 'starts_with'
-  | 'ends_with'
-  | 'regex';
-
+  | 'keyword_match';
 export type ActionType =
-  | 'reply_comment'
-  | 'send_dm'
-  | 'like_comment'
-  | 'hide_comment'
-  | 'add_tag';
+  | 'send_message'
+  | 'add_tag'
+  | 'capture_lead'
+  | 'assign_bot'
+  | 'send_notification';
+export type AutomationStatus = 'active' | 'inactive' | 'error';
 
-export type ExecutionMode = 'real_time' | 'delayed' | 'scheduled';
-
-export type AutomationStatus = 'active' | 'paused' | 'draft' | 'error';
-
-export interface SelectedPost {
-  id: string;
-  thumbnail: string;
-  caption: string;
-  postType: 'image' | 'video' | 'reel' | 'carousel';
-  postedAt: string;
-}
-
-export interface TriggerConfig {
-  id: string;
-  type: TriggerType;
-  scope: TriggerScope;
-  selectedPosts?: SelectedPost[];
-}
-
-export interface Condition {
-  id: string;
-  field: 'comment_text' | 'username' | 'follower_count' | 'is_verified';
-  operator: ConditionOperator;
+export interface ConditionConfig {
+  field: string;
+  operator: 'equals' | 'contains' | 'starts_with' | 'ends_with' | 'regex';
   value: string;
-  caseSensitive: boolean;
-}
-
-export interface ConditionsConfig {
-  id: string;
-  enabled: boolean;
-  logic: 'and' | 'or';
-  conditions: Condition[];
-}
-
-export interface DmTemplate {
-  id: string;
-  name: string;
-  content: string;
-  variables: string[];
+  case_sensitive?: boolean;
 }
 
 export interface ActionConfig {
-  id: string;
   type: ActionType;
+  params: Record<string, unknown>;
+  delay_seconds?: number;
   order: number;
-  enabled: boolean;
-  creditCost: number;
-  config: {
-    // For reply_comment
-    replyTemplates?: string[];
-    useAI?: boolean;
-    aiTone?: 'friendly' | 'professional' | 'casual' | 'witty';
-    aiContext?: string;
-    delay?: number; // seconds
-
-    // For send_dm
-    dmTemplates?: DmTemplate[];
-    sendOnlyOnce?: boolean;
-
-    // For hide_comment
-    hideReason?: string;
-
-    // For add_tag
-    tagName?: string;
-  };
 }
 
-export interface AutomationStatistics {
-  totalExecutions: number;
-  successfulExecutions: number;
-  failedExecutions: number;
-  totalCreditsUsed: number;
-  avgExecutionTime: number; // milliseconds
-  lastExecutionAt: string | null;
-  trend: {
-    executionsChange: number; // percentage
-    period: 'day' | 'week' | 'month';
-  };
+export interface TriggerConfig {
+  type: TriggerType;
+  platform: string;
+  social_account_id: string;
+  conditions?: ConditionConfig[];
 }
 
-export interface RateLimit {
-  maxPerHour: number;
-  maxPerDay: number;
-  currentHourUsage: number;
-  currentDayUsage: number;
-  cooldownMinutes: number;
-}
-
-export interface AutomationBuilder {
+export interface Automation {
   id: string;
+  user_id: string;
   name: string;
   description?: string;
-  platform: Platform;
   status: AutomationStatus;
-  pausedReason?: string;
-  executionMode: ExecutionMode;
-  scheduledTime?: string; // For scheduled mode
-  delaySeconds?: number; // For delayed mode
-
-  trigger: TriggerConfig;
-  conditions: ConditionsConfig;
+  triggers: TriggerConfig[];
   actions: ActionConfig[];
-
-  statistics: AutomationStatistics;
-  rateLimit: RateLimit;
-
-  estimatedCreditCost: number; // Per execution
-
-  createdAt: string;
-  updatedAt: string;
-  lastModifiedBy?: string;
+  bot_id?: string;
+  total_runs: number;
+  last_run_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// UI State types
-export type SelectedBlock =
-  | { type: 'trigger'; id: string }
-  | { type: 'conditions'; id: string }
-  | { type: 'action'; id: string }
-  | null;
-
-export interface ValidationError {
-  blockType: 'trigger' | 'conditions' | 'action';
-  blockId: string;
-  field: string;
-  message: string;
-}
-
-export interface BuilderUIState {
-  selectedBlock: SelectedBlock;
-  isDirty: boolean;
-  isSaving: boolean;
-  lastSavedAt: string | null;
-  validationErrors: ValidationError[];
-  expandedPanels: string[];
+export interface CreateAutomationDto {
+  name: string;
+  description?: string;
+  triggers: TriggerConfig[];
+  actions: ActionConfig[];
+  bot_id?: string;
 }

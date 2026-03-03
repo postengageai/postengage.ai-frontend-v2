@@ -61,8 +61,8 @@ export function VoiceDnaCreateDialog({
     setIsLoadingBrandVoices(true);
     try {
       const response = await IntelligenceApi.getBrandVoices();
-      if (response?.data) {
-        setBrandVoices(response.data);
+      if (response) {
+        setBrandVoices(response);
       }
     } catch {
       // Silently fail — user can still type brand voice ID

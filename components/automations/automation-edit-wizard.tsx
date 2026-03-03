@@ -10,15 +10,12 @@ import {
   AutomationConditionKeywordMode,
   AutomationConditionSource,
   AutomationActionType,
+  AutomationConditionType,
   AutomationPlatform,
   AutomationStatus,
   type AutomationPlatformType,
   type AutomationTriggerTypeType,
-  type AutomationTriggerSourceType,
-  type AutomationTriggerScopeType,
   type AutomationConditionOperatorType,
-  type AutomationConditionKeywordModeType,
-  type AutomationConditionSourceType,
   type AutomationActionTypeType,
   type AutomationStatusType,
 } from '@/lib/constants/automations';
@@ -26,14 +23,6 @@ import {
   automationsApi,
   type Automation,
   type CreateAutomationRequest,
-  type AutomationActionPayload,
-  type SendDmPayload,
-  type ReplyCommentPayload,
-  type PrivateReplyPayload,
-  type SendDmTextMessage,
-  type SendDmTextPayload,
-  type SendDmMediaMessage,
-  type SendDmMediaPayload,
 } from '@/lib/api/automations';
 import { toast } from '@/hooks/use-toast';
 
@@ -43,7 +32,7 @@ interface AutomationEditWizardProps {
   onCancel: () => void;
 }
 
-function parseEnum<T>(
+function _parseEnum<T>(
   value: unknown,
   enumValues: Record<string, T>,
   defaultValue: T
@@ -58,94 +47,38 @@ function parseEnum<T>(
 
 // Convert API data to form data format
 function apiToFormData(apiData: Automation): AutomationFormData {
+  const firstTrigger = apiData.triggers?.[0];
+
   return {
-    platform: parseEnum<AutomationPlatformType>(
-      apiData.platform,
-      AutomationPlatform,
-      AutomationPlatform.INSTAGRAM
-    ),
-    social_account_id: apiData.social_account?.id || '',
-    social_account_name: apiData.social_account?.username,
-    trigger_type: parseEnum<AutomationTriggerTypeType>(
-      apiData.trigger?.trigger_type,
-      AutomationTriggerType,
-      AutomationTriggerType.NEW_COMMENT
-    ),
-    trigger_source: parseEnum<AutomationTriggerSourceType>(
-      apiData.trigger?.trigger_source,
-      AutomationTriggerSource,
-      AutomationTriggerSource.POST
-    ),
-    trigger_scope: parseEnum<AutomationTriggerScopeType>(
-      apiData.trigger?.trigger_scope,
-      AutomationTriggerScope,
-      AutomationTriggerScope.ALL
-    ),
-    content_ids: apiData.trigger?.content_ids,
-    condition: apiData.conditions?.[0]
+    platform: (firstTrigger?.platform ||
+      AutomationPlatform.INSTAGRAM) as AutomationPlatformType,
+    social_account_id: firstTrigger?.social_account_id || '',
+    social_account_name: firstTrigger?.social_account_id,
+    trigger_type: (firstTrigger?.type ||
+      AutomationTriggerType.NEW_COMMENT) as AutomationTriggerTypeType,
+    trigger_source: AutomationTriggerSource.POST,
+    trigger_scope: AutomationTriggerScope.ALL,
+    content_ids: [],
+    condition: firstTrigger?.conditions?.[0]
       ? {
-          condition_type: 'keyword',
-          condition_operator: parseEnum<AutomationConditionOperatorType>(
-            apiData.conditions[0].condition_operator,
-            AutomationConditionOperator,
-            AutomationConditionOperator.CONTAINS
-          ),
-          condition_keyword_mode: parseEnum<AutomationConditionKeywordModeType>(
-            apiData.conditions[0].condition_keyword_mode,
-            AutomationConditionKeywordMode,
-            AutomationConditionKeywordMode.ANY
-          ),
-          condition_source: parseEnum<AutomationConditionSourceType>(
-            apiData.conditions[0].condition_source,
-            AutomationConditionSource,
-            AutomationConditionSource.COMMENT_TEXT
-          ),
-          condition_value:
-            (apiData.conditions[0].condition_value as string[]) || [],
+          condition_type: AutomationConditionType.KEYWORD,
+          condition_operator: (firstTrigger.conditions[0].operator ||
+            AutomationConditionOperator.CONTAINS) as AutomationConditionOperatorType,
+          condition_keyword_mode: AutomationConditionKeywordMode.ANY,
+          condition_source: AutomationConditionSource.COMMENT_TEXT,
+          condition_value: [firstTrigger.conditions[0].value],
           status: 'active',
         }
       : null,
     actions:
       apiData.actions?.map((action, index) => {
-        const actionType = parseEnum<AutomationActionTypeType>(
-          action.action_type,
-          AutomationActionType,
-          AutomationActionType.REPLY_COMMENT
-        );
-
-        let payload: AutomationActionPayload;
-
-        if (actionType === AutomationActionType.SEND_DM) {
-          const dmPayload = action.action_payload as SendDmPayload;
-          const message = dmPayload?.message || {
-            type: 'text',
-            text: '',
-          };
-
-          if (message.type === 'text') {
-            payload = {
-              ...dmPayload,
-              message: message as SendDmTextMessage,
-            } as SendDmTextPayload;
-          } else {
-            payload = {
-              ...dmPayload,
-              message: message as SendDmMediaMessage,
-            } as SendDmMediaPayload;
-          }
-        } else {
-          const textPayload = action.action_payload as
-            | ReplyCommentPayload
-            | PrivateReplyPayload;
-          payload = {
-            ...textPayload,
-            text: textPayload?.text || '',
-          };
-        }
+        const payload: AutomationActionPayload = action.params || {};
 
         return {
-          action_type: actionType,
-          execution_order: index + 1,
+          action_type:
+            (action.type as unknown as AutomationActionTypeType) ||
+            AutomationActionType.REPLY_COMMENT,
+          execution_order: action.order || index + 1,
           delay_seconds: action.delay_seconds || 0,
           status: 'active',
           action_payload: payload,
@@ -153,11 +86,9 @@ function apiToFormData(apiData: Automation): AutomationFormData {
       }) || [],
     name: apiData.name,
     description: apiData.description,
-    status: parseEnum<AutomationStatusType>(
-      apiData.status,
-      AutomationStatus,
-      AutomationStatus.ACTIVE
-    ),
+    status: (apiData.status === 'active'
+      ? AutomationStatus.ACTIVE
+      : AutomationStatus.INACTIVE) as AutomationStatusType,
     bot_id: apiData.bot_id,
   };
 }

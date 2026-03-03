@@ -4,17 +4,17 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { AutomationWizard } from '@/components/automations/automation-wizard';
 import {
-  AutomationsApi,
-  type CreateAutomationRequest,
+  automationsApi,
+  type CreateAutomationDto,
 } from '@/lib/api/automations';
 
 export default function NewAutomationPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleComplete = async (request: CreateAutomationRequest) => {
+  const handleComplete = async (request: CreateAutomationDto) => {
     try {
-      await AutomationsApi.create(request);
+      await automationsApi.create(request);
 
       toast({
         title: 'Success',

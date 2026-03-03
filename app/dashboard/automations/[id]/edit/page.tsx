@@ -2,7 +2,7 @@
 
 import { useRouter, useParams } from 'next/navigation';
 import { AutomationEditWizard } from '@/components/automations/automation-edit-wizard';
-import { CreateAutomationRequest, AutomationsApi } from '@/lib/api/automations';
+import { CreateAutomationDto, automationsApi } from '@/lib/api/automations';
 import { toast } from 'sonner';
 
 export default function EditAutomationPage() {
@@ -10,9 +10,9 @@ export default function EditAutomationPage() {
   const router = useRouter();
   const automationId = params.id as string;
 
-  const handleComplete = async (automation: CreateAutomationRequest) => {
+  const handleComplete = async (automation: CreateAutomationDto) => {
     try {
-      await AutomationsApi.update(automationId, automation);
+      await automationsApi.update(automationId, automation);
       toast.success('Automation updated successfully');
       router.push(`/dashboard/automations/${automationId}`);
     } catch {

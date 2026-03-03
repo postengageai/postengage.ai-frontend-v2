@@ -1,27 +1,20 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import type {
-  SocialAccount as SocialAccountType,
-  SocialPlatform,
-  SocialAccountConnectionStatus,
-} from '../types/settings';
-
-export interface SocialAccount extends SocialAccountType {}
+import type { SocialAccount } from '../types/social-accounts';
 
 export interface ListSocialAccountsParams {
-  platform?: SocialPlatform;
-  status?: SocialAccountConnectionStatus;
-  search?: string;
+  platform?: string;
+  cursor?: string;
+  limit?: number;
+  direction?: 'forward' | 'backward';
 }
 
-const SOCIAL_ACCOUNTS_BASE_URL = '/api/v1/social-accounts';
-
 export class SocialAccountsApi {
-  // List all connected social accounts
+  // List all connected social accounts with cursor pagination
   static async list(
     params?: ListSocialAccountsParams
   ): Promise<SuccessResponse<SocialAccount[]>> {
     const response = await httpClient.get<SocialAccount[]>(
-      SOCIAL_ACCOUNTS_BASE_URL,
+      '/api/social-accounts',
       {
         params,
       }
@@ -32,29 +25,17 @@ export class SocialAccountsApi {
   // Get specific social account details
   static async get(id: string): Promise<SuccessResponse<SocialAccount>> {
     const response = await httpClient.get<SocialAccount>(
-      `${SOCIAL_ACCOUNTS_BASE_URL}/${id}`
+      `/api/social-accounts/${id}`
     );
     return response.data!;
-  }
-
-  // Disconnect social account
-  static async disconnect(id: string): Promise<void> {
-    await httpClient.delete<void>(`${SOCIAL_ACCOUNTS_BASE_URL}/${id}`);
   }
 
   // Set account as primary
-  static async setPrimary(id: string): Promise<SuccessResponse<SocialAccount>> {
-    const response = await httpClient.patch<SocialAccount>(
-      `${SOCIAL_ACCOUNTS_BASE_URL}/${id}/primary`,
-      { is_primary: true }
-    );
-    return response.data!;
-  }
-
-  // Refresh account data
-  static async refresh(id: string): Promise<SuccessResponse<SocialAccount>> {
-    const response = await httpClient.post<SocialAccount>(
-      `${SOCIAL_ACCOUNTS_BASE_URL}/${id}/refresh`
+  static async setPrimary(
+    id: string
+  ): Promise<SuccessResponse<Partial<SocialAccount>>> {
+    const response = await httpClient.patch<Partial<SocialAccount>>(
+      `/api/social-accounts/${id}/primary`
     );
     return response.data!;
   }
@@ -64,7 +45,5 @@ export class SocialAccountsApi {
 export const socialAccountsApi = {
   list: SocialAccountsApi.list,
   get: SocialAccountsApi.get,
-  disconnect: SocialAccountsApi.disconnect,
   setPrimary: SocialAccountsApi.setPrimary,
-  refresh: SocialAccountsApi.refresh,
 };

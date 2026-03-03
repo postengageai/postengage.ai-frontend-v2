@@ -1,6 +1,6 @@
 import { httpClient, SuccessResponse } from '../../http/client';
 
-const INSTAGRAM_MEDIA_BASE_URL = '/api/v1/instagram/media';
+const INSTAGRAM_MEDIA_BASE_URL = '/api/instagram/media';
 
 export interface GetMediaResponse {
   id: string;

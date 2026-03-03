@@ -101,13 +101,14 @@ export default function IntelligenceAnalyticsPage() {
         ]);
 
         const data = response.data;
+        if (!data) return;
         const label =
-          data.period && data.period.start && data.period.end
+          data.period?.start && data.period?.end
             ? `${data.period.start.slice(0, 10)} → ${data.period.end.slice(0, 10)}`
             : '';
         setState({
           periodLabel: label,
-          items: data.items || [],
+          items: data.items ?? [],
         });
 
         if (qualityResponse?.data) {

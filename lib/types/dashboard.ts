@@ -1,80 +1,53 @@
-// Types for the PostEngageAI Dashboard
-
-import { Notification } from './notifications';
-
-export interface User {
+export interface DashboardUser {
   id: string;
-  name: string;
   email: string;
-  avatar?: string;
-  plan: 'free' | 'starter' | 'pro' | 'business';
+  first_name: string;
+  plan: 'free' | 'pro' | 'enterprise';
+  status: 'active' | 'suspended' | 'deactivated';
 }
 
-export interface ConnectedAccount {
+export interface DashboardMetrics {
+  total_accounts: number;
+  total_bots: number;
+  total_automations: number;
+  total_leads: number;
+  unread_notifications: number;
+}
+
+export interface DashboardCredits {
+  balance: number;
+  monthly_allocation: number;
+  usage_percentage: number;
+  status: 'active' | 'low' | 'exhausted';
+}
+
+export interface DashboardRecentActivity {
+  last_interaction: string;
+  today_interactions: number;
+  today_leads: number;
+}
+
+export interface DashboardSocialAccount {
   id: string;
-  platform: 'instagram';
+  platform: string;
   username: string;
-  profilePicture?: string;
-  isConnected: boolean;
-  lastSync?: Date;
+  followers?: number;
+  is_primary: boolean;
+  status: string;
 }
 
-export interface Automation {
-  id: string;
-  name: string;
-  trigger: 'comment' | 'keyword' | 'dm' | 'mention';
-  action: 'reply' | 'dm' | 'like';
-  triggers?: string[];
-  actions?: string[];
-  status: 'running' | 'paused';
-  creditCost: number;
-  handledCount: number;
-  lastRun?: Date;
-  createdAt: Date;
+export interface DashboardAlert {
+  type: 'info' | 'warning' | 'error';
+  message: string;
 }
 
-export interface DashboardState {
-  user: User;
-  connectedAccount: ConnectedAccount | null;
-  credits: {
-    remaining: number;
-    total: number;
-    estimatedReplies: number;
-  };
-  automations: Automation[];
-  notifications: Notification[];
-  isLoading: boolean;
-}
-
-export interface Suggestion {
-  id: string;
-  type:
-    | 'action'
-    | 'info'
-    | 'warning'
-    | 'connect'
-    | 'create'
-    | 'upgrade'
-    | 'optimize';
-  title: string;
-  description: string;
-  action_label?: string;
-  action_url?: string;
-  priority?: 'high' | 'medium' | 'low';
-}
-
-export interface PerformanceMetrics {
-  engagement_rate: number;
-  reply_rate: number;
-  conversion_rate: number;
-  average_response_time: number;
-}
-
-export interface Activity {
-  id: string;
-  type: string;
-  description?: string;
-  timestamp: Date;
-  automationName?: string;
-  creditCost: number;
+export interface DashboardStats {
+  user: DashboardUser;
+  metrics: DashboardMetrics;
+  credits: DashboardCredits;
+  recent_activity: DashboardRecentActivity;
+  social_accounts: DashboardSocialAccount[];
+  active_automations: number;
+  scheduled_tasks: number;
+  alerts: DashboardAlert[];
 }

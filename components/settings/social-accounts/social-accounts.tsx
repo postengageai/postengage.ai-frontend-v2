@@ -36,27 +36,29 @@ import { SocialAccountsApi } from '@/lib/api/social-accounts';
 import { InstagramOAuthApi } from '@/lib/api/oauth';
 import type {
   SocialAccount,
-  SocialAccountConnectionStatus,
-} from '@/lib/types/settings';
+  SocialAccountStatus,
+} from '@/lib/types/social-accounts';
 import { SocialAccountsSkeleton } from './social-accounts-skeleton';
 
 const statusConfig: Record<
-  SocialAccountConnectionStatus,
+  SocialAccountStatus,
   {
     label: string;
     variant: 'default' | 'secondary' | 'destructive' | 'outline';
     icon: React.ElementType;
   }
 > = {
-  connected: { label: 'Connected', variant: 'default', icon: CheckCircle2 },
-  disconnected: {
-    label: 'Disconnected',
+  active: { label: 'Connected', variant: 'default', icon: CheckCircle2 },
+  inactive: {
+    label: 'Inactive',
     variant: 'secondary',
     icon: AlertTriangle,
   },
-  expired: { label: 'Expired', variant: 'destructive', icon: AlertTriangle },
-  pending: { label: 'Pending', variant: 'outline', icon: RefreshCw },
-  error: { label: 'Error', variant: 'destructive', icon: AlertTriangle },
+  disconnected: {
+    label: 'Disconnected',
+    variant: 'destructive',
+    icon: AlertTriangle,
+  },
 };
 
 export function SocialAccounts() {
@@ -292,11 +294,9 @@ export function SocialAccounts() {
         </CardHeader>
         <CardContent className='space-y-4'>
           {accounts.map(account => {
-            const status = statusConfig[account.connection_status];
+            const status = statusConfig[account.status];
             const StatusIcon = status.icon;
-            const needsReconnect =
-              account.connection_status === 'expired' ||
-              account.connection_status === 'error';
+            const needsReconnect = account.status === 'disconnected';
 
             return (
               <div
@@ -310,9 +310,9 @@ export function SocialAccounts() {
               >
                 {/* Avatar & Platform */}
                 <div className='relative'>
-                  {account.avatar?.url ? (
+                  {account.avatar ? (
                     <Image
-                      src={account.avatar.url || '/placeholder.svg'}
+                      src={account.avatar || '/placeholder.svg'}
                       alt={account.username}
                       width={48}
                       height={48}
@@ -346,10 +346,9 @@ export function SocialAccounts() {
                       <StatusIcon
                         className={cn(
                           'h-3 w-3',
-                          account.connection_status === 'connected'
+                          account.status === 'active'
                             ? 'text-green-500'
-                            : account.connection_status === 'expired' ||
-                                account.connection_status === 'error'
+                            : account.status === 'disconnected'
                               ? 'text-destructive'
                               : 'text-muted-foreground'
                         )}
@@ -358,7 +357,7 @@ export function SocialAccounts() {
                     </span>
                     <span>•</span>
                     <span>Connected {formatDate(account.connected_at)}</span>
-                    {account.connection_status === 'connected' && (
+                    {account.status === 'active' && account.last_synced_at && (
                       <>
                         <span>•</span>
                         <span>

@@ -53,8 +53,8 @@ export default function BrandVoicesPage() {
         VoiceDnaApi.listVoiceDna(),
       ]);
 
-      if (voicesResponse?.data) {
-        setVoices(voicesResponse.data);
+      if (voicesResponse) {
+        setVoices(voicesResponse);
       }
       if (voiceDnaResponse?.data) {
         const map: Record<string, VoiceDna> = {};

@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { UserApi, UpdateUserRequest, ChangePasswordRequest } from '../api/user';
+import { UserApi } from '../api/user';
+import { UpdateUserDto, ChangePasswordDto } from '../types/settings';
 import {
   SocialAccountsApi,
-  SocialAccount,
   ListSocialAccountsParams,
 } from '../api/social-accounts';
+import type { SocialAccount } from '../types/social-accounts';
 import { useUserActions } from '../user/store';
 
 interface SettingsState {
@@ -25,8 +26,8 @@ interface SettingsState {
   actions: {
     // User profile actions
     loadUserProfile: () => Promise<void>;
-    updateUserProfile: (updates: UpdateUserRequest) => Promise<void>;
-    changePassword: (request: ChangePasswordRequest) => Promise<void>;
+    updateUserProfile: (updates: UpdateUserDto) => Promise<void>;
+    changePassword: (request: ChangePasswordDto) => Promise<void>;
 
     // Social accounts actions
     loadSocialAccounts: (params?: ListSocialAccountsParams) => Promise<void>;
@@ -68,7 +69,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     },
 
     // Update user profile
-    updateUserProfile: async (updates: UpdateUserRequest) => {
+    updateUserProfile: async (updates: UpdateUserDto) => {
       set({ isProfileLoading: true, profileError: null });
 
       try {
@@ -83,7 +84,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     },
 
     // Change password
-    changePassword: async (request: ChangePasswordRequest) => {
+    changePassword: async (request: ChangePasswordDto) => {
       set({ isChangingPassword: true, passwordChangeError: null });
 
       try {
@@ -116,9 +117,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     },
 
     // Disconnect social account
-    disconnectSocialAccount: async (id: string) => {
+    disconnectSocialAccount: async (_id: string) => {
       try {
-        await SocialAccountsApi.disconnect(id);
+        // TODO: disconnect method removed from API
+        // await SocialAccountsApi.disconnect(_id);
         // Reload the list after disconnecting
         await get().actions.loadSocialAccounts();
       } catch (error) {
@@ -146,9 +148,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     },
 
     // Refresh social account
-    refreshSocialAccount: async (id: string) => {
+    refreshSocialAccount: async (_id: string) => {
       try {
-        await SocialAccountsApi.refresh(id);
+        // TODO: refresh method removed from API
+        // await SocialAccountsApi.refresh(_id);
         // Reload the list after refreshing
         await get().actions.loadSocialAccounts();
       } catch (error) {

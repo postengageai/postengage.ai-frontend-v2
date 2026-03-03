@@ -9,19 +9,16 @@ import {
   VoiceReview,
   VoiceFeedbackDto,
   AdjustVoiceDto,
-  ContinuousLearningStats,
-  GenerateSampleReplyDto,
-  SampleReplyResult,
 } from '../types/voice-dna';
 
-const VOICE_DNA_BASE_URL = '/api/v1/intelligence/voice-dna';
+const VOICE_DNA_BASE_URL = '/api/intelligence/voice-dna';
 
 export class VoiceDnaApi {
   // List all Voice DNA records
   static async listVoiceDna(): Promise<SuccessResponse<VoiceDna[]>> {
     const response = await httpClient.get<VoiceDna[]>(VOICE_DNA_BASE_URL);
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Get a single Voice DNA by ID
@@ -30,7 +27,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/${id}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Get Voice DNA by brand voice ID
@@ -41,7 +38,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/brand-voice/${brandVoiceId}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Create a new Voice DNA
@@ -50,7 +47,7 @@ export class VoiceDnaApi {
   ): Promise<SuccessResponse<VoiceDna>> {
     const response = await httpClient.post<VoiceDna>(VOICE_DNA_BASE_URL, data);
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Add a few-shot example
@@ -63,7 +60,7 @@ export class VoiceDnaApi {
       data
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Delete a few-shot example by index
@@ -75,7 +72,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/${id}/few-shot/${index}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Add a negative example
@@ -88,7 +85,7 @@ export class VoiceDnaApi {
       data
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Delete a negative example by index
@@ -100,7 +97,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/${id}/negative-example/${index}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Trigger re-analysis
@@ -111,7 +108,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/${id}/reanalyze`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Delete a Voice DNA record
@@ -120,7 +117,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/${id}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // === Phase 5: Auto-Inference & Voice Review ===
@@ -134,7 +131,7 @@ export class VoiceDnaApi {
       data
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Get voice review (human-readable summary)
@@ -145,7 +142,7 @@ export class VoiceDnaApi {
       `${VOICE_DNA_BASE_URL}/${voiceDnaId}/review`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Submit voice feedback
@@ -157,7 +154,7 @@ export class VoiceDnaApi {
       data
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   // Adjust voice (tone sliders, add/remove examples)
@@ -170,29 +167,12 @@ export class VoiceDnaApi {
       data
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
-  // Get continuous learning stats
-  static async getContinuousLearningStats(
-    voiceDnaId: string
-  ): Promise<SuccessResponse<ContinuousLearningStats>> {
-    const response = await httpClient.get<ContinuousLearningStats>(
-      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/learning`
-    );
-    if (response.error) throw response.error;
-    return response.data;
-  }
+  // Get continuous learning stats (not yet implemented)
+  // static async getContinuousLearningStats(voiceDnaId: string): Promise<SuccessResponse<ContinuousLearningStats>> { }
 
-  // Generate sample reply (dry-run)
-  static async generateSampleReply(
-    data: GenerateSampleReplyDto
-  ): Promise<SuccessResponse<SampleReplyResult>> {
-    const response = await httpClient.post<SampleReplyResult>(
-      `${VOICE_DNA_BASE_URL}/sample-reply`,
-      data
-    );
-    if (response.error) throw response.error;
-    return response.data;
-  }
+  // Generate sample reply (dry-run) (not yet implemented)
+  // static async generateSampleReply(data: GenerateSampleReplyDto): Promise<SuccessResponse<SampleReplyResult>> { }
 }

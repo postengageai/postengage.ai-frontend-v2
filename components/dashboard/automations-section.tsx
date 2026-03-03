@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AutomationCard } from '@/components/dashboard/automation-card';
 import { Plus, Bot, ArrowRight } from 'lucide-react';
-import type { Automation } from '@/lib/types/dashboard';
+import type { Automation } from '@/lib/api/automations';
 
 interface AutomationsSectionProps {
   automations: Automation[];
@@ -26,7 +26,7 @@ export function AutomationsSection({
           <h2 className='text-lg font-semibold'>Your Automations</h2>
           <p className='text-sm text-muted-foreground'>
             {hasAutomations
-              ? `${automations.filter(a => a.status === 'running').length} of ${automations.length} active`
+              ? `${automations.filter(a => a.status === 'active').length} of ${automations.length} active`
               : 'Create automations to engage automatically'}
           </p>
         </div>

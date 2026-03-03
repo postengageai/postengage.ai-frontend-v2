@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { io, Socket } from 'socket.io-client';
 import { Notification } from '@/lib/types/notifications';
+import { Message } from '@/lib/types/conversations';
 
 // Connection state change listener type
 type ConnectionStateListener = (connected: boolean) => void;
@@ -105,6 +106,7 @@ class SocketService {
     }
 
     this.socket.on('notification', callback);
+    this.socket.on('notification.updated', callback);
   }
 
   unsubscribeFromNotifications(
@@ -115,6 +117,73 @@ class SocketService {
     }
 
     this.socket.off('notification', callback);
+    this.socket.off('notification.updated', callback);
+  }
+
+  // Message specific methods
+  subscribeToMessages(
+    callback: (data: { type: 'received' | 'sent'; message: Message }) => void
+  ): void {
+    if (!this.socket) {
+      return;
+    }
+
+    this.socket.on('message.received', (message: Message) =>
+      callback({ type: 'received', message })
+    );
+    this.socket.on('message.sent', (message: Message) =>
+      callback({ type: 'sent', message })
+    );
+  }
+
+  unsubscribeFromMessages(
+    _callback: (data: { type: 'received' | 'sent'; message: Message }) => void
+  ): void {
+    if (!this.socket) {
+      return;
+    }
+
+    this.socket.off('message.received');
+    this.socket.off('message.sent');
+  }
+
+  // Automation event methods
+  subscribeToAutomationEvents(
+    callback: (data: {
+      type: 'executed' | 'failed';
+      automation_id: string;
+      status: string;
+      executed_at?: string;
+      error?: string;
+    }) => void
+  ): void {
+    if (!this.socket) {
+      return;
+    }
+
+    this.socket.on('automation.executed', data =>
+      callback({ ...data, type: 'executed' })
+    );
+    this.socket.on('automation.failed', data =>
+      callback({ ...data, type: 'failed' })
+    );
+  }
+
+  unsubscribeFromAutomationEvents(
+    _callback: (data: {
+      type: 'executed' | 'failed';
+      automation_id: string;
+      status: string;
+      executed_at?: string;
+      error?: string;
+    }) => void
+  ): void {
+    if (!this.socket) {
+      return;
+    }
+
+    this.socket.off('automation.executed');
+    this.socket.off('automation.failed');
   }
 
   // Voice DNA specific methods

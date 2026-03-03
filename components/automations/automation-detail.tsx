@@ -215,18 +215,20 @@ export function AutomationDetail({
                 )}
 
                 <div className='flex items-center gap-3 text-sm text-muted-foreground'>
-                  <div className='flex items-center gap-1'>
-                    <Image
-                      src={
-                        automation.social_account.avatar || '/placeholder.svg'
-                      }
-                      alt=''
-                      width={16}
-                      height={16}
-                      className='h-4 w-4 rounded-full'
-                    />
-                    <span>@{automation.social_account.username}</span>
-                  </div>
+                  {automation.social_account && (
+                    <div className='flex items-center gap-1'>
+                      <Image
+                        src={
+                          automation.social_account.avatar || '/placeholder.svg'
+                        }
+                        alt=''
+                        width={16}
+                        height={16}
+                        className='h-4 w-4 rounded-full'
+                      />
+                      <span>@{automation.social_account.username}</span>
+                    </div>
+                  )}
                   <span className='text-muted-foreground/50'>•</span>
                   <span>Updated {formatTimeAgo(automation.updated_at)}</span>
                   {automation.last_executed_at && (
@@ -451,13 +453,13 @@ export function AutomationDetail({
                     </div>
                     <p className='font-semibold text-lg'>
                       {getTriggerLabel(
-                        automation.trigger.type,
-                        automation.trigger.scope
+                        automation.trigger?.type,
+                        automation.trigger?.scope
                       )}
                     </p>
-                    {automation.trigger.content_count ? (
+                    {automation.trigger?.content_count ? (
                       <div className='mt-2 inline-flex items-center rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400'>
-                        {automation.trigger.content_count} posts selected
+                        {automation.trigger?.content_count} posts selected
                       </div>
                     ) : null}
                   </div>
@@ -484,7 +486,7 @@ export function AutomationDetail({
                         </div>
                         <p className='font-semibold text-lg'>Keyword Filter</p>
                         <div className='mt-3 flex flex-wrap gap-1.5'>
-                          {automation.condition.keywords
+                          {(automation.condition.keywords ?? [])
                             .slice(0, 5)
                             .map(keyword => (
                               <Badge
@@ -495,12 +497,14 @@ export function AutomationDetail({
                                 {keyword}
                               </Badge>
                             ))}
-                          {automation.condition.keywords.length > 5 && (
+                          {(automation.condition.keywords?.length ?? 0) > 5 && (
                             <Badge
                               variant='secondary'
                               className='bg-background/80 text-xs font-normal border border-amber-200 dark:border-amber-800'
                             >
-                              +{automation.condition.keywords.length - 5} more
+                              +
+                              {(automation.condition.keywords?.length ?? 0) - 5}{' '}
+                              more
                             </Badge>
                           )}
                         </div>

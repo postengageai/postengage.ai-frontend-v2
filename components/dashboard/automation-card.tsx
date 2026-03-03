@@ -7,7 +7,6 @@ import {
   MessageCircle,
   AtSign,
   Mail,
-  Heart,
   Zap,
   Clock,
   MoreHorizontal,
@@ -19,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import type { Automation } from '@/lib/types/dashboard';
+import type { Automation } from '@/lib/api/automations';
 
 interface AutomationCardProps {
   automation: Automation;
@@ -32,18 +31,18 @@ export function AutomationCard({
   onToggle,
   onDelete,
 }: AutomationCardProps) {
-  const isRunning = automation.status === 'running';
+  const isActive = automation.status === 'active';
 
   // Get trigger icon
   const getTriggerIcon = () => {
-    switch (automation.trigger) {
-      case 'comment':
+    switch (automation.triggers?.[0]?.type) {
+      case 'comment_received':
         return MessageCircle;
-      case 'keyword':
+      case 'keyword_match':
         return AtSign;
-      case 'dm':
+      case 'direct_message':
         return Mail;
-      case 'mention':
+      case 'story_mention':
         return AtSign;
       default:
         return MessageCircle;
@@ -52,21 +51,23 @@ export function AutomationCard({
 
   // Get action icon
   const getActionIcon = () => {
-    switch (automation.action) {
-      case 'reply':
-        return MessageCircle;
-      case 'dm':
+    const firstAction = automation.actions?.[0];
+    switch (firstAction?.type) {
+      case 'send_message':
         return Mail;
-      case 'like':
-        return Heart;
+      case 'send_notification':
+        return Zap;
+      case 'add_tag':
+        return AtSign;
       default:
         return MessageCircle;
     }
   };
 
   // Format last run time
-  const formatLastRun = (date?: Date) => {
-    if (!date) return 'Never';
+  const formatLastRun = (dateStr?: string) => {
+    if (!dateStr) return 'Never';
+    const date = new Date(dateStr);
     const minutes = Math.floor((Date.now() - date.getTime()) / (1000 * 60));
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
@@ -77,30 +78,32 @@ export function AutomationCard({
 
   // Get trigger/action labels
   const getTriggerLabel = () => {
-    switch (automation.trigger) {
-      case 'comment':
+    const triggerType = automation.triggers?.[0]?.type;
+    switch (triggerType) {
+      case 'comment_received':
         return 'New comments';
-      case 'keyword':
+      case 'keyword_match':
         return 'Keyword match';
-      case 'dm':
+      case 'direct_message':
         return 'Direct messages';
-      case 'mention':
-        return 'Mentions';
+      case 'story_mention':
+        return 'Story mentions';
       default:
-        return automation.trigger;
+        return triggerType || 'Unknown trigger';
     }
   };
 
   const getActionLabel = () => {
-    switch (automation.action) {
-      case 'reply':
-        return 'Auto-reply';
-      case 'dm':
-        return 'Send DM';
-      case 'like':
-        return 'Like';
+    const firstAction = automation.actions?.[0];
+    switch (firstAction?.type) {
+      case 'send_message':
+        return 'Send message';
+      case 'send_notification':
+        return 'Send notification';
+      case 'add_tag':
+        return 'Add tag';
       default:
-        return automation.action;
+        return firstAction?.type || 'Unknown action';
     }
   };
 
@@ -110,7 +113,7 @@ export function AutomationCard({
   return (
     <Card
       className={`py-0 overflow-hidden transition-all duration-150 hover:translate-y-[-2px] hover:shadow-lg ${
-        !isRunning ? 'opacity-75' : ''
+        !isActive ? 'opacity-75' : ''
       }`}
     >
       <CardContent className='p-5'>
@@ -120,7 +123,7 @@ export function AutomationCard({
             <div className='flex items-center gap-3'>
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                  isRunning
+                  isActive
                     ? 'bg-primary/10 text-primary'
                     : 'bg-secondary text-muted-foreground'
                 }`}
@@ -145,20 +148,13 @@ export function AutomationCard({
             {/* Stats */}
             <div className='flex items-center gap-4 mt-4 pt-3 border-t border-border'>
               <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-                <MessageCircle className='h-3 w-3' />
-                <span className='font-mono'>{automation.handledCount}</span>
-                <span>handled</span>
-              </div>
-              <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                 <Zap className='h-3 w-3' />
-                <span className='font-mono'>{automation.creditCost}</span>
-                <span>
-                  credit{automation.creditCost !== 1 ? 's' : ''}/action
-                </span>
+                <span className='font-mono'>{automation.total_runs || 0}</span>
+                <span>total runs</span>
               </div>
               <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                 <Clock className='h-3 w-3' />
-                <span>{formatLastRun(automation.lastRun)}</span>
+                <span>{formatLastRun(automation.last_run_at)}</span>
               </div>
             </div>
           </div>
@@ -167,19 +163,19 @@ export function AutomationCard({
           <div className='flex items-center gap-2 shrink-0'>
             <div className='flex items-center gap-2'>
               <Switch
-                checked={isRunning}
+                checked={isActive}
                 onCheckedChange={() => onToggle(automation.id)}
               />
-              {isRunning ? (
+              {isActive ? (
                 <Badge
                   variant='secondary'
-                  className='bg-success/10 text-success border-0 text-xs'
+                  className='bg-emerald-500/10 text-emerald-500 border-0 text-xs'
                 >
                   Active
                 </Badge>
               ) : (
                 <Badge variant='secondary' className='text-xs'>
-                  Paused
+                  Inactive
                 </Badge>
               )}
             </div>

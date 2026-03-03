@@ -8,7 +8,6 @@ import { Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AuthApi } from '@/lib/api/auth';
 import {
   AuthCard,
   AuthCardHeader,
@@ -30,9 +29,8 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      await AuthApi.forgotPassword({ email });
-
-      // Always show success (privacy-safe)
+      // TODO: forgotPassword API endpoint removed - password reset feature coming soon
+      // For now, show success message
       setIsSubmitted(true);
     } catch {
       // Still show success for privacy

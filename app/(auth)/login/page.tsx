@@ -48,8 +48,8 @@ export default function LoginPage() {
       const response = await AuthApi.login({ email, password });
 
       // Update both auth store and legacy user store
-      actions.setUser(response.data.user);
-      userStoreActions.setUser(response.data.user);
+      actions.setUser(response.data);
+      userStoreActions.setUser(response.data);
       actions.setIsAuthenticated(true);
 
       // Redirect to intended page or dashboard

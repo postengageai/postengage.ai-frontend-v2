@@ -6,7 +6,7 @@ import type {
   MemoryUsersParams,
 } from '../types/memory';
 
-const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
+const INTELLIGENCE_BASE_URL = '/api/intelligence';
 
 export class MemoryApi {
   static async getMemoryStats(
@@ -16,7 +16,7 @@ export class MemoryApi {
       `${INTELLIGENCE_BASE_URL}/bots/${botId}/memory/stats`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   static async getTrackedUsers(
@@ -38,7 +38,7 @@ export class MemoryApi {
 
     const response = await httpClient.get<UserRelationshipMemory[]>(url);
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   static async getUserMemory(
@@ -49,7 +49,7 @@ export class MemoryApi {
       `${INTELLIGENCE_BASE_URL}/bots/${botId}/memory/users/${platformUserId}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 
   static async searchEntities(
@@ -60,6 +60,6 @@ export class MemoryApi {
       `${INTELLIGENCE_BASE_URL}/bots/${botId}/memory/search?q=${encodeURIComponent(query)}`
     );
     if (response.error) throw response.error;
-    return response.data;
+    return response.data!;
   }
 }

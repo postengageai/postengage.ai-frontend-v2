@@ -13,20 +13,31 @@ import { TriggerCard } from './trigger-card';
 import { ConditionCard } from './condition-card';
 import { ActionCard } from './action-card';
 import type {
-  AutomationBuilder,
   TriggerConfig,
-  ConditionsConfig,
   ActionConfig,
   ActionType,
-  SelectedBlock,
 } from '@/lib/types/automation-builder';
+
+interface SelectedBlock {
+  type: 'trigger' | 'conditions' | 'action';
+  id: string;
+}
+
+interface AutomationBuilder {
+  id: string;
+  name: string;
+  description?: string;
+  trigger: TriggerConfig;
+  conditions: { id: string };
+  actions: ActionConfig[];
+}
 
 interface BuilderCanvasProps {
   automation: AutomationBuilder;
   selectedBlock: SelectedBlock;
   onSelectBlock: (block: SelectedBlock) => void;
   onUpdateTrigger: (updates: Partial<TriggerConfig>) => void;
-  onUpdateConditions: (updates: Partial<ConditionsConfig>) => void;
+  onUpdateConditions: (updates: Partial<{ id: string }>) => void;
   onUpdateAction: (actionId: string, updates: Partial<ActionConfig>) => void;
   onAddAction: (type: ActionType) => void;
   onRemoveAction: (actionId: string) => void;
@@ -66,11 +77,9 @@ export function BuilderCanvas({
             trigger={automation.trigger}
             isSelected={
               selectedBlock?.type === 'trigger' &&
-              selectedBlock.id === automation.trigger.id
+              selectedBlock.id === 'trigger'
             }
-            onSelect={() =>
-              onSelectBlock({ type: 'trigger', id: automation.trigger.id })
-            }
+            onSelect={() => onSelectBlock({ type: 'trigger', id: 'trigger' })}
             onUpdate={onUpdateTrigger}
           />
 
@@ -98,22 +107,31 @@ export function BuilderCanvas({
           {sortedActions.length > 0 ? (
             <div className='space-y-0'>
               {sortedActions.map((action, index) => (
-                <div key={action.id}>
+                <div key={`action-${action.order}`}>
                   <ActionCard
                     action={action}
                     isSelected={
                       selectedBlock?.type === 'action' &&
-                      selectedBlock.id === action.id
+                      selectedBlock.id === `action-${action.order}`
                     }
                     onSelect={() =>
-                      onSelectBlock({ type: 'action', id: action.id })
+                      onSelectBlock({
+                        type: 'action',
+                        id: `action-${action.order}`,
+                      })
                     }
-                    onUpdate={updates => onUpdateAction(action.id, updates)}
-                    onRemove={() => onRemoveAction(action.id)}
+                    onUpdate={updates =>
+                      onUpdateAction(`action-${action.order}`, updates)
+                    }
+                    onRemove={() => onRemoveAction(`action-${action.order}`)}
                     canMoveUp={index > 0}
                     canMoveDown={index < sortedActions.length - 1}
-                    onMoveUp={() => onReorderAction(action.id, 'up')}
-                    onMoveDown={() => onReorderAction(action.id, 'down')}
+                    onMoveUp={() =>
+                      onReorderAction(`action-${action.order}`, 'up')
+                    }
+                    onMoveDown={() =>
+                      onReorderAction(`action-${action.order}`, 'down')
+                    }
                   />
                   {index < sortedActions.length - 1 && (
                     <FlowConnector variant='dashed' />
@@ -146,47 +164,42 @@ export function BuilderCanvas({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='center' className='w-48'>
-                <DropdownMenuItem onClick={() => onAddAction('reply_comment')}>
+                <DropdownMenuItem onClick={() => onAddAction('send_message')}>
                   <span className='w-2 h-2 rounded-full bg-emerald-500 mr-2' />
-                  Reply to Comment
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddAction('send_dm')}>
-                  <span className='w-2 h-2 rounded-full bg-purple-500 mr-2' />
-                  Send DM
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddAction('like_comment')}>
-                  <span className='w-2 h-2 rounded-full bg-pink-500 mr-2' />
-                  Like Comment
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddAction('hide_comment')}>
-                  <span className='w-2 h-2 rounded-full bg-slate-500 mr-2' />
-                  Hide Comment
+                  Send Message
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onAddAction('add_tag')}>
                   <span className='w-2 h-2 rounded-full bg-blue-500 mr-2' />
                   Add Tag
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddAction('capture_lead')}>
+                  <span className='w-2 h-2 rounded-full bg-pink-500 mr-2' />
+                  Capture Lead
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddAction('assign_bot')}>
+                  <span className='w-2 h-2 rounded-full bg-purple-500 mr-2' />
+                  Assign Bot
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onAddAction('send_notification')}
+                >
+                  <span className='w-2 h-2 rounded-full bg-slate-500 mr-2' />
+                  Send Notification
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          {/* Estimated Credits */}
+          {/* Action Summary */}
           {sortedActions.length > 0 && (
             <div className='mt-6 p-4 bg-card/50 rounded-xl border border-border'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <p className='text-sm font-medium'>
-                    Estimated Cost per Execution
-                  </p>
+                  <p className='text-sm font-medium'>Actions Configured</p>
                   <p className='text-xs text-muted-foreground'>
-                    Based on enabled actions
+                    {sortedActions.length} action
+                    {sortedActions.length > 1 ? 's' : ''}
                   </p>
-                </div>
-                <div className='text-right'>
-                  <p className='text-2xl font-bold text-primary'>
-                    {automation.estimatedCreditCost}
-                  </p>
-                  <p className='text-xs text-muted-foreground'>credits</p>
                 </div>
               </div>
             </div>

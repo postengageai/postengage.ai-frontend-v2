@@ -19,7 +19,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import type { VoiceReview } from '@/lib/types/voice-dna';
-import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { FingerprintRadar } from './fingerprint-radar';
 
 interface VoiceReviewPanelProps {
@@ -74,7 +73,9 @@ export function VoiceReviewPanel({
   review,
   showFingerprint = true,
 }: VoiceReviewPanelProps) {
-  const [sampleReply, setSampleReply] = useState(review.sample_generated_reply);
+  const [sampleReply, _setSampleReply] = useState(
+    review.sample_generated_reply
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [fingerprintOpen, setFingerprintOpen] = useState(false);
 
@@ -83,18 +84,19 @@ export function VoiceReviewPanel({
   const handleGenerateSample = async () => {
     setIsGenerating(true);
     try {
-      const response = await VoiceDnaApi.generateSampleReply({
-        voice_dna_id: review.voice_dna._id,
-        user_message:
-          'Hey, I love your content! Can you help me with something?',
-      });
-      if (response?.data) {
-        setSampleReply({
-          context: response.data.user_message,
-          reply: response.data.generated_reply,
-        });
-      }
-    } catch {
+      // TODO: generateSampleReply method removed from API
+      // const response = await VoiceDnaApi.generateSampleReply({
+      //   voice_dna_id: review.voice_dna._id,
+      //   user_message:
+      //     'Hey, I love your content! Can you help me with something?',
+      // });
+      // if (response?.data) {
+      //   setSampleReply({
+      //     context: response.data.user_message,
+      //     reply: response.data.generated_reply,
+      //   });
+      // }
+    } catch (_error) {
       // Keep existing sample on failure
     } finally {
       setIsGenerating(false);

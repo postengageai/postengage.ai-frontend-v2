@@ -1,8 +1,11 @@
-import type {
-  AutomationBuilder,
-  BuilderUIState,
-  DmTemplate,
-} from '@/lib/types/automation-builder';
+// Mock types - AutomationBuilder types are no longer used
+// Use Automation, ActionConfig, TriggerConfig instead
+interface DmTemplate {
+  id: string;
+  name: string;
+  content: string;
+  variables: string[];
+}
 
 export const mockDmTemplates: DmTemplate[] = [
   {
@@ -28,7 +31,9 @@ export const mockDmTemplates: DmTemplate[] = [
   },
 ];
 
-export const mockAutomation: AutomationBuilder = {
+/*
+// Mock data is outdated - types have changed
+export const mockAutomation = {
   id: 'auto_abc123',
   name: 'Welcome New Commenters',
   description: 'Automatically reply and DM users who comment on our posts',
@@ -124,7 +129,7 @@ export const mockAutomation: AutomationBuilder = {
   updatedAt: '2024-01-15T14:32:00Z',
 };
 
-export const mockEmptyAutomation: AutomationBuilder = {
+export const mockEmptyAutomation = {
   id: 'auto_new',
   name: 'Untitled Automation',
   platform: 'instagram',
@@ -172,8 +177,9 @@ export const mockEmptyAutomation: AutomationBuilder = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
+*/
 
-export const mockBuilderUIState: BuilderUIState = {
+export const mockBuilderUIState = {
   selectedBlock: null,
   isDirty: false,
   isSaving: false,
@@ -194,14 +200,14 @@ export function getTriggerTypeLabel(type: string): string {
   return labels[type] || type;
 }
 
-// Helper to get action type label
+// Helper to get action type label (updated for new ActionType)
 export function getActionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    reply_comment: 'Reply to Comment',
-    send_dm: 'Send DM',
-    like_comment: 'Like Comment',
-    hide_comment: 'Hide Comment',
+    send_message: 'Send Message',
     add_tag: 'Add Tag',
+    capture_lead: 'Capture Lead',
+    assign_bot: 'Assign Bot',
+    send_notification: 'Send Notification',
   };
   return labels[type] || type;
 }

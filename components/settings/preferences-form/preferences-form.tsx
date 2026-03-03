@@ -19,8 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useUser, useUserActions } from '@/lib/user/store';
-import { UserApi } from '@/lib/api/user';
+import { useUser } from '@/lib/user/store';
 import { PreferencesFormSkeleton } from './preferences-form-skeleton';
 
 const timezones = [
@@ -51,7 +50,6 @@ const languages = [
 
 export function PreferencesForm() {
   const user = useUser();
-  const userActions = useUserActions();
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('America/Los_Angeles');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,14 +65,8 @@ export function PreferencesForm() {
         setIsLoadingData(true);
         setError(null);
 
-        if (user) {
-          if (user.language) {
-            setLanguage(user.language);
-          }
-          if (user.timezone) {
-            setTimezone(user.timezone);
-          }
-        }
+        // TODO: Language and timezone fields removed from User type - preferences feature coming soon
+        // For now, use default values
       } catch (_err) {
         setError(
           'Failed to load user preferences. Please try refreshing the page.'
@@ -98,17 +90,8 @@ export function PreferencesForm() {
     setError(null);
 
     try {
-      // Update user preferences via API
-      await UserApi.updateProfile({
-        language,
-        timezone,
-      });
-
-      // Update local user state
-      userActions.updateUser({
-        language,
-        timezone,
-      });
+      // TODO: Language and timezone fields removed from User type - preferences update coming soon
+      // updateProfile no longer supports language and timezone
 
       setIsSaved(true);
       setHasChanges(false);

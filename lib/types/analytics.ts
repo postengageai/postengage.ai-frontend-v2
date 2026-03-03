@@ -1,26 +1,64 @@
 export enum AnalyticsPeriod {
   TODAY = 'today',
-  YESTERDAY = 'yesterday',
-  LAST_7_DAYS = 'last_7_days',
-  LAST_30_DAYS = 'last_30_days',
-  THIS_MONTH = 'this_month',
-  LAST_MONTH = 'last_month',
-  CUSTOM = 'custom',
+  WEEK = 'week',
+  MONTH = 'month',
+  YEAR = 'year',
 }
 
-export interface IntelligenceAnalyticsItem {
-  date: string;
-  social_account_id: string;
-  ai_calls: number;
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  fallback_rate: number;
-  escalation_rate: number;
-  // Added fields for UI compatibility
-  total_processed: number;
-  replied_count: number;
-  avg_latency_ms: number;
-  actions_taken: number;
-  confidence_score: number;
+/**
+ * High-level analytics overview for a given period
+ */
+export interface AnalyticsOverview {
+  period: string;
+  total_interactions: number;
+  total_leads_captured: number;
+  total_messages_sent: number;
+  total_messages_received: number;
+  response_rate: number;
+  avg_response_time_ms: number;
+  active_automations: number;
+  credits_used: number;
+  comparison: {
+    interactions_change: number;
+    leads_change: number;
+    messages_change: number;
+    response_rate_change: number;
+  };
+}
+
+/**
+ * Individual activity record
+ */
+export interface Activity {
+  id: string;
+  type:
+    | 'comment_reply'
+    | 'dm_sent'
+    | 'lead_captured'
+    | 'automation_triggered'
+    | 'bot_response';
+  description: string;
+  platform: string;
+  automation_id?: string;
+  automation_name?: string;
+  lead_id?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+/**
+ * Intelligence and bot performance metrics
+ */
+export interface IntelligenceMetrics {
+  period: string;
+  total_bot_interactions: number;
+  avg_quality_score: number;
+  sentiment_breakdown: {
+    positive: number;
+    neutral: number;
+    negative: number;
+  };
+  top_topics: Array<{ topic: string; count: number }>;
+  voice_dna_accuracy: number;
+  credits_used_intelligence: number;
 }

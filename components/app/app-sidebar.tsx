@@ -415,7 +415,10 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <button className='flex w-full items-center gap-3 rounded-xl bg-secondary/30 border border-border/50 p-3 hover:bg-secondary/50 transition-colors text-left'>
               <Avatar className='h-9 w-9 rounded-lg border border-primary/20'>
-                <AvatarImage src={user?.avatar?.url} alt={user?.first_name} />
+                <AvatarImage
+                  src={user?.avatar || undefined}
+                  alt={user?.first_name}
+                />
                 <AvatarFallback className='rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 text-primary'>
                   {user?.first_name?.[0]}
                   {user?.last_name?.[0]}

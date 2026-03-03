@@ -6,10 +6,8 @@ import {
   MessageCircle,
   Send,
   Heart,
-  EyeOff,
   Tag,
   GripVertical,
-  Sparkles,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -19,7 +17,6 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import type { ActionConfig, ActionType } from '@/lib/types/automation-builder';
 import { getActionTypeLabel } from '@/lib/mock/automation-builder-data';
@@ -28,7 +25,7 @@ interface ActionCardProps {
   action: ActionConfig;
   isSelected: boolean;
   onSelect: () => void;
-  onUpdate: (updates: Partial<ActionConfig>) => void;
+  onUpdate?: (updates: Partial<ActionConfig>) => void;
   onRemove: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -37,41 +34,41 @@ interface ActionCardProps {
 }
 
 const actionIcons: Record<ActionType, React.ReactNode> = {
-  reply_comment: <MessageCircle className='h-4 w-4' />,
-  send_dm: <Send className='h-4 w-4' />,
-  like_comment: <Heart className='h-4 w-4' />,
-  hide_comment: <EyeOff className='h-4 w-4' />,
+  send_message: <Send className='h-4 w-4' />,
   add_tag: <Tag className='h-4 w-4' />,
+  capture_lead: <Heart className='h-4 w-4' />,
+  assign_bot: <MessageCircle className='h-4 w-4' />,
+  send_notification: <AlertCircle className='h-4 w-4' />,
 };
 
 const actionColors: Record<
   ActionType,
   { bg: string; text: string; border: string }
 > = {
-  reply_comment: {
+  send_message: {
     bg: 'bg-emerald-500/10',
     text: 'text-emerald-500',
     border: 'border-emerald-500/20',
-  },
-  send_dm: {
-    bg: 'bg-purple-500/10',
-    text: 'text-purple-500',
-    border: 'border-purple-500/20',
-  },
-  like_comment: {
-    bg: 'bg-pink-500/10',
-    text: 'text-pink-500',
-    border: 'border-pink-500/20',
-  },
-  hide_comment: {
-    bg: 'bg-slate-500/10',
-    text: 'text-slate-500',
-    border: 'border-slate-500/20',
   },
   add_tag: {
     bg: 'bg-blue-500/10',
     text: 'text-blue-500',
     border: 'border-blue-500/20',
+  },
+  capture_lead: {
+    bg: 'bg-pink-500/10',
+    text: 'text-pink-500',
+    border: 'border-pink-500/20',
+  },
+  assign_bot: {
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-500',
+    border: 'border-purple-500/20',
+  },
+  send_notification: {
+    bg: 'bg-slate-500/10',
+    text: 'text-slate-500',
+    border: 'border-slate-500/20',
   },
 };
 
@@ -79,7 +76,7 @@ export function ActionCard({
   action,
   isSelected,
   onSelect,
-  onUpdate,
+  onUpdate: _onUpdate,
   onRemove,
   canMoveUp,
   canMoveDown,
@@ -87,23 +84,7 @@ export function ActionCard({
   onMoveDown,
 }: ActionCardProps) {
   const colors = actionColors[action.type];
-  const hasAI = action.config.useAI;
-  const hasDelay = action.config.delay && action.config.delay > 0;
-
-  // Determine if action is properly configured
-  const isConfigured = () => {
-    if (action.type === 'reply_comment') {
-      return (
-        hasAI ||
-        (action.config.replyTemplates &&
-          action.config.replyTemplates.length > 0)
-      );
-    }
-    if (action.type === 'send_dm') {
-      return action.config.dmTemplates && action.config.dmTemplates.length > 0;
-    }
-    return true;
-  };
+  const hasDelay = action.delay_seconds && action.delay_seconds > 0;
 
   return (
     <Card
@@ -111,8 +92,7 @@ export function ActionCard({
         'cursor-pointer transition-all hover:translate-y-[-2px]',
         isSelected
           ? 'ring-2 ring-primary border-primary shadow-lg shadow-primary/10'
-          : 'border-border hover:border-primary/50',
-        !action.enabled && 'opacity-60'
+          : 'border-border hover:border-primary/50'
       )}
       onClick={onSelect}
     >
@@ -179,129 +159,41 @@ export function ActionCard({
             </div>
           </div>
 
-          <div
-            className='flex items-center gap-2'
-            onClick={e => e.stopPropagation()}
+          <Badge
+            variant='secondary'
+            className={cn('border', colors.bg, colors.text, colors.border)}
           >
-            <Badge
-              variant='secondary'
-              className={cn('border', colors.bg, colors.text, colors.border)}
-            >
-              Action
-            </Badge>
-            <Switch
-              checked={action.enabled}
-              onCheckedChange={checked => onUpdate({ enabled: checked })}
-              className='data-[state=checked]:bg-emerald-500'
-            />
-          </div>
+            Action
+          </Badge>
         </div>
 
         {/* Quick info */}
-        {action.enabled && (
-          <div className='flex flex-wrap items-center gap-2 mb-3'>
-            {hasAI && (
-              <Badge
-                variant='outline'
-                className='text-xs gap-1 bg-gradient-to-r from-purple-500/10 to-blue-500/10'
-              >
-                <Sparkles className='h-3 w-3 text-purple-500' />
-                AI Enabled
-              </Badge>
-            )}
-            {hasDelay && (
-              <Badge variant='outline' className='text-xs gap-1'>
-                <Clock className='h-3 w-3 text-muted-foreground' />
-                {action.config.delay}s delay
-              </Badge>
-            )}
-            <Badge variant='outline' className='text-xs font-mono'>
-              {action.creditCost} credit{action.creditCost > 1 ? 's' : ''}
+        <div className='flex flex-wrap items-center gap-2 mb-3'>
+          {hasDelay && (
+            <Badge variant='outline' className='text-xs gap-1'>
+              <Clock className='h-3 w-3 text-muted-foreground' />
+              {action.delay_seconds}s delay
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Preview content */}
-        {action.enabled && (
-          <div className='bg-background/50 rounded-lg p-3 border border-border'>
-            {action.type === 'reply_comment' && (
-              <div className='space-y-1'>
-                {hasAI ? (
-                  <>
-                    <p className='text-xs text-muted-foreground'>
-                      AI will generate replies with:
-                    </p>
-                    <p className='text-sm font-medium capitalize'>
-                      {action.config.aiTone} tone
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className='text-xs text-muted-foreground'>
-                      Reply templates:
-                    </p>
-                    <p className='text-sm truncate'>
-                      {action.config.replyTemplates?.[0] ||
-                        'No templates added'}
-                    </p>
-                  </>
-                )}
-              </div>
-            )}
-
-            {action.type === 'send_dm' && (
-              <div className='space-y-1'>
-                <p className='text-xs text-muted-foreground'>
-                  {action.config.dmTemplates?.length || 0} template(s)
-                  {action.config.sendOnlyOnce && ' • Send once per user'}
-                </p>
-                <p className='text-sm truncate'>
-                  {action.config.dmTemplates?.[0]?.name || 'No templates added'}
-                </p>
-              </div>
-            )}
-
-            {action.type === 'like_comment' && (
-              <p className='text-sm text-muted-foreground'>
-                Automatically like the triggering comment
-              </p>
-            )}
-
-            {action.type === 'hide_comment' && (
-              <p className='text-sm text-muted-foreground'>
-                Hide comment from public view
-              </p>
-            )}
-
-            {action.type === 'add_tag' && (
-              <div className='space-y-1'>
-                <p className='text-xs text-muted-foreground'>Tag user as:</p>
-                <p className='text-sm font-medium'>
-                  {action.config.tagName || 'No tag specified'}
-                </p>
-              </div>
-            )}
+        <div className='bg-background/50 rounded-lg p-3 border border-border'>
+          <div className='space-y-1'>
+            <p className='text-xs text-muted-foreground'>
+              Action configuration:
+            </p>
+            <p className='text-sm truncate font-mono text-foreground/70'>
+              {JSON.stringify(action.params)}
+            </p>
           </div>
-        )}
+        </div>
 
         {/* Validation indicator */}
         <div className='flex items-center justify-between mt-3 pt-3 border-t border-border'>
           <div className='flex items-center gap-1.5'>
-            {!action.enabled || isConfigured() ? (
-              <>
-                <CheckCircle2 className='h-3.5 w-3.5 text-emerald-500' />
-                <span className='text-xs text-emerald-500'>
-                  {action.enabled ? 'Configured' : 'Disabled'}
-                </span>
-              </>
-            ) : (
-              <>
-                <AlertCircle className='h-3.5 w-3.5 text-amber-500' />
-                <span className='text-xs text-amber-500'>
-                  Needs configuration
-                </span>
-              </>
-            )}
+            <CheckCircle2 className='h-3.5 w-3.5 text-emerald-500' />
+            <span className='text-xs text-emerald-500'>Configured</span>
           </div>
 
           <Button

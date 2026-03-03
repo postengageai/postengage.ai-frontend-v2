@@ -26,7 +26,6 @@ import {
   AutomationTriggerScope,
   type AutomationTriggerScopeType,
   type AutomationActionTypeType,
-  type AutomationConditionTypeType,
   type AutomationConditionOperatorType,
   type AutomationConditionKeywordModeType,
   AutomationConditionSource,

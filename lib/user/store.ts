@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User } from '../schemas/auth';
+import { User } from '../types/settings';
 
 interface UserState {
   user: User | null;

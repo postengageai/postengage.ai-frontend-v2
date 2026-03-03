@@ -158,6 +158,12 @@ export interface AdjustVoiceDto {
   trigger_reanalysis?: boolean;
 }
 
+// === Sample Reply Generator ===
+export interface GenerateSampleReplyDto {
+  voice_dna_id: string;
+  user_message: string;
+}
+
 // === Continuous Learning Stats ===
 export interface ContinuousLearningStats {
   voice_dna_id: string;
@@ -173,16 +179,4 @@ export interface ContinuousLearningStats {
   last_refinement_at?: string;
   next_refinement_at_signals: number;
   learning_velocity: 'fast' | 'moderate' | 'slow';
-}
-
-// === Sample Reply Generation ===
-export interface GenerateSampleReplyDto {
-  voice_dna_id: string;
-  user_message: string;
-}
-
-export interface SampleReplyResult {
-  user_message: string;
-  generated_reply: string;
-  confidence: number;
 }

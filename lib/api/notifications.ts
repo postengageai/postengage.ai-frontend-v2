@@ -1,58 +1,51 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import {
-  Notification,
-  NotificationStatusType,
-  NotificationTypeType,
-} from '@/lib/types/notifications';
-
-export interface NotificationsResponse {
-  data: Notification[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-  };
-}
-
-export interface MarkAllAsReadResponse {
-  message: string;
-  queued: boolean;
-}
+import { Notification, NotificationTypeType } from '@/lib/types/notifications';
 
 export class NotificationsApi {
   static async getNotifications(params?: {
-    status?: NotificationStatusType;
+    unread_only?: boolean;
     type?: NotificationTypeType;
+    cursor?: string;
     limit?: number;
-    skip?: number;
+    direction?: 'forward' | 'backward';
   }): Promise<SuccessResponse<Notification[]>> {
     const response = await httpClient.get<Notification[]>(
-      'api/v1/notifications',
+      '/api/notifications',
       { params }
     );
     return response.data!;
   }
 
-  static async markAsRead(id: string): Promise<SuccessResponse<Notification>> {
-    const response = await httpClient.patch<Notification>(
-      `api/v1/notifications/${id}/read`
-    );
+  static async getUnreadCount(): Promise<
+    SuccessResponse<{ unread_count: number; total_count: number }>
+  > {
+    const response = await httpClient.get<{
+      unread_count: number;
+      total_count: number;
+    }>('/api/notifications/unread-count');
+    return response.data!;
+  }
+
+  static async markAsRead(
+    id: string
+  ): Promise<
+    SuccessResponse<{ id: string; is_read: boolean; read_at: string }>
+  > {
+    const response = await httpClient.patch<{
+      id: string;
+      is_read: boolean;
+      read_at: string;
+    }>(`/api/notifications/${id}/read`);
     return response.data!;
   }
 
   static async markAllAsRead(): Promise<
-    SuccessResponse<MarkAllAsReadResponse>
+    SuccessResponse<{ marked_count: number; message: string }>
   > {
-    const response = await httpClient.patch<MarkAllAsReadResponse>(
-      'api/v1/notifications/read-all'
-    );
-    return response.data!;
-  }
-
-  static async getUnreadCount(): Promise<SuccessResponse<{ count: number }>> {
-    const response = await httpClient.get<{ count: number }>(
-      'api/v1/notifications/unread-count'
-    );
+    const response = await httpClient.patch<{
+      marked_count: number;
+      message: string;
+    }>('/api/notifications/read-all');
     return response.data!;
   }
 }

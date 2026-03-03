@@ -76,7 +76,6 @@ export default function MediaPage() {
       try {
         if (activeTab === 'uploads') {
           const response = await MediaApi.list({
-            page: isLoadMore ? page + 1 : 1,
             limit: 20,
             search: debouncedSearch,
             sort_by: sortBy,

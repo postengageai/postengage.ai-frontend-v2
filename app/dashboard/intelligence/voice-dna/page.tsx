@@ -33,8 +33,8 @@ export default function VoiceDnaPage() {
       if (voiceDnaResponse?.data) {
         setVoiceDnaList(voiceDnaResponse.data);
       }
-      if (brandVoiceResponse?.data) {
-        setBrandVoices(brandVoiceResponse.data);
+      if (brandVoiceResponse) {
+        setBrandVoices(brandVoiceResponse);
       }
     } catch {
       toast({

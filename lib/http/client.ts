@@ -128,6 +128,27 @@ export class HttpClient {
             data: response.data,
           });
         }
+
+        // Handle double-nested data structure from backend.
+        // Backend wraps paginated results as:
+        //   { success, data: { data: [...], pagination: {...} }, meta }
+        // Flatten to:
+        //   { success, data: [...], pagination: {...}, meta }
+        if (
+          response.data?.data &&
+          typeof response.data.data === 'object' &&
+          !Array.isArray(response.data.data) &&
+          'data' in response.data.data &&
+          'pagination' in response.data.data
+        ) {
+          const innerData = response.data.data as {
+            data: unknown;
+            pagination: unknown;
+          };
+          response.data.data = innerData.data;
+          response.data.pagination = innerData.pagination;
+        }
+
         return response;
       },
       async (error: AxiosError) => {
@@ -144,11 +165,11 @@ export class HttpClient {
         if (error.response?.status === 401) {
           const originalRequest = error.config;
 
-          // Don't retry refresh/login/signup endpoints (prevents infinite loop)
+          // Don't retry refresh/login/register endpoints (prevents infinite loop)
           const isAuthEndpoint =
             originalRequest?.url?.includes('/auth/refresh') ||
             originalRequest?.url?.includes('/auth/login') ||
-            originalRequest?.url?.includes('/auth/signup') ||
+            originalRequest?.url?.includes('/auth/register') ||
             originalRequest?.url?.includes('/users/profile');
 
           // Only attempt refresh once per request
@@ -168,7 +189,7 @@ export class HttpClient {
               )._retried = true;
 
               // Attempt token refresh
-              await this.axiosInstance.post('/api/v1/auth/refresh');
+              await this.axiosInstance.post('/api/auth/refresh');
 
               // Retry the original request with refreshed token
               return this.axiosInstance.request(originalRequest);

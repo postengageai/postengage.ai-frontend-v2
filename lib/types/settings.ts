@@ -1,38 +1,28 @@
 // User types based on API contract
-export interface MediaObject {
-  id: string;
-  url: string;
-  type?: string;
-}
-
 export interface User {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
-  phone: string | null;
-  avatar: MediaObject | null;
-  is_verified: boolean;
-  status: 'active' | 'inactive';
-  timezone: string | null;
-  language: string;
-  role: string;
+  avatar?: string;
+  bio?: string;
+  role: 'user' | 'admin';
+  account_status: 'active' | 'suspended' | 'deactivated';
+  email_verified: boolean;
+  plan: 'free' | 'pro' | 'enterprise';
   created_at: string;
   updated_at: string;
 }
 
-export interface UpdateProfileDto {
+export interface UpdateUserDto {
   first_name?: string;
   last_name?: string;
-  phone?: string;
-  status?: 'active' | 'inactive';
-  avatar_id?: string;
+  bio?: string;
 }
 
 export interface ChangePasswordDto {
   current_password: string;
   new_password: string;
-  confirm_password: string;
 }
 
 // Social Account types based on API contract
@@ -55,7 +45,7 @@ export interface SocialAccount {
   id: string;
   platform: SocialPlatform;
   username: string;
-  avatar: MediaObject | null;
+  avatar?: string;
   connection_status: SocialAccountConnectionStatus;
   connected_at: string;
   last_synced_at: string;

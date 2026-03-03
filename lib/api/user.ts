@@ -1,40 +1,7 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import { User } from '../schemas/auth';
+import { User, UpdateUserDto, ChangePasswordDto } from '../types/settings';
 
-const USERS_BASE_URL = '/api/v1/users';
-
-export interface UpdateUserRequest {
-  first_name?: string;
-  last_name?: string;
-  phone?: string | null;
-  timezone?: string | null;
-  language?: string;
-}
-
-export interface ChangePasswordRequest {
-  current_password: string;
-  new_password: string;
-  confirm_password: string;
-}
-
-export interface UserProfileResponse {
-  user: User;
-}
-
-export interface UploadAvatarResponse {
-  message: string;
-  media: {
-    id: string;
-    name: string;
-    url: string;
-    mime_type: string;
-    size: number;
-    tags: string[];
-    status: string;
-    created_at: string;
-    updated_at: string;
-  };
-}
+const USERS_BASE_URL = '/api/users';
 
 export class UserApi {
   // Get current user profile
@@ -45,29 +12,22 @@ export class UserApi {
 
   // Update user profile
   static async updateProfile(
-    request: UpdateUserRequest
+    request: UpdateUserDto
   ): Promise<SuccessResponse<User>> {
-    const response = await httpClient.put<User>(
+    const response = await httpClient.patch<User>(
       `${USERS_BASE_URL}/profile`,
       request
     );
     return response.data!;
   }
 
-  // Change password
-  static async changePassword(request: ChangePasswordRequest): Promise<void> {
-    await httpClient.put<void>(`${USERS_BASE_URL}/change-password`, request);
-  }
-
-  // Upload avatar (implementation depends on backend)
-  static async uploadAvatar(
-    file: File
-  ): Promise<SuccessResponse<UploadAvatarResponse>> {
+  // Upload avatar
+  static async uploadAvatar(file: File): Promise<SuccessResponse<User>> {
     const formData = new FormData();
     formData.append('avatar', file);
 
-    const response = await httpClient.put<UploadAvatarResponse>(
-      `${USERS_BASE_URL}/upload-avatar`,
+    const response = await httpClient.post<User>(
+      `${USERS_BASE_URL}/profile/avatar`,
       formData,
       {
         headers: {
@@ -78,12 +38,29 @@ export class UserApi {
 
     return response.data!;
   }
+
+  // Change password
+  static async changePassword(
+    request: ChangePasswordDto
+  ): Promise<SuccessResponse<User>> {
+    const response = await httpClient.patch<User>(
+      `${USERS_BASE_URL}/change-password`,
+      request
+    );
+    return response.data!;
+  }
+
+  // Delete account
+  static async deleteAccount(): Promise<void> {
+    await httpClient.delete(`${USERS_BASE_URL}/account`);
+  }
 }
 
 // Hook-friendly API functions
 export const userApi = {
   getProfile: UserApi.getProfile,
   updateProfile: UserApi.updateProfile,
-  changePassword: UserApi.changePassword,
   uploadAvatar: UserApi.uploadAvatar,
+  changePassword: UserApi.changePassword,
+  deleteAccount: UserApi.deleteAccount,
 };

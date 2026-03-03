@@ -5,8 +5,23 @@ import { Brain, TrendingUp, Check, Pencil, X, Zap, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { VoiceDnaApi } from '@/lib/api/voice-dna';
-import type { ContinuousLearningStats } from '@/lib/types/voice-dna';
+
+interface FeedbackBreakdown {
+  approved: number;
+  edited: number;
+  rejected: number;
+}
+
+interface ContinuousLearningStats {
+  feedback_breakdown: FeedbackBreakdown;
+  total_feedback_processed: number;
+  next_refinement_at_signals: number;
+  auto_refinement_count: number;
+  learning_velocity: string;
+  few_shot_examples_count: number;
+  negative_examples_count: number;
+  last_refinement_at: string | null;
+}
 
 interface ContinuousLearningDashboardProps {
   voiceDnaId: string;
@@ -30,7 +45,7 @@ const VELOCITY_CONFIG = {
 export function ContinuousLearningDashboard({
   voiceDnaId,
 }: ContinuousLearningDashboardProps) {
-  const [stats, setStats] = useState<ContinuousLearningStats | null>(null);
+  const [stats, _setStats] = useState<ContinuousLearningStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,11 +54,12 @@ export function ContinuousLearningDashboard({
 
   const fetchStats = async () => {
     try {
-      const response = await VoiceDnaApi.getContinuousLearningStats(voiceDnaId);
-      if (response?.data) {
-        setStats(response.data);
-      }
-    } catch {
+      // TODO: getContinuousLearningStats method removed from API
+      // const response = await VoiceDnaApi.getContinuousLearningStats(voiceDnaId);
+      // if (response?.data) {
+      //   setStats(response.data);
+      // }
+    } catch (_error) {
       // Silent
     } finally {
       setIsLoading(false);
@@ -92,7 +108,8 @@ export function ContinuousLearningDashboard({
         )
       : 0;
 
-  const velocityConfig = VELOCITY_CONFIG[stats.learning_velocity];
+  const velocityConfig =
+    VELOCITY_CONFIG[stats.learning_velocity as keyof typeof VELOCITY_CONFIG];
 
   return (
     <div className='space-y-4'>

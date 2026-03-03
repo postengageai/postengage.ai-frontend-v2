@@ -58,9 +58,9 @@ export function ProfileForm() {
         // Upload avatar to server
         const response = await UserApi.uploadAvatar(file);
 
-        // Update local state with the uploaded media object
+        // Update local state with the avatar URL (now a string)
         userActions.updateUser({
-          avatar: response.data.media,
+          avatar: response.data?.avatar,
         });
 
         setHasChanges(true);
@@ -82,8 +82,7 @@ export function ProfileForm() {
       const updateData = {
         first_name: user.first_name,
         last_name: user.last_name,
-        phone: user.phone,
-        // ...(user.avatar ? { avatar_id: user.avatar.id } : {}),
+        bio: user.bio,
       };
 
       // Call API to update profile
@@ -141,9 +140,9 @@ export function ProfileForm() {
                 onClick={handleAvatarClick}
                 className='group relative h-20 w-20 overflow-hidden rounded-full bg-muted ring-2 ring-border transition-all hover:ring-primary'
               >
-                {user.avatar?.url ? (
+                {user.avatar ? (
                   <Image
-                    src={user.avatar.url || '/placeholder.svg'}
+                    src={user.avatar || '/placeholder.svg'}
                     alt='Profile'
                     fill
                     className='object-cover'
@@ -198,13 +197,13 @@ export function ProfileForm() {
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='phone'>Phone number</Label>
+            <Label htmlFor='bio'>Bio</Label>
             <Input
-              id='phone'
-              type='tel'
-              value={user.phone || ''}
-              onChange={e => handleInputChange('phone', e.target.value)}
-              placeholder='Optional'
+              id='bio'
+              type='text'
+              value={user.bio || ''}
+              onChange={e => handleInputChange('bio', e.target.value)}
+              placeholder='Tell us about yourself'
             />
           </div>
 
@@ -257,14 +256,14 @@ export function ProfileForm() {
               <dt className='text-muted-foreground'>Email status</dt>
               <dd>
                 <Badge
-                  variant={user.is_verified ? 'default' : 'secondary'}
+                  variant={user.email_verified ? 'default' : 'secondary'}
                   className={
-                    user.is_verified
+                    user.email_verified
                       ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
                       : ''
                   }
                 >
-                  {user.is_verified ? 'Verified' : 'Unverified'}
+                  {user.email_verified ? 'Verified' : 'Unverified'}
                 </Badge>
               </dd>
             </div>

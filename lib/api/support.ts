@@ -1,27 +1,23 @@
 import { httpClient, SuccessResponse } from '../http/client';
+import { SupportTicket, CreateTicketDto } from '../types/support';
 
-export interface CreateSupportTicketRequest {
-  category: string;
-  subject: string;
-  message: string;
-}
-
-export interface CreateSupportTicketResponse {
-  success: boolean;
-  message: string;
-}
-
-const SUPPORT_BASE_URL = '/api/v1/support';
+const SUPPORT_BASE_URL = '/api/support';
 
 export class SupportApi {
+  // Create support ticket
   static async createTicket(
-    request: CreateSupportTicketRequest
-  ): Promise<SuccessResponse<CreateSupportTicketResponse>> {
-    const response = await httpClient.post<CreateSupportTicketResponse>(
-      `${SUPPORT_BASE_URL}/ticket`,
+    request: CreateTicketDto
+  ): Promise<SuccessResponse<SupportTicket>> {
+    const response = await httpClient.post<SupportTicket>(
+      SUPPORT_BASE_URL,
       request
     );
 
     return response.data!;
   }
 }
+
+// Hook-friendly API functions
+export const supportApi = {
+  createTicket: SupportApi.createTicket,
+};

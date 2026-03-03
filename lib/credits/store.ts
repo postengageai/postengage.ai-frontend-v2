@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import {
   CreditBalance,
   CreditTransaction,
-  CreditUsage,
+  UsageBreakdown,
 } from '../types/credits';
 import { CreditsApi } from '../api/credits';
 
@@ -10,7 +10,7 @@ interface CreditsState {
   balance: CreditBalance | null;
   transactions: CreditTransaction[];
   transactionsTotal: number;
-  usage: CreditUsage | null;
+  usage: UsageBreakdown | null;
   invoices: CreditTransaction[];
   invoicesTotal: number;
   isLoading: boolean;
@@ -20,13 +20,13 @@ interface CreditsState {
   actions: {
     setBalance: (balance: CreditBalance | null) => void;
     setTransactions: (transactions: CreditTransaction[], total: number) => void;
-    setUsage: (usage: CreditUsage | null) => void;
+    setUsage: (usage: UsageBreakdown | null) => void;
     setInvoices: (invoices: CreditTransaction[], total: number) => void;
     setLoading: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     fetchBalance: () => Promise<void>;
     fetchTransactions: (limit?: number, page?: number) => Promise<void>;
-    fetchUsage: (days?: number, from?: string, to?: string) => Promise<void>;
+    fetchUsage: (period?: 'today' | 'week' | 'month') => Promise<void>;
     fetchInvoices: (limit?: number, page?: number) => Promise<void>;
     reset: () => void;
   };
@@ -68,11 +68,13 @@ export const useCreditsStore = create<CreditsState>(set => ({
       }
     },
 
-    fetchTransactions: async (limit = 20, skip = 0) => {
+    fetchTransactions: async (limit = 20, page = 1) => {
       set({ isTransactionsLoading: true, error: null });
       try {
-        const page = Math.floor(skip / limit) + 1;
-        const response = await CreditsApi.getTransactions({ limit, page });
+        const response = await CreditsApi.getTransactions({
+          limit,
+          page,
+        });
         set({
           transactions: response.data,
           transactionsTotal: response.pagination?.total ?? 0,
@@ -90,10 +92,10 @@ export const useCreditsStore = create<CreditsState>(set => ({
       }
     },
 
-    fetchUsage: async (days, from, to) => {
+    fetchUsage: async (period = 'month') => {
       set({ isUsageLoading: true, error: null });
       try {
-        const response = await CreditsApi.getUsage({ days, from, to });
+        const response = await CreditsApi.getUsage({ period });
         set({ usage: response.data, isUsageLoading: false });
       } catch (error: unknown) {
         const errorMessage =
@@ -105,14 +107,14 @@ export const useCreditsStore = create<CreditsState>(set => ({
       }
     },
 
-    fetchInvoices: async (limit = 20, skip = 0) => {
+    fetchInvoices: async (_limit = 20, _skip = 0) => {
       set({ isLoading: true, error: null });
       try {
-        const page = Math.floor(skip / limit) + 1;
-        const response = await CreditsApi.getInvoices({ limit, page });
+        // TODO: getInvoices method removed from API
+        // const response = await CreditsApi.getInvoices({ limit, next_cursor: undefined });
         set({
-          invoices: response.data,
-          invoicesTotal: response.pagination?.total ?? 0,
+          invoices: [],
+          invoicesTotal: 0,
           isLoading: false,
         });
       } catch (error: unknown) {

@@ -1,27 +1,26 @@
-import {
-  LoginRequest,
-  SignupRequest,
-  VerifyEmailRequest,
-  ResendVerificationRequest,
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
-  LoginResponse,
-  SignupResponse,
-  VerifyEmailResponse,
-  User,
-} from '../schemas/auth';
 import { httpClient, SuccessResponse } from '../http/client';
 import { ApiError } from '../http/errors';
+import { User } from '../types/settings';
 
-const AUTH_BASE_URL = '/api/v1/auth';
+const AUTH_BASE_URL = '/api/auth';
+
+export interface RegisterDto {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface LoginDto {
+  email: string;
+  password: string;
+}
 
 export class AuthApi {
   // User registration
-  static async signup(
-    request: SignupRequest
-  ): Promise<SuccessResponse<SignupResponse>> {
-    const response = await httpClient.post<SignupResponse>(
-      `${AUTH_BASE_URL}/signup`,
+  static async register(request: RegisterDto): Promise<SuccessResponse<User>> {
+    const response = await httpClient.post<User>(
+      `${AUTH_BASE_URL}/register`,
       request
     );
 
@@ -29,40 +28,10 @@ export class AuthApi {
   }
 
   // User login
-  static async login(
-    request: LoginRequest
-  ): Promise<SuccessResponse<LoginResponse>> {
-    const response = await httpClient.post<LoginResponse>(
+  static async login(request: LoginDto): Promise<SuccessResponse<User>> {
+    const response = await httpClient.post<User>(
       `${AUTH_BASE_URL}/login`,
       request
-    );
-
-    return response.data!;
-  }
-
-  // Verify email
-  static async verifyEmail(
-    request: VerifyEmailRequest
-  ): Promise<SuccessResponse<VerifyEmailResponse>> {
-    const response = await httpClient.post<VerifyEmailResponse>(
-      `${AUTH_BASE_URL}/verify-email`,
-      request
-    );
-
-    return response.data!;
-  }
-
-  // Resend verification email
-  static async resendVerification(
-    request: ResendVerificationRequest
-  ): Promise<void> {
-    await httpClient.post(`${AUTH_BASE_URL}/resend-verification`, request);
-  }
-
-  // Refresh session (token refresh)
-  static async refreshSession(): Promise<SuccessResponse<{ user: User }>> {
-    const response = await httpClient.post<{ user: User }>(
-      `${AUTH_BASE_URL}/refresh`
     );
 
     return response.data!;
@@ -73,26 +42,23 @@ export class AuthApi {
     await httpClient.post(`${AUTH_BASE_URL}/logout`);
   }
 
-  // Forgot password
-  static async forgotPassword(request: ForgotPasswordRequest): Promise<void> {
-    await httpClient.post(`${AUTH_BASE_URL}/forgot-password`, request);
-  }
+  // Refresh access token
+  static async refresh(): Promise<SuccessResponse<User>> {
+    const response = await httpClient.post<User>(`${AUTH_BASE_URL}/refresh`);
 
-  // Reset password
-  static async resetPassword(request: ResetPasswordRequest): Promise<void> {
-    await httpClient.post(`${AUTH_BASE_URL}/reset-password`, request);
-  }
-
-  // Get current user profile
-  static async getCurrentUser(): Promise<SuccessResponse<User>> {
-    const response = await httpClient.get<User>('/api/v1/users/profile');
     return response.data!;
   }
 
-  // Check if user is authenticated by fetching profile
+  // Get current user
+  static async me(): Promise<SuccessResponse<User>> {
+    const response = await httpClient.get<User>(`${AUTH_BASE_URL}/me`);
+    return response.data!;
+  }
+
+  // Check if user is authenticated by fetching current user
   static async checkAuth(): Promise<User | null> {
     try {
-      const response = await this.getCurrentUser();
+      const response = await this.me();
       return response.data;
     } catch (error) {
       // Check if error is a 401 or 403 status code
@@ -109,14 +75,10 @@ export class AuthApi {
 
 // Hook-friendly API functions
 export const authApi = {
-  signup: AuthApi.signup,
+  register: AuthApi.register,
   login: AuthApi.login,
-  verifyEmail: AuthApi.verifyEmail,
-  resendVerification: AuthApi.resendVerification,
-  refreshSession: AuthApi.refreshSession,
   logout: AuthApi.logout,
-  forgotPassword: AuthApi.forgotPassword,
-  resetPassword: AuthApi.resetPassword,
-  getCurrentUser: AuthApi.getCurrentUser,
+  refresh: AuthApi.refresh,
+  me: AuthApi.me,
   checkAuth: AuthApi.checkAuth,
 };

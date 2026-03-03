@@ -5,7 +5,6 @@ import type React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -21,11 +20,9 @@ import {
   Bell,
   Check,
   CheckCheck,
-  ChevronRight,
   ChevronLeft,
   Search,
   Trash2,
-  Archive,
   MoreHorizontal,
   Inbox,
   Filter,
@@ -35,8 +32,6 @@ import { cn } from '@/lib/utils';
 import type {
   Notification,
   NotificationTypeType,
-  NotificationPriorityType,
-  NotificationStatusType,
 } from '@/lib/types/notifications';
 import { notificationsApi } from '@/lib/api/notifications';
 import { socketService } from '@/lib/socket/socket.service';
@@ -55,7 +50,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-type FilterType = 'all' | 'unread' | 'read' | 'archived';
+type FilterType = 'all' | 'unread' | 'read';
 
 export default function ActivityPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -112,10 +107,8 @@ export default function ActivityPage() {
   const filteredNotifications = useMemo(() => {
     return notifications.filter(n => {
       // Status filter
-      if (filter === 'unread' && n.status !== 'unread') return false;
-      if (filter === 'read' && n.status !== 'read') return false;
-      if (filter === 'archived' && n.status !== 'archived') return false;
-      if (filter === 'all' && n.status === 'archived') return false; // Hide archived in "all"
+      if (filter === 'unread' && n.is_read) return false;
+      if (filter === 'read' && !n.is_read) return false;
 
       // Type filter
       if (typeFilter !== 'all' && n.type !== typeFilter) return false;
@@ -133,10 +126,7 @@ export default function ActivityPage() {
     });
   }, [notifications, filter, typeFilter, searchQuery]);
 
-  const unreadCount = notifications.filter(n => n.status === 'unread').length;
-  const archivedCount = notifications.filter(
-    n => n.status === 'archived'
-  ).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -146,7 +136,7 @@ export default function ActivityPage() {
           n.id === id
             ? {
                 ...n,
-                status: 'read' as NotificationStatusType,
+                is_read: true,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -162,10 +152,10 @@ export default function ActivityPage() {
       await notificationsApi.markAllAsRead();
       setNotifications(prev =>
         prev.map(n =>
-          n.status === 'unread'
+          !n.is_read
             ? {
                 ...n,
-                status: 'read' as NotificationStatusType,
+                is_read: true,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -176,45 +166,19 @@ export default function ActivityPage() {
     }
   };
 
-  const handleArchive = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n =>
-        n.id === id
-          ? {
-              ...n,
-              status: 'archived' as NotificationStatusType,
-              archived_at: new Date().toISOString(),
-            }
-          : n
-      )
-    );
-  };
-
   const handleDelete = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const handleBulkAction = (action: 'read' | 'archive' | 'delete') => {
+  const handleBulkAction = (action: 'read' | 'delete') => {
     if (action === 'read') {
       setNotifications(prev =>
         prev.map(n =>
           selectedIds.has(n.id)
             ? {
                 ...n,
-                status: 'read' as NotificationStatusType,
+                is_read: true,
                 read_at: new Date().toISOString(),
-              }
-            : n
-        )
-      );
-    } else if (action === 'archive') {
-      setNotifications(prev =>
-        prev.map(n =>
-          selectedIds.has(n.id)
-            ? {
-                ...n,
-                status: 'archived' as NotificationStatusType,
-                archived_at: new Date().toISOString(),
               }
             : n
         )
@@ -298,31 +262,6 @@ export default function ActivityPage() {
     }
   };
 
-  const getPriorityBadge = (priority: NotificationPriorityType) => {
-    switch (priority) {
-      case 'urgent':
-        return (
-          <Badge
-            variant='outline'
-            className='text-[10px] px-1.5 py-0 border-red-500/50 text-red-400 bg-red-500/10'
-          >
-            Urgent
-          </Badge>
-        );
-      case 'high':
-        return (
-          <Badge
-            variant='outline'
-            className='text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-400 bg-amber-500/10'
-          >
-            High
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
-
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const diff = Date.now() - date.getTime();
@@ -398,32 +337,25 @@ export default function ActivityPage() {
             <div className='flex items-center gap-2 flex-wrap'>
               {/* Status Filter Tabs */}
               <div className='flex items-center bg-secondary/50 rounded-lg p-0.5'>
-                {(['all', 'unread', 'read', 'archived'] as FilterType[]).map(
-                  f => (
-                    <button
-                      key={f}
-                      onClick={() => setFilter(f)}
-                      className={cn(
-                        'px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize flex items-center gap-1.5',
-                        filter === f
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      {f}
-                      {f === 'unread' && unreadCount > 0 && (
-                        <span className='bg-primary text-primary-foreground text-[10px] px-1.5 rounded-full'>
-                          {unreadCount}
-                        </span>
-                      )}
-                      {f === 'archived' && archivedCount > 0 && (
-                        <span className='bg-muted-foreground/30 text-[10px] px-1.5 rounded-full'>
-                          {archivedCount}
-                        </span>
-                      )}
-                    </button>
-                  )
-                )}
+                {(['all', 'unread', 'read'] as FilterType[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={cn(
+                      'px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize flex items-center gap-1.5',
+                      filter === f
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {f}
+                    {f === 'unread' && unreadCount > 0 && (
+                      <span className='bg-primary text-primary-foreground text-[10px] px-1.5 rounded-full'>
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
 
               {/* Type Filter */}
@@ -488,15 +420,6 @@ export default function ActivityPage() {
               >
                 <Check className='h-3.5 w-3.5 mr-1.5' />
                 Mark read
-              </Button>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleBulkAction('archive')}
-                className='h-8 text-xs'
-              >
-                <Archive className='h-3.5 w-3.5 mr-1.5' />
-                Archive
               </Button>
               <Button
                 variant='ghost'
@@ -570,10 +493,8 @@ export default function ActivityPage() {
                 onToggleSelect={() => toggleSelect(notification.id)}
                 getTypeIcon={getTypeIcon}
                 getTypeColor={getTypeColor}
-                getPriorityBadge={getPriorityBadge}
                 formatTime={formatTime}
                 onMarkAsRead={handleMarkAsRead}
-                onArchive={handleArchive}
                 onDelete={handleDelete}
               />
             ))}
@@ -590,10 +511,8 @@ interface NotificationRowProps {
   onToggleSelect: () => void;
   getTypeIcon: (type: NotificationTypeType) => React.ReactNode;
   getTypeColor: (type: NotificationTypeType) => string;
-  getPriorityBadge: (priority: NotificationPriorityType) => React.ReactNode;
   formatTime: (dateString: string) => string;
   onMarkAsRead: (id: string) => void;
-  onArchive: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -603,14 +522,11 @@ function NotificationRow({
   onToggleSelect,
   getTypeIcon,
   getTypeColor,
-  getPriorityBadge,
   formatTime,
   onMarkAsRead,
-  onArchive,
   onDelete,
 }: NotificationRowProps) {
-  const isUnread = notification.status === 'unread';
-  const isArchived = notification.status === 'archived';
+  const isUnread = !notification.is_read;
 
   return (
     <div
@@ -618,8 +534,7 @@ function NotificationRow({
         'group flex items-start gap-3 p-4 rounded-xl transition-all duration-200',
         'hover:bg-secondary/60 border border-transparent',
         isUnread && 'bg-secondary/30',
-        isSelected && 'border-primary/50 bg-primary/5',
-        isArchived && 'opacity-60'
+        isSelected && 'border-primary/50 bg-primary/5'
       )}
     >
       {/* Checkbox */}
@@ -648,36 +563,17 @@ function NotificationRow({
       <div className='flex-1 min-w-0'>
         <div className='flex items-start justify-between gap-3'>
           <div className='min-w-0 flex-1'>
-            <div className='flex items-center gap-2 flex-wrap'>
-              <p
-                className={cn(
-                  'text-sm',
-                  isUnread ? 'font-semibold' : 'font-medium'
-                )}
-              >
-                {notification.title}
-              </p>
-              {getPriorityBadge(notification.priority)}
-              {isArchived && (
-                <Badge variant='outline' className='text-[10px] px-1.5 py-0'>
-                  Archived
-                </Badge>
+            <p
+              className={cn(
+                'text-sm',
+                isUnread ? 'font-semibold' : 'font-medium'
               )}
-            </div>
+            >
+              {notification.title}
+            </p>
             <p className='text-sm text-muted-foreground mt-0.5 line-clamp-2'>
               {notification.message}
             </p>
-
-            {/* Action button */}
-            {notification.action_label && notification.action_url && (
-              <Link
-                href={notification.action_url}
-                className='inline-flex items-center gap-1 text-xs text-primary font-medium mt-2 hover:underline'
-              >
-                {notification.action_label}
-                <ChevronRight className='h-3 w-3' />
-              </Link>
-            )}
           </div>
 
           <div className='flex items-center gap-2 flex-shrink-0'>
@@ -703,12 +599,6 @@ function NotificationRow({
                   >
                     <Check className='h-3.5 w-3.5 mr-2' />
                     Mark as read
-                  </DropdownMenuItem>
-                )}
-                {!isArchived && (
-                  <DropdownMenuItem onClick={() => onArchive(notification.id)}>
-                    <Archive className='h-3.5 w-3.5 mr-2' />
-                    Archive
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -744,9 +634,6 @@ function EmptyState({
   } else if (filter === 'unread') {
     title = 'All caught up!';
     description = "You've read all your notifications. Nice work.";
-  } else if (filter === 'archived') {
-    title = 'No archived notifications';
-    description = 'Archived notifications will appear here.';
   }
 
   return (

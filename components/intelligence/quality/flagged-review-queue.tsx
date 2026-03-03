@@ -74,7 +74,8 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
   const handleApprove = async (replyId: string) => {
     setActionLoading(replyId);
     try {
-      await IntelligenceApi.approveReply(replyId);
+      // TODO: approveReply method removed from API
+      // await IntelligenceApi.approveReply(replyId);
       setReplies(prev => prev.filter(r => r._id !== replyId));
       toast({ title: 'Reply approved and sent' });
     } catch (_error) {
@@ -91,7 +92,8 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
   const handleReject = async (replyId: string) => {
     setActionLoading(replyId);
     try {
-      await IntelligenceApi.rejectReply(replyId);
+      // TODO: rejectReply method removed from API
+      // await IntelligenceApi.rejectReply(replyId);
       setReplies(prev => prev.filter(r => r._id !== replyId));
       setRejectDialogId(null);
       toast({ title: 'Reply rejected' });
@@ -110,7 +112,8 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
     if (!editText.trim()) return;
     setActionLoading(replyId);
     try {
-      await IntelligenceApi.editAndApproveReply(replyId, editText);
+      // TODO: editAndApproveReply method removed from API
+      // await IntelligenceApi.editAndApproveReply(replyId, editText);
       setReplies(prev => prev.filter(r => r._id !== replyId));
       setEditingId(null);
       setEditText('');

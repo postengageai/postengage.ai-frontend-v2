@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Plus,
-  MessageCircle,
   Send,
   ArrowRight,
   Zap,
@@ -21,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { Automation } from '@/lib/types/dashboard';
+import type { Automation } from '@/lib/api/automations';
 
 interface AutomationSummaryProps {
   automations: Automation[];
@@ -34,8 +33,11 @@ export function AutomationSummary({
   onToggle,
   onDelete,
 }: AutomationSummaryProps) {
-  const activeCount = automations.filter(a => a.status === 'running').length;
-  const totalHandled = automations.reduce((acc, a) => acc + a.handledCount, 0);
+  const activeCount = automations.filter(a => a.status === 'active').length;
+  const totalRuns = automations.reduce(
+    (acc, a) => acc + (a.total_runs || 0),
+    0
+  );
 
   if (automations.length === 0) {
     return <EmptyAutomationsState />;
@@ -68,9 +70,9 @@ export function AutomationSummary({
             </div>
             <span className='text-muted-foreground'>
               <span className='font-semibold text-foreground'>
-                {totalHandled.toLocaleString()}
+                {totalRuns.toLocaleString()}
               </span>{' '}
-              total handled
+              total runs
             </span>
           </div>
         </div>
@@ -115,21 +117,21 @@ function AutomationCard({
   onToggle,
   onDelete,
 }: AutomationCardProps) {
-  const isActive = automation.status === 'running';
+  const isActive = automation.status === 'active';
 
   const getActionIcon = () => {
-    switch (automation.action) {
-      case 'reply':
-        return <MessageCircle className='h-3.5 w-3.5' />;
-      case 'dm':
+    const firstAction = automation.actions?.[0];
+    switch (firstAction?.type) {
+      case 'send_message':
         return <Send className='h-3.5 w-3.5' />;
       default:
         return <Zap className='h-3.5 w-3.5' />;
     }
   };
 
-  const formatLastRun = (date?: Date) => {
-    if (!date) return 'Never run';
+  const formatLastRun = (dateStr?: string) => {
+    if (!dateStr) return 'Never run';
+    const date = new Date(dateStr);
     const diff = Date.now() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return 'Just now';
@@ -166,18 +168,18 @@ function AutomationCard({
           </p>
           <div className='flex items-center gap-2 mt-0.5'>
             <span className='text-xs text-muted-foreground'>
-              {automation.handledCount} handled
+              {automation.total_runs || 0} total runs
             </span>
             <span className='text-xs text-muted-foreground/50'>•</span>
             <span className='text-xs text-muted-foreground'>
-              {formatLastRun(automation.lastRun)}
+              {formatLastRun(automation.last_run_at)}
             </span>
           </div>
         </div>
       </Link>
       <div className='flex items-center gap-3 pl-3'>
         <Badge variant={isActive ? 'default' : 'secondary'} className='text-xs'>
-          {isActive ? 'Active' : 'Paused'}
+          {isActive ? 'Active' : 'Inactive'}
         </Badge>
         <Switch
           checked={isActive}

@@ -1,11 +1,16 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import { PricingResponse } from '../types/pricing';
+import { Plan } from '../types/pricing';
 
 export class PricingApi {
-  static async getPackages(): Promise<SuccessResponse<PricingResponse>> {
-    const response = await httpClient.get<PricingResponse>(
-      'api/v1/payments/packages'
-    );
+  /**
+   * Get available pricing plans
+   * GET /api/payments/plans
+   */
+  static async getPlans(): Promise<SuccessResponse<Plan[]>> {
+    const response = await httpClient.get<Plan[]>('/api/payments/plans');
     return response.data!;
   }
 }
+
+// Create a singleton instance for convenience
+export const pricingApi = new PricingApi();
