@@ -1,64 +1,83 @@
 export enum AnalyticsPeriod {
   TODAY = 'today',
-  WEEK = 'week',
-  MONTH = 'month',
-  YEAR = 'year',
+  YESTERDAY = 'yesterday',
+  LAST_7_DAYS = 'last_7_days',
+  LAST_30_DAYS = 'last_30_days',
+  THIS_MONTH = 'this_month',
+  LAST_MONTH = 'last_month',
+  CUSTOM = 'custom',
 }
 
-/**
- * High-level analytics overview for a given period
- */
-export interface AnalyticsOverview {
-  period: string;
-  total_interactions: number;
-  total_leads_captured: number;
-  total_messages_sent: number;
-  total_messages_received: number;
-  response_rate: number;
-  avg_response_time_ms: number;
-  active_automations: number;
-  credits_used: number;
-  comparison: {
-    interactions_change: number;
-    leads_change: number;
-    messages_change: number;
-    response_rate_change: number;
+export interface AnalyticsDateRange {
+  start: string;
+  end: string;
+  type?: AnalyticsPeriod;
+}
+
+export interface AnalyticsMetrics {
+  totalLeads: number;
+  totalExecutions: number;
+  totalCreditsUsed: number;
+  successRate: number;
+}
+
+export interface AnalyticsOverviewResponse {
+  period: AnalyticsDateRange;
+  metrics: AnalyticsMetrics;
+}
+
+export interface DailyActivity {
+  date: string;
+  executions: number;
+  failures: number;
+}
+
+export interface AnalyticsActivityResponse {
+  period: AnalyticsDateRange;
+  activity: {
+    data: DailyActivity[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
   };
 }
 
-/**
- * Individual activity record
- */
-export interface Activity {
-  id: string;
-  type:
-    | 'comment_reply'
-    | 'dm_sent'
-    | 'lead_captured'
-    | 'automation_triggered'
-    | 'bot_response';
-  description: string;
-  platform: string;
-  automation_id?: string;
-  automation_name?: string;
-  lead_id?: string;
-  metadata?: Record<string, unknown>;
-  created_at: string;
+export interface IntelligenceAnalyticsItem {
+  date: string;
+  social_account_id: string;
+  ai_calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  fallback_rate: number;
+  llm_failures: number;
+  escalations: number;
+  total_decisions: number;
+  // Extended analytics fields
+  total_processed?: number;
+  replied_count?: number;
+  avg_latency_ms?: number;
+  actions_taken?: number;
 }
 
-/**
- * Intelligence and bot performance metrics
- */
-export interface IntelligenceMetrics {
-  period: string;
-  total_bot_interactions: number;
-  avg_quality_score: number;
-  sentiment_breakdown: {
-    positive: number;
-    neutral: number;
-    negative: number;
-  };
-  top_topics: Array<{ topic: string; count: number }>;
-  voice_dna_accuracy: number;
-  credits_used_intelligence: number;
+export interface IntelligenceAnalyticsResponse {
+  period: AnalyticsDateRange;
+  items: IntelligenceAnalyticsItem[];
+}
+
+// Analytics API Response types
+export interface IntelligenceAnalyticsParams {
+  period: AnalyticsPeriod;
+  bot_id?: string;
+}
+
+export interface QualityAnalyticsParams {
+  period?: 'daily' | 'weekly' | 'monthly';
+  bot_id?: string;
+  include_quality?: boolean;
+  include_diversity?: boolean;
+  include_intents?: boolean;
 }

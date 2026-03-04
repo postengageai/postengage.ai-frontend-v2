@@ -61,8 +61,8 @@ export function VoiceDnaCreateDialog({
     setIsLoadingBrandVoices(true);
     try {
       const response = await IntelligenceApi.getBrandVoices();
-      if (response) {
-        setBrandVoices(response);
+      if (response?.data) {
+        setBrandVoices(response.data);
       }
     } catch {
       // Silently fail — user can still type brand voice ID
@@ -91,10 +91,8 @@ export function VoiceDnaCreateDialog({
     try {
       await onSubmit({
         brand_voice_id: selectedBrandVoiceId,
-        raw_samples: samples.map(text => ({
-          text,
-          source: 'manual_input',
-        })),
+        samples: samples,
+        source: 'manual_input',
       });
       // Reset form
       setRawSamplesText('');
@@ -130,7 +128,7 @@ export function VoiceDnaCreateDialog({
               </SelectTrigger>
               <SelectContent>
                 {brandVoices.map(bv => (
-                  <SelectItem key={bv._id} value={bv._id}>
+                  <SelectItem key={bv.id} value={bv.id}>
                     {bv.name}
                   </SelectItem>
                 ))}

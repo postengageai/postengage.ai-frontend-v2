@@ -65,7 +65,7 @@ export function AutomationCard({
   };
 
   // Format last run time
-  const formatLastRun = (dateStr?: string) => {
+  const formatLastRun = (dateStr?: string | null) => {
     if (!dateStr) return 'Never';
     const date = new Date(dateStr);
     const minutes = Math.floor((Date.now() - date.getTime()) / (1000 * 60));
@@ -149,12 +149,14 @@ export function AutomationCard({
             <div className='flex items-center gap-4 mt-4 pt-3 border-t border-border'>
               <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                 <Zap className='h-3 w-3' />
-                <span className='font-mono'>{automation.total_runs || 0}</span>
+                <span className='font-mono'>
+                  {automation.execution_count || 0}
+                </span>
                 <span>total runs</span>
               </div>
               <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                 <Clock className='h-3 w-3' />
-                <span>{formatLastRun(automation.last_run_at)}</span>
+                <span>{formatLastRun(automation.last_executed_at)}</span>
               </div>
             </div>
           </div>

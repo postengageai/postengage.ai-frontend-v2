@@ -11,6 +11,7 @@ import {
   Pause,
   Brain,
   Users,
+  Trash,
 } from 'lucide-react';
 import {
   Card,
@@ -60,7 +61,7 @@ export default function BotsPage() {
 
   const toggleBotStatus = async (bot: BotType) => {
     try {
-      const newStatus = bot.status === 'active' ? 'inactive' : 'active';
+      const newStatus = bot.status === 'active' ? 'paused' : 'active';
       await IntelligenceApi.updateBot(bot.id, {
         status: newStatus,
       });
@@ -105,10 +106,12 @@ export default function BotsPage() {
     switch (bot.status) {
       case 'active':
         return 'Active';
-      case 'inactive':
-        return 'Inactive';
-      case 'training':
-        return 'Training';
+      case 'paused':
+        return 'Paused';
+      case 'draft':
+        return 'Draft';
+      case 'archived':
+        return 'Archived';
       default:
         return 'Unknown';
     }
@@ -171,13 +174,15 @@ export default function BotsPage() {
                     {bot.name}
                     <span
                       className={`inline-block h-2.5 w-2.5 rounded-full ${
-                        bot.quality_score && bot.quality_score >= 0.7
+                        bot.stats?.avg_confidence &&
+                        bot.stats.avg_confidence >= 0.7
                           ? 'bg-green-500'
-                          : bot.quality_score && bot.quality_score >= 0.5
+                          : bot.stats?.avg_confidence &&
+                              bot.stats.avg_confidence >= 0.5
                             ? 'bg-yellow-500'
                             : 'bg-red-500'
                       }`}
-                      title={`Quality Score: ${(bot.quality_score ? bot.quality_score * 100 : 0).toFixed(0)}%`}
+                      title={`Quality Score: ${(bot.stats?.avg_confidence ? bot.stats.avg_confidence * 100 : 0).toFixed(0)}%`}
                     />
                   </CardTitle>
                   <CardDescription className='line-clamp-1'>
@@ -238,13 +243,17 @@ export default function BotsPage() {
                       {getStatusLabel(bot)}
                     </Badge>
                   </div>
-                  {bot.quality_score !== undefined && (
+                  {bot.stats?.avg_confidence !== undefined && (
                     <div className='flex justify-between items-center text-sm'>
                       <span className='text-muted-foreground'>
                         Quality Score
                       </span>
                       <span className='font-medium'>
-                        {(bot.quality_score * 100).toFixed(0)}%
+                        {(bot.stats?.avg_confidence
+                          ? bot.stats.avg_confidence * 100
+                          : 0
+                        ).toFixed(0)}
+                        %
                       </span>
                     </div>
                   )}
@@ -253,7 +262,7 @@ export default function BotsPage() {
                       Total Interactions
                     </span>
                     <span className='font-medium'>
-                      {bot.total_interactions}
+                      {bot.stats?.total_replies ?? 0}
                     </span>
                   </div>
                   <div className='pt-4 flex gap-2'>

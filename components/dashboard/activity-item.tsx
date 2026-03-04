@@ -105,7 +105,7 @@ export function ActivityItem({ activity, isLast = false }: ActivityItemProps) {
               <span className='text-xs text-muted-foreground'>
                 {activity.automationName}
               </span>
-              {activity.creditCost > 0 && (
+              {(activity.creditCost ?? 0) > 0 && (
                 <span className='flex items-center gap-1 text-xs text-muted-foreground'>
                   <Zap className='h-3 w-3' />
                   {activity.creditCost}
@@ -114,7 +114,9 @@ export function ActivityItem({ activity, isLast = false }: ActivityItemProps) {
             </div>
           </div>
           <span className='text-xs text-muted-foreground shrink-0'>
-            {formatTimestamp(activity.timestamp)}
+            {activity.timestamp
+              ? formatTimestamp(new Date(activity.timestamp))
+              : ''}
           </span>
         </div>
       </div>

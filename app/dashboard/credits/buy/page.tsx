@@ -32,8 +32,10 @@ export default function BuyCreditsPage() {
   ];
 
   const sortedPlans = (plans || []).sort((a, b) => {
-    // Sort by price (monthly) to show Free, Starter, Pro, Enterprise order
-    return a.price_monthly - b.price_monthly;
+    // Sort by price to show ascending order
+    const priceA = a.price || a.price_monthly || 0;
+    const priceB = b.price || b.price_monthly || 0;
+    return priceA - priceB;
   });
 
   return (
@@ -99,32 +101,33 @@ export default function BuyCreditsPage() {
           <div className='rounded-lg border border-border bg-card p-6'>
             <h3 className='font-medium mb-2'>Can I change my plan later?</h3>
             <p className='text-sm text-muted-foreground'>
-              Yes, you can upgrade or downgrade your plan anytime. Changes take
-              effect at the next billing cycle.
+              Yes, you can upgrade, downgrade, or cancel your plan at any time.
+              Changes will take effect at the start of your next billing cycle.
             </p>
           </div>
+
+          <div className='rounded-lg border border-border bg-card p-6'>
+            <h3 className='font-medium mb-2'>Is there a free trial?</h3>
+            <p className='text-sm text-muted-foreground'>
+              All plans include a 14-day free trial. No credit card required.
+            </p>
+          </div>
+
           <div className='rounded-lg border border-border bg-card p-6'>
             <h3 className='font-medium mb-2'>
               What payment methods do you accept?
             </h3>
             <p className='text-sm text-muted-foreground'>
-              We accept all major credit cards and debit cards through Razorpay
-              secure payment gateway.
+              We accept all major credit cards, PayPal, and other popular
+              payment methods.
             </p>
           </div>
+
           <div className='rounded-lg border border-border bg-card p-6'>
-            <h3 className='font-medium mb-2'>Is there a free trial?</h3>
+            <h3 className='font-medium mb-2'>Do you offer refunds?</h3>
             <p className='text-sm text-muted-foreground'>
-              Yes, all plans include a 14-day free trial with full access to
-              features.
-            </p>
-          </div>
-          <div className='rounded-lg border border-border bg-card p-6'>
-            <h3 className='font-medium mb-2'>Can I cancel anytime?</h3>
-            <p className='text-sm text-muted-foreground'>
-              Yes, you can cancel your subscription anytime. No questions asked.
-              Your access continues until the end of your current billing
-              period.
+              Yes, we offer a 30-day money-back guarantee if you're not
+              satisfied with your purchase.
             </p>
           </div>
         </div>

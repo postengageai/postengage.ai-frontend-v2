@@ -131,11 +131,14 @@ export function LeadTable({
         </TableHeader>
         <TableBody>
           {sortedLeads.map(lead => (
-            <TableRow key={lead._id} className='hover:bg-muted/50'>
+            <TableRow key={lead.id} className='hover:bg-muted/50'>
               <TableCell>
                 <div className='flex items-center gap-2'>
                   <Avatar className='h-8 w-8'>
-                    <AvatarImage src={lead.avatar_url} alt={lead.username} />
+                    <AvatarImage
+                      src={lead.profile_picture || undefined}
+                      alt={lead.username}
+                    />
                     <AvatarFallback>
                       {lead.username?.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -160,7 +163,7 @@ export function LeadTable({
               </TableCell>
               <TableCell>
                 <LeadTagManager
-                  leadId={lead._id}
+                  leadId={lead.id}
                   tags={lead.tags}
                   onTagsChange={onTagsChange}
                 />

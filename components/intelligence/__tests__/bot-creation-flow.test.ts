@@ -51,7 +51,7 @@ const mockBehavior: BotBehavior = {
 };
 
 const mockBot: Bot = {
-  _id: 'bot-1',
+  id: 'bot-1',
   user_id: 'user-1',
   name: 'Test Bot',
   description: 'A test bot',
@@ -99,7 +99,7 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
 
     const response = await IntelligenceApi.createBot(createDto);
 
-    expect(response.data._id).toBe('bot-1');
+    expect(response.data.id).toBe('bot-1');
     expect(response.data.social_account_id).toBe('sa-1');
     expect(response.data.brand_voice_id).toBe('bv-1');
   });
@@ -212,7 +212,7 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
       social_account_id: 'sa-1',
       behavior: mockBehavior,
     });
-    const botId = botResponse.data._id;
+    const botId = botResponse.data.id;
     const socialAccountId = botResponse.data.social_account_id;
 
     // 2. Trigger auto-infer
@@ -236,7 +236,10 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
     // 3. Poll until ready
     vi.mocked(VoiceDnaApi.getVoiceDna).mockResolvedValue({
       success: true,
-      data: { _id: voiceDnaId, status: 'ready' } as VoiceDna,
+      data: {
+        _id: voiceDnaId,
+        status: 'ready' as const,
+      } as unknown as VoiceDna,
       meta: mockMeta,
     });
 

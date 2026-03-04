@@ -379,7 +379,7 @@ export function InvoicesTable({
                         className='h-6 w-6 shrink-0'
                         onClick={() =>
                           copyToClipboard(
-                            selectedInvoice.payment_id,
+                            selectedInvoice.payment_id ?? '',
                             'payment_id'
                           )
                         }

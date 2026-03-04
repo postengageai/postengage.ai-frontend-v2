@@ -5,38 +5,26 @@ import { Job } from '@/lib/types/jobs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { JobStatusBadge } from './job-status-badge';
-import { Loader2, RotateCcw, X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface JobCardProps {
   job: Job;
   onCancel?: (jobId: string) => void;
-  onRetry?: (jobId: string) => void;
   isLoading?: boolean;
 }
 
-const jobTypeLabels = {
-  automation: 'Automation',
-  export: 'Export',
-  import: 'Import',
-  sync: 'Sync',
-  analysis: 'Analysis',
-  cleanup: 'Cleanup',
+const jobTypeLabels: Record<string, string> = {
+  lead_export: 'Lead Export',
+  lead_import: 'Lead Import',
+  report_generation: 'Report Generation',
+  bulk_automation_update: 'Bulk Automation Update',
+  account_data_export: 'Account Data Export',
 };
 
-export function JobCard({
-  job,
-  onCancel,
-  onRetry,
-  isLoading = false,
-}: JobCardProps) {
-  const canCancel = job.status === 'pending' || job.status === 'active';
-  const canRetry = job.status === 'failed';
-
-  const progressPercentage =
-    job.progress.total > 0
-      ? Math.round((job.progress.current / job.progress.total) * 100)
-      : 0;
+export function JobCard({ job, onCancel, isLoading = false }: JobCardProps) {
+  const canCancel = job.status === 'queued' || job.status === 'processing';
+  const progressPercentage = job.progress > 0 ? job.progress : 0;
 
   return (
     <Card className='hover:border-primary/50 transition-all'>
@@ -47,26 +35,28 @@ export function JobCard({
             <div className='flex-1 min-w-0'>
               <div className='flex items-center gap-2 mb-2'>
                 <span className='text-sm font-mono text-muted-foreground truncate'>
-                  {job.id.slice(0, 8)}...{job.id.slice(-4)}
+                  {job.job_id.slice(0, 8)}...{job.job_id.slice(-4)}
                 </span>
                 <JobStatusBadge status={job.status} />
               </div>
-              <p className='text-sm font-semibold'>{jobTypeLabels[job.type]}</p>
+              <p className='text-sm font-semibold'>
+                {jobTypeLabels[job.type] || job.type}
+              </p>
             </div>
           </div>
 
           {/* Progress Bar */}
-          {(job.status === 'active' || job.status === 'pending') && (
+          {(job.status === 'processing' || job.status === 'queued') && (
             <div className='space-y-2'>
               <div className='flex items-center justify-between text-xs text-muted-foreground'>
-                <span>{job.progress.current_step || 'Processing...'}</span>
+                <span>Processing...</span>
                 <span>{progressPercentage}%</span>
               </div>
               <div className='w-full bg-muted rounded-full h-2 overflow-hidden'>
                 <div
                   className={cn(
                     'h-full transition-all duration-300',
-                    job.status === 'active' ? 'bg-blue-500' : 'bg-amber-500'
+                    job.status === 'processing' ? 'bg-blue-500' : 'bg-amber-500'
                   )}
                   style={{ width: `${progressPercentage}%` }}
                 />
@@ -105,40 +95,22 @@ export function JobCard({
           </div>
 
           {/* Actions */}
-          {(canCancel || canRetry) && (
+          {canCancel && (
             <div className='flex gap-2 pt-2 border-t border-border'>
-              {canCancel && (
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onCancel?.(job.id)}
-                  disabled={isLoading}
-                  className='flex-1'
-                >
-                  {isLoading ? (
-                    <Loader2 className='h-3.5 w-3.5 animate-spin mr-1.5' />
-                  ) : (
-                    <X className='h-3.5 w-3.5 mr-1.5' />
-                  )}
-                  Cancel
-                </Button>
-              )}
-              {canRetry && (
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onRetry?.(job.id)}
-                  disabled={isLoading}
-                  className='flex-1'
-                >
-                  {isLoading ? (
-                    <Loader2 className='h-3.5 w-3.5 animate-spin mr-1.5' />
-                  ) : (
-                    <RotateCcw className='h-3.5 w-3.5 mr-1.5' />
-                  )}
-                  Retry
-                </Button>
-              )}
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => onCancel?.(job.job_id)}
+                disabled={isLoading}
+                className='flex-1'
+              >
+                {isLoading ? (
+                  <Loader2 className='h-3.5 w-3.5 animate-spin mr-1.5' />
+                ) : (
+                  <X className='h-3.5 w-3.5 mr-1.5' />
+                )}
+                Cancel
+              </Button>
             </div>
           )}
         </div>

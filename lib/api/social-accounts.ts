@@ -14,7 +14,7 @@ export class SocialAccountsApi {
     params?: ListSocialAccountsParams
   ): Promise<SuccessResponse<SocialAccount[]>> {
     const response = await httpClient.get<SocialAccount[]>(
-      '/api/social-accounts',
+      '/api/v1/social-accounts',
       {
         params,
       }
@@ -25,7 +25,7 @@ export class SocialAccountsApi {
   // Get specific social account details
   static async get(id: string): Promise<SuccessResponse<SocialAccount>> {
     const response = await httpClient.get<SocialAccount>(
-      `/api/social-accounts/${id}`
+      `/api/v1/social-accounts/${id}`
     );
     return response.data!;
   }
@@ -35,7 +35,7 @@ export class SocialAccountsApi {
     id: string
   ): Promise<SuccessResponse<Partial<SocialAccount>>> {
     const response = await httpClient.patch<Partial<SocialAccount>>(
-      `/api/social-accounts/${id}/primary`
+      `/api/v1/social-accounts/${id}/primary`
     );
     return response.data!;
   }

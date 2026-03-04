@@ -9,14 +9,14 @@ interface JobStatusBadgeProps {
   className?: string;
 }
 
-const statusConfig = {
-  pending: {
+const statusConfig: Record<JobStatus, { color: string; label: string }> = {
+  queued: {
     color: 'bg-amber-500/10 text-amber-500 border-amber-200/50',
-    label: 'Pending',
+    label: 'Queued',
   },
-  active: {
+  processing: {
     color: 'bg-blue-500/10 text-blue-500 border-blue-200/50',
-    label: 'Active',
+    label: 'Processing',
   },
   completed: {
     color: 'bg-emerald-500/10 text-emerald-500 border-emerald-200/50',

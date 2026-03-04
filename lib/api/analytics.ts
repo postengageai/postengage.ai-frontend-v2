@@ -1,33 +1,34 @@
-import { httpClient, SuccessResponse, PaginationMeta } from '../http/client';
+import { httpClient, SuccessResponse } from '../http/client';
 import {
-  AnalyticsOverview,
-  Activity,
-  IntelligenceMetrics,
+  AnalyticsOverviewResponse,
+  AnalyticsActivityResponse,
+  IntelligenceAnalyticsResponse,
+  AnalyticsPeriod,
 } from '../types/analytics';
 
-const ANALYTICS_BASE_URL = '/api/analytics';
+const ANALYTICS_BASE_URL = '/api/v1/analytics';
 
 export interface OverviewParams {
-  period?: 'today' | 'week' | 'month' | 'year';
+  period?: AnalyticsPeriod;
   social_account_id?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface ActivityParams {
-  period?: 'today' | 'week' | 'month' | 'year';
-  type?: string;
+  period?: AnalyticsPeriod;
   social_account_id?: string;
+  page?: number;
   limit?: number;
-  cursor?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface IntelligenceParams {
-  period?: 'today' | 'week' | 'month' | 'year';
-  bot_id?: string;
-}
-
-export interface ActivityResponse {
-  data: Activity[];
-  pagination?: PaginationMeta;
+  period?: AnalyticsPeriod;
+  social_account_id?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export class AnalyticsApi {
@@ -36,8 +37,8 @@ export class AnalyticsApi {
    */
   static async getOverview(
     params?: OverviewParams
-  ): Promise<SuccessResponse<AnalyticsOverview>> {
-    const response = await httpClient.get<AnalyticsOverview>(
+  ): Promise<SuccessResponse<AnalyticsOverviewResponse>> {
+    const response = await httpClient.get<AnalyticsOverviewResponse>(
       `${ANALYTICS_BASE_URL}/overview`,
       { params }
     );
@@ -45,12 +46,12 @@ export class AnalyticsApi {
   }
 
   /**
-   * Get detailed activity timeline with cursor-based pagination
+   * Get detailed activity timeline with pagination
    */
   static async getActivity(
     params?: ActivityParams
-  ): Promise<SuccessResponse<Activity[]>> {
-    const response = await httpClient.get<Activity[]>(
+  ): Promise<SuccessResponse<AnalyticsActivityResponse>> {
+    const response = await httpClient.get<AnalyticsActivityResponse>(
       `${ANALYTICS_BASE_URL}/activity`,
       { params }
     );
@@ -62,8 +63,8 @@ export class AnalyticsApi {
    */
   static async getIntelligence(
     params?: IntelligenceParams
-  ): Promise<SuccessResponse<IntelligenceMetrics>> {
-    const response = await httpClient.get<IntelligenceMetrics>(
+  ): Promise<SuccessResponse<IntelligenceAnalyticsResponse>> {
+    const response = await httpClient.get<IntelligenceAnalyticsResponse>(
       `${ANALYTICS_BASE_URL}/intelligence`,
       { params }
     );

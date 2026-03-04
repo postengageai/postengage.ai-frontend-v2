@@ -11,7 +11,7 @@ import {
   AdjustVoiceDto,
 } from '../types/voice-dna';
 
-const VOICE_DNA_BASE_URL = '/api/intelligence/voice-dna';
+const VOICE_DNA_BASE_URL = '/api/v1/intelligence/voice-dna';
 
 export class VoiceDnaApi {
   // List all Voice DNA records

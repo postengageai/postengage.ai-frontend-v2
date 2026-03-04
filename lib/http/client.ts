@@ -130,7 +130,9 @@ export class HttpClient {
         }
 
         // Handle double-nested data structure from backend.
-        // Backend wraps paginated results as:
+        // Backend sometimes wraps results as:
+        //   { success, data: { success, data: [...], meta }, meta }
+        // or
         //   { success, data: { data: [...], pagination: {...} }, meta }
         // Flatten to:
         //   { success, data: [...], pagination: {...}, meta }
@@ -139,14 +141,17 @@ export class HttpClient {
           typeof response.data.data === 'object' &&
           !Array.isArray(response.data.data) &&
           'data' in response.data.data &&
-          'pagination' in response.data.data
+          ('pagination' in response.data.data ||
+            'success' in response.data.data)
         ) {
           const innerData = response.data.data as {
             data: unknown;
-            pagination: unknown;
+            pagination?: PaginationMeta;
           };
           response.data.data = innerData.data;
-          response.data.pagination = innerData.pagination;
+          if (innerData.pagination) {
+            response.data.pagination = innerData.pagination;
+          }
         }
 
         return response;

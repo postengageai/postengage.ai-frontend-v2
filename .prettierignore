@@ -27,6 +27,8 @@ Thumbs.db
 
 # Coverage
 coverage/
+playwright-report/
+test-results/
 
 # Lock files
 package-lock.json

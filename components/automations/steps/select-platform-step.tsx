@@ -3,11 +3,12 @@
 import { Instagram } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import type { Platform } from '@/lib/types/automation-builder';
+import type { AutomationPlatformType } from '@/lib/types/automation-builder';
+import { AutomationPlatform } from '@/lib/constants/automations';
 
 interface SelectPlatformStepProps {
-  platform?: Platform;
-  onChange: (platform: Platform) => void;
+  platform?: AutomationPlatformType;
+  onChange: (platform: AutomationPlatformType) => void;
 }
 
 export function SelectPlatformStep({
@@ -16,7 +17,7 @@ export function SelectPlatformStep({
 }: SelectPlatformStepProps) {
   const platforms = [
     {
-      id: 'INSTAGRAM' as Platform,
+      id: AutomationPlatform.INSTAGRAM,
       name: 'Instagram',
       icon: Instagram,
       description: 'Auto-reply to comments, DMs, and more',

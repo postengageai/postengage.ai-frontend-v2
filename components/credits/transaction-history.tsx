@@ -212,7 +212,7 @@ export function TransactionHistory({
                 <TableBody>
                   {transactions.map(transaction => (
                     <TableRow
-                      key={transaction._id}
+                      key={transaction.id}
                       className='cursor-pointer'
                       onClick={() => setSelectedTransaction(transaction)}
                     >
@@ -319,7 +319,8 @@ export function TransactionHistory({
                       Balance Before
                     </p>
                     <p className='mt-1 font-mono text-sm text-foreground'>
-                      {selectedTransaction.balance_before.toLocaleString()}
+                      {selectedTransaction.balance_before?.toLocaleString() ??
+                        '0'}
                     </p>
                   </div>
                   <div>

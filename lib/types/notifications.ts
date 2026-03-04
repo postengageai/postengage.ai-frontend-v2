@@ -1,15 +1,21 @@
 export const NotificationType = {
   AUTOMATION: 'automation',
-  LEAD: 'lead',
-  PAYMENT: 'payment',
-  SOCIAL: 'social',
+  BILLING: 'billing',
   SYSTEM: 'system',
-  BOT: 'bot',
-  UPGRADE: 'upgrade',
+  USAGE: 'usage',
+  SECURITY: 'security',
+  SOCIAL: 'social',
+  PERFORMANCE: 'performance',
+  MAINTENANCE: 'maintenance',
+  NEW_FEATURE: 'new_feature',
+  ANNOUNCEMENT: 'announcement',
 } as const;
 
 export type NotificationTypeType =
   (typeof NotificationType)[keyof typeof NotificationType];
+
+export type NotificationStatus = 'unread' | 'read' | 'archived' | 'deleted';
+export type NotificationPriority = 'high' | 'medium' | 'low' | 'urgent';
 
 export interface Notification {
   id: string;
@@ -17,8 +23,17 @@ export interface Notification {
   type: NotificationTypeType;
   title: string;
   message: string;
-  data?: Record<string, unknown>;
-  is_read: boolean;
+  status: NotificationStatus;
+  priority: NotificationPriority;
+  action_url?: string | null;
+  action_label?: string;
+  read_at?: string | null;
+  is_read?: boolean;
+  is_broadcast: boolean;
+  target_channels: string[];
   created_at: string;
-  read_at?: string;
+  updated_at: string;
+  _links?: Record<string, { href: string; method?: string }>;
 }
+
+export type NotificationPriorityType = NotificationPriority;

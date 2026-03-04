@@ -75,11 +75,11 @@ export default function EditBotPage() {
         );
         if (statsResponse?.data) setMemoryStats(statsResponse.data);
 
-        // Fetch Voice DNA if bot has a voice_dna_id
-        if (botResponse?.data?.voice_dna_id) {
+        // Fetch Voice DNA if bot has a brand_voice_id
+        if (botResponse?.data?.brand_voice_id) {
           try {
-            const vdnaResponse = await VoiceDnaApi.getVoiceDnaById(
-              botResponse.data.voice_dna_id
+            const vdnaResponse = await VoiceDnaApi.getVoiceDnaByBrandVoice(
+              botResponse.data.brand_voice_id
             );
             if (vdnaResponse?.data) setVoiceDna(vdnaResponse.data);
           } catch {
@@ -133,12 +133,16 @@ export default function EditBotPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {bot.quality_score !== undefined ? (
+          {bot.stats?.avg_confidence !== undefined ? (
             <div className='text-sm'>
               <p className='text-muted-foreground'>
                 Quality Score:{' '}
                 <span className='font-medium'>
-                  {(bot.quality_score * 100).toFixed(0)}%
+                  {(bot.stats?.avg_confidence
+                    ? bot.stats.avg_confidence * 100
+                    : 0
+                  ).toFixed(0)}
+                  %
                 </span>
               </p>
             </div>

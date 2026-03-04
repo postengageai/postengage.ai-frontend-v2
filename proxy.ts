@@ -44,7 +44,7 @@ function isOAuthRoute(pathname: string): boolean {
   );
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip OAuth popup routes — they handle their own lifecycle

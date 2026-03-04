@@ -29,14 +29,14 @@ interface ConversationListProps {
   filter?: 'all' | 'unread' | 'archived';
 }
 
-const platformIcons = {
+const platformIcons: Record<string, typeof Instagram> = {
   instagram: Instagram,
   facebook: Facebook,
   twitter: Twitter,
   whatsapp: WhatsAppIcon,
 };
 
-const platformColors = {
+const platformColors: Record<string, string> = {
   instagram: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400',
   facebook: 'bg-blue-600',
   twitter: 'bg-sky-500',
@@ -60,8 +60,7 @@ export function ConversationList({
 
   const filteredConversations = conversations.filter(conv => {
     if (filter === 'unread') return conv.unread_count > 0;
-    if (filter === 'archived') return conv.is_archived;
-    return !conv.is_archived;
+    return true;
   });
 
   const initials = (name: string) =>
@@ -101,8 +100,14 @@ export function ConversationList({
             </div>
           ) : (
             filteredConversations.map(conversation => {
-              const PlatformIcon = platformIcons[conversation.platform];
+              const PlatformIcon =
+                platformIcons[conversation.platform.toLowerCase()] ||
+                MessageCircle;
               const isSelected = selectedId === conversation.id;
+              const lastMessageTime = formatDistanceToNow(
+                new Date(conversation.last_message_at),
+                { addSuffix: false }
+              );
 
               return (
                 <button
@@ -115,14 +120,10 @@ export function ConversationList({
                 >
                   <div className='flex-shrink-0'>
                     <Avatar className='h-10 w-10'>
-                      {conversation.participant.avatar_url && (
-                        <AvatarImage
-                          src={conversation.participant.avatar_url}
-                          alt={conversation.participant.name}
-                        />
-                      )}
                       <AvatarFallback>
-                        {initials(conversation.participant.name)}
+                        {conversation.platform_conversation_id
+                          ?.slice(0, 2)
+                          .toUpperCase() || 'C'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -131,48 +132,26 @@ export function ConversationList({
                     <div className='flex items-center justify-between gap-2 mb-1'>
                       <div className='flex items-center gap-2 min-w-0'>
                         <h3 className='font-semibold text-sm truncate'>
-                          {conversation.participant.name}
+                          Conversation {conversation.id?.slice(0, 8)}
                         </h3>
-                        {conversation.participant.is_verified && (
-                          <span className='text-blue-500 text-xs flex-shrink-0'>
-                            ✓
-                          </span>
-                        )}
                       </div>
                       <span className='text-xs text-muted-foreground flex-shrink-0'>
-                        {formatDistanceToNow(
-                          new Date(conversation.last_message_at),
-                          { addSuffix: false }
-                        )}
+                        {lastMessageTime}
                       </span>
                     </div>
 
                     <p className='text-xs text-muted-foreground truncate'>
-                      {conversation.last_message?.content || 'No messages yet'}
+                      {conversation.platform} conversation
                     </p>
 
-                    <div className='flex items-center justify-between gap-2 mt-2'>
-                      <div className='flex items-center gap-1.5'>
-                        {PlatformIcon && (
-                          <div
-                            className={cn(
-                              'h-5 w-5 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0',
-                              platformColors[conversation.platform]
-                            )}
-                          >
-                            <PlatformIcon className='h-3 w-3' />
-                          </div>
-                        )}
-                        {conversation.is_archived && (
-                          <Archive className='h-3.5 w-3.5 text-muted-foreground flex-shrink-0' />
-                        )}
-                      </div>
-
+                    <div className='flex items-center gap-2 mt-2'>
+                      {conversation.tags.length > 0 && (
+                        <Badge variant='secondary' className='text-[10px]'>
+                          {conversation.tags[0]}
+                        </Badge>
+                      )}
                       {conversation.unread_count > 0 && (
-                        <Badge
-                          variant='default'
-                          className='text-[10px] h-5 px-1.5'
-                        >
+                        <Badge className='bg-primary text-primary-foreground text-[10px]'>
                           {conversation.unread_count}
                         </Badge>
                       )}

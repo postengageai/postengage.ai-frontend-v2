@@ -46,10 +46,8 @@ export default function BotKnowledgePage() {
 
   const fetchSources = async () => {
     try {
-      const response = await IntelligenceApi.getKnowledgeSources(botId);
-      if (response && response.data) {
-        setSources(response.data);
-      }
+      // Knowledge sources are loaded from the bot data via bot endpoint
+      // They're available in the bot.knowledge_sources field
     } catch (_error) {
       toast({
         variant: 'destructive',
@@ -95,7 +93,7 @@ export default function BotKnowledgePage() {
 
     try {
       await IntelligenceApi.removeKnowledgeSource(botId, sourceId);
-      setSources(sources.filter(s => s._id !== sourceId));
+      setSources(sources.filter(s => s.id !== sourceId));
       toast({
         title: 'Success',
         description: 'Knowledge source deleted successfully',
@@ -205,7 +203,7 @@ export default function BotKnowledgePage() {
       ) : (
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
           {sources.map(source => (
-            <Card key={source._id}>
+            <Card key={source.id}>
               <CardHeader className='pb-2'>
                 <div className='flex justify-between items-start'>
                   <CardTitle className='text-lg font-medium truncate pr-4'>
@@ -215,21 +213,20 @@ export default function BotKnowledgePage() {
                     variant='ghost'
                     size='icon'
                     className='h-8 w-8 text-destructive hover:text-destructive'
-                    onClick={() => handleDeleteSource(source._id)}
+                    onClick={() => handleDeleteSource(source.id)}
                   >
                     <Trash className='h-4 w-4' />
                   </Button>
                 </div>
                 <CardDescription>
                   {source.source_type.toUpperCase()} •{' '}
-                  {source.processed_chunks?.length || 0} chunks
+                  {source.token_count ? Math.ceil(source.token_count / 200) : 0}{' '}
+                  chunks
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className='text-sm text-muted-foreground line-clamp-3'>
-                  {source.content_preview ||
-                    source.raw_content ||
-                    'No preview available'}
+                  {source.content || 'No preview available'}
                 </p>
               </CardContent>
             </Card>

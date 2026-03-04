@@ -51,14 +51,10 @@ export function useRazorpay() {
   };
 
   /**
-   * Process a payment for a subscription plan
-   * @param planId - The plan ID to subscribe to
-   * @param billingCycle - Monthly or annual billing (default: monthly)
+   * Process a payment for a credit package
+   * @param packageId - The package ID to purchase
    */
-  const processPayment = async (
-    planId: string,
-    billingCycle: 'monthly' | 'annual' = 'monthly'
-  ) => {
+  const processPayment = async (packageId: string) => {
     setIsProcessing(true);
     try {
       const isLoaded = await loadScript();
@@ -70,8 +66,7 @@ export function useRazorpay() {
 
       // 1. Create Order via Payments API
       const orderResponse = await PaymentsApi.createOrder({
-        plan_id: planId,
-        billing_cycle: billingCycle,
+        packageId,
       });
       const order = orderResponse.data;
 
@@ -85,7 +80,7 @@ export function useRazorpay() {
         amount: order.amount,
         currency: order.currency,
         name: 'PostEngageAI',
-        description: `Plan subscription - ${order.receipt}`,
+        description: `Credit package - ${order.package.name}`,
         order_id: order.order_id,
         handler: async (response: RazorpayResponse) => {
           // Show verifying state
@@ -97,25 +92,25 @@ export function useRazorpay() {
           try {
             // 3. Verify payment with backend BEFORE showing success
             const verifyResult = await PaymentsApi.verifyPayment({
-              order_id: order.order_id,
-              payment_id: response.razorpay_payment_id,
-              signature: response.razorpay_signature,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
             });
 
             // Only show success AFTER backend confirms
             toast({
               title: 'Payment Successful!',
-              description: `Your subscription is now active. Status: ${verifyResult.data.status}`,
+              description: `Your credits have been added. New balance: ${verifyResult.data.new_balance}`,
             });
 
             // Redirect or refetch user data
-            window.location.href = '/dashboard/settings/billing';
+            window.location.href = '/dashboard/credits/overview';
           } catch (_error) {
             toast({
               variant: 'destructive',
               title: 'Payment Verification Failed',
               description:
-                'Your payment was received but verification failed. Your subscription may be activated shortly. If not, please contact support.',
+                'Your payment was received but verification failed. Your credits may be added shortly. If not, please contact support.',
               duration: 10000,
             });
 

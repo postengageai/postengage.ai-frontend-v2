@@ -7,7 +7,7 @@ import {
   AddLeadTagsPayload,
 } from '@/lib/types/leads';
 
-const LEADS_BASE_URL = '/api/leads';
+const LEADS_BASE_URL = '/api/v1/leads';
 
 export interface LeadsListParams {
   status?: string;

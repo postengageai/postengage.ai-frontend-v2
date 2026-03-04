@@ -129,7 +129,7 @@ function AutomationCard({
     }
   };
 
-  const formatLastRun = (dateStr?: string) => {
+  const formatLastRun = (dateStr?: string | null) => {
     if (!dateStr) return 'Never run';
     const date = new Date(dateStr);
     const diff = Date.now() - date.getTime();
@@ -172,7 +172,7 @@ function AutomationCard({
             </span>
             <span className='text-xs text-muted-foreground/50'>•</span>
             <span className='text-xs text-muted-foreground'>
-              {formatLastRun(automation.last_run_at)}
+              {formatLastRun(automation.last_executed_at)}
             </span>
           </div>
         </div>

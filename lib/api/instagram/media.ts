@@ -1,18 +1,7 @@
 import { httpClient, SuccessResponse } from '../../http/client';
+import { InstagramMedia } from '../../types/instagram';
 
 const INSTAGRAM_MEDIA_BASE_URL = '/api/instagram/media';
-
-export interface GetMediaResponse {
-  id: string;
-  media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL' | 'REELS' | 'STORIES';
-  media_url: string;
-  caption?: string;
-  timestamp: string;
-  permalink: string;
-  like_count?: number;
-  comments_count?: number;
-  thumbnail_url?: string;
-}
 
 export interface GetMediaParams {
   social_account_id: string;
@@ -36,8 +25,8 @@ export class InstagramMediaApi {
    */
   static async getMediaList(
     params: GetMediaListParams
-  ): Promise<SuccessResponse<GetMediaResponse[]>> {
-    const response = await httpClient.get<GetMediaResponse[]>(
+  ): Promise<SuccessResponse<InstagramMedia[]>> {
+    const response = await httpClient.get<InstagramMedia[]>(
       INSTAGRAM_MEDIA_BASE_URL,
       {
         params: {
@@ -62,8 +51,8 @@ export class InstagramMediaApi {
   static async getMedia(
     mediaId: string,
     params: GetMediaParams
-  ): Promise<SuccessResponse<GetMediaResponse>> {
-    const response = await httpClient.get<GetMediaResponse>(
+  ): Promise<SuccessResponse<InstagramMedia>> {
+    const response = await httpClient.get<InstagramMedia>(
       `${INSTAGRAM_MEDIA_BASE_URL}/${mediaId}`,
       {
         params: {
@@ -75,3 +64,5 @@ export class InstagramMediaApi {
     return response.data!;
   }
 }
+
+export type GetMediaResponse = InstagramMedia;

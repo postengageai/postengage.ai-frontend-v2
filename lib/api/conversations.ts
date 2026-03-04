@@ -1,13 +1,12 @@
 import { httpClient, SuccessResponse } from '../http/client';
 import {
   Conversation,
-  ConversationWithMessages,
   Message,
   ConversationListParams,
   SendMessageRequest,
 } from '../types/conversations';
 
-const CONVERSATIONS_BASE_URL = '/api/conversations';
+const CONVERSATIONS_BASE_URL = '/api/v1/conversations';
 
 export class ConversationsApi {
   static async list(
@@ -22,10 +21,8 @@ export class ConversationsApi {
     return response.data!;
   }
 
-  static async get(
-    id: string
-  ): Promise<SuccessResponse<ConversationWithMessages>> {
-    const response = await httpClient.get<ConversationWithMessages>(
+  static async get(id: string): Promise<SuccessResponse<Conversation>> {
+    const response = await httpClient.get<Conversation>(
       `${CONVERSATIONS_BASE_URL}/${id}`
     );
     return response.data!;

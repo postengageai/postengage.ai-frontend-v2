@@ -33,8 +33,8 @@ export default function VoiceDnaPage() {
       if (voiceDnaResponse?.data) {
         setVoiceDnaList(voiceDnaResponse.data);
       }
-      if (brandVoiceResponse) {
-        setBrandVoices(brandVoiceResponse);
+      if (brandVoiceResponse?.data) {
+        setBrandVoices(brandVoiceResponse.data);
       }
     } catch {
       toast({
@@ -48,7 +48,7 @@ export default function VoiceDnaPage() {
   };
 
   const getBrandVoiceName = (brandVoiceId: string): string => {
-    const bv = brandVoices.find(b => b._id === brandVoiceId);
+    const bv = brandVoices.find(b => b.id === brandVoiceId);
     return bv?.name || 'Unknown Brand Voice';
   };
 

@@ -138,8 +138,8 @@ export default function VoiceDnaDetailPage() {
           const bvResponse = await IntelligenceApi.getBrandVoice(
             response.data.brand_voice_id
           );
-          if (bvResponse) {
-            setBrandVoiceName(bvResponse.name);
+          if (bvResponse.data) {
+            setBrandVoiceName(bvResponse.data.name);
           }
         } catch {
           // Brand voice might not exist

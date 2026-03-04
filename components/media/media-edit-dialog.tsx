@@ -117,7 +117,7 @@ export function MediaEditDialog({
                     <FileText className='h-16 w-16' />
                     <p className='text-sm font-medium mt-2'>{media.name}</p>
                     <p className='text-xs'>
-                      {(media.size / 1024 / 1024).toFixed(2)} MB
+                      {(media.size_bytes / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 )}

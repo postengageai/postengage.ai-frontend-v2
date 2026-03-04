@@ -1,7 +1,9 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import { Media, ListMediaParams } from '../types/media';
+import type { Media, ListMediaParams } from '../types/media';
 
-const MEDIA_BASE_URL = '/api/media';
+const MEDIA_BASE_URL = '/api/v1/media';
+
+export type { Media };
 
 export class MediaApi {
   static async list(
@@ -11,8 +13,8 @@ export class MediaApi {
     if (params?.page) {
       searchParams.set('page', String(params.page));
     }
-    if (params?.per_page) {
-      searchParams.set('per_page', String(params.per_page));
+    if (params?.limit) {
+      searchParams.set('limit', String(params.limit));
     }
     if (params?.type) {
       searchParams.set('type', params.type);
@@ -28,11 +30,24 @@ export class MediaApi {
 
   static async upload(
     file: File,
+    metadata?: {
+      name?: string;
+      description?: string;
+      alt_text?: string;
+      tags?: string[];
+    },
     onProgress?: (progress: number) => void,
     signal?: AbortSignal
   ): Promise<SuccessResponse<Media>> {
     const formData = new FormData();
     formData.append('file', file);
+    if (metadata?.name) formData.append('name', metadata.name);
+    if (metadata?.description)
+      formData.append('description', metadata.description);
+    if (metadata?.alt_text) formData.append('alt_text', metadata.alt_text);
+    if (metadata?.tags && Array.isArray(metadata.tags)) {
+      metadata.tags.forEach(tag => formData.append('tags[]', tag));
+    }
 
     const response = await httpClient.post<Media>(
       `${MEDIA_BASE_URL}/upload`,
@@ -58,6 +73,23 @@ export class MediaApi {
 
   static async get(id: string): Promise<SuccessResponse<Media>> {
     const response = await httpClient.get<Media>(`${MEDIA_BASE_URL}/${id}`);
+    if (response.error) throw response.error;
+    return response.data!;
+  }
+
+  static async update(
+    id: string,
+    payload: Partial<{
+      name: string;
+      description: string;
+      alt_text: string;
+      tags: string[];
+    }>
+  ): Promise<SuccessResponse<Media>> {
+    const response = await httpClient.patch<Media>(
+      `${MEDIA_BASE_URL}/${id}`,
+      payload
+    );
     if (response.error) throw response.error;
     return response.data!;
   }

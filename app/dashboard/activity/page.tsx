@@ -107,11 +107,12 @@ export default function ActivityPage() {
   const filteredNotifications = useMemo(() => {
     return notifications.filter(n => {
       // Status filter
-      if (filter === 'unread' && n.is_read) return false;
-      if (filter === 'read' && !n.is_read) return false;
+      if (filter === 'unread' && n.status === 'read') return false;
+      if (filter === 'read' && n.status !== 'read') return false;
 
       // Type filter
-      if (typeFilter !== 'all' && n.type !== typeFilter) return false;
+      if (typeFilter !== 'all' && (n.type as string) !== typeFilter)
+        return false;
 
       // Search filter
       if (searchQuery) {
@@ -126,7 +127,7 @@ export default function ActivityPage() {
     });
   }, [notifications, filter, typeFilter, searchQuery]);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter(n => n.status !== 'read').length;
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -136,7 +137,7 @@ export default function ActivityPage() {
           n.id === id
             ? {
                 ...n,
-                is_read: true,
+                status: 'read' as const,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -152,10 +153,10 @@ export default function ActivityPage() {
       await notificationsApi.markAllAsRead();
       setNotifications(prev =>
         prev.map(n =>
-          !n.is_read
+          n.status !== 'read'
             ? {
                 ...n,
-                is_read: true,
+                status: 'read' as const,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -177,7 +178,7 @@ export default function ActivityPage() {
           selectedIds.has(n.id)
             ? {
                 ...n,
-                is_read: true,
+                status: 'read' as const,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -207,7 +208,7 @@ export default function ActivityPage() {
     }
   };
 
-  const getTypeIcon = (type: NotificationTypeType) => {
+  const getTypeIcon = (type: NotificationTypeType | string) => {
     const iconClass = 'h-4 w-4';
     switch (type) {
       case 'social':
@@ -235,7 +236,7 @@ export default function ActivityPage() {
     }
   };
 
-  const getTypeColor = (type: NotificationTypeType) => {
+  const getTypeColor = (type: NotificationTypeType | string) => {
     switch (type) {
       case 'social':
         return 'bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-pink-400';
@@ -509,8 +510,8 @@ interface NotificationRowProps {
   notification: Notification;
   isSelected: boolean;
   onToggleSelect: () => void;
-  getTypeIcon: (type: NotificationTypeType) => React.ReactNode;
-  getTypeColor: (type: NotificationTypeType) => string;
+  getTypeIcon: (type: NotificationTypeType | string) => React.ReactNode;
+  getTypeColor: (type: NotificationTypeType | string) => string;
   formatTime: (dateString: string) => string;
   onMarkAsRead: (id: string) => void;
   onDelete: (id: string) => void;
@@ -526,7 +527,7 @@ function NotificationRow({
   onMarkAsRead,
   onDelete,
 }: NotificationRowProps) {
-  const isUnread = !notification.is_read;
+  const isUnread = notification.status !== 'read';
 
   return (
     <div
@@ -604,7 +605,7 @@ function NotificationRow({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => onDelete(notification.id)}
-                  className='text-destructive focus:text-destructive'
+                  className='text-destructive'
                 >
                   <Trash2 className='h-3.5 w-3.5 mr-2' />
                   Delete
@@ -618,43 +619,27 @@ function NotificationRow({
   );
 }
 
-function EmptyState({
-  filter,
-  searchQuery,
-}: {
+interface EmptyStateProps {
   filter: FilterType;
   searchQuery: string;
-}) {
-  let title = 'No notifications';
-  let description = 'New events will appear here.';
+}
 
-  if (searchQuery) {
-    title = 'No results found';
-    description = `No notifications match "${searchQuery}"`;
-  } else if (filter === 'unread') {
-    title = 'All caught up!';
-    description = "You've read all your notifications. Nice work.";
-  }
-
+function EmptyState({ filter, searchQuery }: EmptyStateProps) {
   return (
-    <div className='py-16 text-center'>
-      <div className='mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
-        <Inbox className='h-7 w-7 text-muted-foreground' />
-      </div>
-      <h3 className='mt-4 text-lg font-medium text-foreground'>{title}</h3>
-      <p className='mt-1 text-sm text-muted-foreground max-w-sm mx-auto'>
-        {description}
+    <div className='flex flex-col items-center justify-center min-h-[400px] text-center'>
+      <Inbox className='h-12 w-12 text-muted-foreground mb-4' />
+      <h3 className='text-lg font-medium text-foreground mb-2'>
+        {filter === 'unread'
+          ? 'All caught up!'
+          : filter === 'read'
+            ? 'No read notifications'
+            : 'No notifications'}
+      </h3>
+      <p className='text-sm text-muted-foreground'>
+        {searchQuery
+          ? `No notifications match "${searchQuery}"`
+          : 'Check back later for updates'}
       </p>
-      {searchQuery && (
-        <Button
-          variant='outline'
-          size='sm'
-          className='mt-4 bg-transparent'
-          onClick={() => {}}
-        >
-          Clear search
-        </Button>
-      )}
     </div>
   );
 }

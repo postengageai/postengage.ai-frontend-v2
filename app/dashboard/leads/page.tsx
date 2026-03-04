@@ -40,7 +40,6 @@ export default function LeadsPage() {
 
       try {
         const params: LeadsListParams = {
-          page: isLoadMore ? page + 1 : 1,
           limit: 50,
         };
 
@@ -90,9 +89,7 @@ export default function LeadsPage() {
 
   const handleTagsChange = (leadId: string, newTags: string[]) => {
     setLeads(prev =>
-      prev.map(lead =>
-        lead._id === leadId ? { ...lead, tags: newTags } : lead
-      )
+      prev.map(lead => (lead.id === leadId ? { ...lead, tags: newTags } : lead))
     );
   };
 

@@ -33,14 +33,14 @@ interface MessageThreadProps {
   isLoading?: boolean;
 }
 
-const platformIcons = {
+const platformIcons: Record<string, typeof Instagram> = {
   instagram: Instagram,
   facebook: Facebook,
   twitter: Twitter,
   whatsapp: MessageCircle,
 };
 
-const platformColors = {
+const platformColors: Record<string, string> = {
   instagram: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400',
   facebook: 'bg-blue-600',
   twitter: 'bg-sky-500',
@@ -57,7 +57,8 @@ export function MessageThread({
   isLoading = false,
 }: MessageThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const PlatformIcon = platformIcons[conversation.platform];
+  const PlatformIcon =
+    platformIcons[conversation.platform.toLowerCase()] || MessageCircle;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -78,24 +79,22 @@ export function MessageThread({
             <div
               className={cn(
                 'h-10 w-10 rounded-full flex items-center justify-center text-white',
-                platformColors[conversation.platform]
+                platformColors[conversation.platform.toLowerCase()] ||
+                  'bg-gray-500'
               )}
             >
-              {PlatformIcon && <PlatformIcon className='h-5 w-5' />}
+              <PlatformIcon className='h-5 w-5' />
             </div>
             <div>
               <div className='flex items-center gap-2'>
                 <h2 className='font-semibold text-foreground'>
-                  {conversation.participant.name}
+                  {conversation.platform_conversation_id?.slice(0, 20) ||
+                    'Conversation'}
                 </h2>
-                {conversation.participant.is_verified && (
-                  <span className='text-blue-500 text-xs' title='Verified'>
-                    ✓
-                  </span>
-                )}
               </div>
               <p className='text-xs text-muted-foreground'>
-                @{conversation.participant.username}
+                {conversation.platform} • {conversation.total_interactions}{' '}
+                interactions
               </p>
             </div>
           </div>
@@ -140,11 +139,12 @@ export function MessageThread({
               </p>
             </div>
           ) : (
-            messages.map(message => (
+            messages.map((message, idx) => (
               <MessageBubble
                 key={message.id}
                 message={message}
-                isOwn={message.sender_id === currentUserId}
+                isFromCurrentUser={message.sender_id === currentUserId}
+                previousMessage={idx > 0 ? messages[idx - 1] : undefined}
               />
             ))
           )}
@@ -152,7 +152,13 @@ export function MessageThread({
       </ScrollArea>
 
       {/* Input */}
-      <MessageInput onSend={handleSend} isLoading={isLoading} />
+      <div className='border-t border-border p-4'>
+        <MessageInput
+          onSend={handleSend}
+          isLoading={isLoading}
+          placeholder='Type a message...'
+        />
+      </div>
     </div>
   );
 }

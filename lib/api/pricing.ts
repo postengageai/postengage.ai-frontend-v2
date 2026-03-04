@@ -1,13 +1,15 @@
 import { httpClient, SuccessResponse } from '../http/client';
-import { Plan } from '../types/pricing';
+import { PricingResponse } from '../types/pricing';
 
 export class PricingApi {
   /**
    * Get available pricing plans
-   * GET /api/payments/plans
+   * GET /api/v1/payments/packages
    */
-  static async getPlans(): Promise<SuccessResponse<Plan[]>> {
-    const response = await httpClient.get<Plan[]>('/api/payments/plans');
+  static async getPlans(): Promise<SuccessResponse<PricingResponse>> {
+    const response = await httpClient.get<PricingResponse>(
+      '/api/v1/payments/packages'
+    );
     return response.data!;
   }
 }

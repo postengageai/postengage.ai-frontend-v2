@@ -11,8 +11,8 @@ import { ConfigureActionsStep } from './steps/configure-actions-step';
 import { ReviewStep } from './steps/review-step';
 import type { Media } from '@/lib/api/media';
 import type {
-  CreateAutomationRequest,
   AutomationActionPayload,
+  CreateAutomationRequest,
 } from '@/lib/api/automations';
 import {
   AutomationPlatform,
@@ -28,7 +28,9 @@ import {
   type AutomationActionTypeType,
   type AutomationConditionOperatorType,
   type AutomationConditionKeywordModeType,
+  type AutomationConditionTypeType,
   AutomationConditionSource,
+  AutomationConditionType,
   type AutomationConditionSourceType,
   AutomationExecutionMode,
 } from '@/lib/constants/automations';
@@ -225,7 +227,6 @@ export function AutomationWizard({
               condition_keyword_mode: formData.condition.condition_keyword_mode,
               condition_source: formData.condition.condition_source,
               condition_value: formData.condition.condition_value,
-              status: AutomationStatus.ACTIVE,
             },
           ]
         : [],

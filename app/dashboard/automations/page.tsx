@@ -42,6 +42,7 @@ import {
 import {
   AutomationTriggerType,
   AutomationActionType,
+  AutomationStatus,
 } from '@/lib/constants/automations';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from '@/hooks/use-toast';
@@ -63,7 +64,7 @@ export default function AutomationsPage() {
     try {
       const params: AutomationListParams = {};
       if (debouncedSearchQuery) params.search = debouncedSearchQuery;
-      if (statusFilter !== 'all') params.status = statusFilter;
+      if (statusFilter !== 'all') params.status = statusFilter as any;
 
       const response = await automationsApi.list(params);
 
@@ -89,14 +90,19 @@ export default function AutomationsPage() {
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
     if (sortBy === 'executions')
-      return (b.total_runs || 0) - (a.total_runs || 0);
+      return (b.execution_count || 0) - (a.execution_count || 0);
     if (sortBy === 'name') return a.name.localeCompare(b.name);
     return 0;
   });
 
-  const toggleStatus = async (id: string, _currentStatus: string) => {
+  const toggleStatus = async (id: string, currentStatus: string) => {
     try {
-      await automationsApi.toggle(id);
+      // Use activate or deactivate based on current status
+      if (currentStatus === AutomationStatus.ACTIVE) {
+        await automationsApi.deactivate(id);
+      } else {
+        await automationsApi.activate(id);
+      }
       // Refresh automations to get latest status
       await fetchAutomations();
       toast({
@@ -112,9 +118,11 @@ export default function AutomationsPage() {
     }
   };
 
-  const activeCount = automations.filter(a => a.status === 'active').length;
+  const activeCount = automations.filter(
+    a => a.status === AutomationStatus.ACTIVE
+  ).length;
   const totalExecutions = automations.reduce(
-    (sum, a) => sum + (a.total_runs || 0),
+    (sum, a) => sum + (a.execution_count || 0),
     0
   );
 
@@ -151,9 +159,12 @@ export default function AutomationsPage() {
 
   function getActionTypeLabel(type: string): string {
     const labels: Record<string, string> = {
-      [AutomationActionType.REPLY_COMMENT]: 'Reply',
+      [AutomationActionType.REPLY_COMMENT]: 'Reply Comment',
       [AutomationActionType.SEND_DM]: 'Send DM',
       [AutomationActionType.PRIVATE_REPLY]: 'Private Reply',
+      [AutomationActionType.LIKE_CONTENT]: 'Like',
+      [AutomationActionType.ADD_TAG]: 'Add Tag',
+      [AutomationActionType.NOTIFY_ADMIN]: 'Notify Admin',
     };
     return (
       labels[type] ||
@@ -162,32 +173,32 @@ export default function AutomationsPage() {
   }
 
   return (
-    <div className='flex flex-col h-full'>
+    <div className='h-screen flex flex-col overflow-hidden bg-background'>
       {/* Header */}
-      <div className='p-6 border-b border-border'>
-        <div className='flex items-center justify-between mb-6'>
+      <div className='border-b bg-background/95 backdrop-blur-sm p-6 space-y-4'>
+        <div className='flex items-center justify-between'>
           <div>
-            <h1 className='text-2xl font-bold mb-1'>Automations</h1>
-            <p className='text-muted-foreground'>
-              Create and manage your Instagram automations
+            <h1 className='text-2xl font-bold'>Automations</h1>
+            <p className='text-sm text-muted-foreground mt-0.5'>
+              Create and manage your automation workflows
             </p>
           </div>
           <Button asChild>
             <Link href='/dashboard/automations/new'>
               <Plus className='h-4 w-4 mr-2' />
-              New Automation
+              Create Automation
             </Link>
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className='grid grid-cols-3 gap-4 mb-6'>
+        {/* Stats Cards */}
+        <div className='grid grid-cols-3 gap-3'>
           <Card className='bg-card/50'>
             <CardContent className='p-4'>
               <div className='flex items-center justify-between'>
                 <div>
                   <p className='text-xs text-muted-foreground uppercase tracking-wide'>
-                    Total Automations
+                    Total
                   </p>
                   <p className='text-2xl font-bold mt-1'>
                     {automations.length}
@@ -255,9 +266,11 @@ export default function AutomationsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>All Status</SelectItem>
-              <SelectItem value='active'>Active</SelectItem>
-              <SelectItem value='inactive'>Inactive</SelectItem>
-              <SelectItem value='error'>Error</SelectItem>
+              <SelectItem value={AutomationStatus.ACTIVE}>Active</SelectItem>
+              <SelectItem value={AutomationStatus.INACTIVE}>
+                Inactive
+              </SelectItem>
+              <SelectItem value={AutomationStatus.ERROR}>Error</SelectItem>
             </SelectContent>
           </Select>
 
@@ -284,7 +297,7 @@ export default function AutomationsPage() {
         ) : filteredAutomations.length > 0 ? (
           <div className='space-y-3'>
             {filteredAutomations.map(automation => {
-              const isActive = automation.status === 'active';
+              const isActive = automation.status === AutomationStatus.ACTIVE;
 
               return (
                 <Card
@@ -323,14 +336,14 @@ export default function AutomationsPage() {
                               'shrink-0 text-[10px] h-5 px-1.5',
                               isActive
                                 ? 'bg-emerald-500/10 text-emerald-500'
-                                : automation.status === 'error'
+                                : automation.status === AutomationStatus.ERROR
                                   ? 'bg-red-500/10 text-red-500'
                                   : 'bg-amber-500/10 text-amber-500'
                             )}
                           >
-                            {automation.status === 'active'
+                            {automation.status === AutomationStatus.ACTIVE
                               ? 'Active'
-                              : automation.status === 'error'
+                              : automation.status === AutomationStatus.ERROR
                                 ? 'Error'
                                 : 'Inactive'}
                           </Badge>
@@ -346,7 +359,7 @@ export default function AutomationsPage() {
                                   <Instagram className='h-3 w-3 text-white' />
                                 </div>
                                 <span className='font-medium'>
-                                  {automation.triggers[0].platform}
+                                  {automation.platform}
                                 </span>
                               </div>
                             )}
@@ -364,13 +377,13 @@ export default function AutomationsPage() {
                           </div>
 
                           {/* Last Run */}
-                          {automation.last_run_at && (
+                          {automation.last_executed_at && (
                             <div className='flex items-center gap-1.5'>
                               <Clock className='h-3.5 w-3.5' />
                               <span>
                                 Run{' '}
                                 {formatDistanceToNow(
-                                  new Date(automation.last_run_at),
+                                  new Date(automation.last_executed_at),
                                   { addSuffix: true }
                                 )}
                               </span>
@@ -421,7 +434,7 @@ export default function AutomationsPage() {
                       <div className='hidden sm:flex flex-col items-end justify-center gap-1 min-w-[100px] border-l border-border pl-6 py-2 self-stretch'>
                         <div className='text-right mb-1'>
                           <p className='text-xl font-bold'>
-                            {(automation.total_runs || 0).toLocaleString()}
+                            {(automation.execution_count || 0).toLocaleString()}
                           </p>
                           <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
                             total runs

@@ -2,23 +2,39 @@ import { httpClient, SuccessResponse } from '../http/client';
 import {
   Automation,
   CreateAutomationDto,
-  TriggerType,
-  ActionType,
+  AutomationTriggerType,
+  AutomationActionType,
   AutomationStatus,
+  AutomationPlatform,
+  type AutomationStatusType,
+  type AutomationPlatformType,
   TriggerConfig,
   ActionConfig,
   ConditionConfig,
+  // New Payload Types
+  ReplyCommentPayload,
+  SendDmPayload,
+  PrivateReplyPayload,
+  SendDmTextMessage,
+  SendDmTextPayload,
+  SendDmMediaMessage,
+  SendDmMediaPayload,
+  ActionPayload,
 } from '../types/automation-builder';
 
-const AUTOMATIONS_BASE_URL = '/api/automations';
+const AUTOMATIONS_BASE_URL = '/api/v1/automations';
 
-// Re-export types from automation-builder for convenience
+// Re-export types and constants
+export {
+  AutomationTriggerType as TriggerType,
+  AutomationActionType as ActionType,
+  AutomationStatus,
+  AutomationPlatform,
+};
+
 export type {
   Automation,
   CreateAutomationDto,
-  TriggerType,
-  ActionType,
-  AutomationStatus,
   TriggerConfig,
   ActionConfig,
   ConditionConfig,
@@ -26,14 +42,16 @@ export type {
 
 // Legacy type aliases for backward compatibility with wizard components
 export type CreateAutomationRequest = CreateAutomationDto;
-export type AutomationActionPayload = Record<string, unknown>;
-export type SendDmPayload = Record<string, unknown>;
-export type ReplyCommentPayload = Record<string, unknown>;
-export type PrivateReplyPayload = Record<string, unknown>;
-export type SendDmTextMessage = Record<string, unknown>;
-export type SendDmTextPayload = Record<string, unknown>;
-export type SendDmMediaMessage = Record<string, unknown>;
-export type SendDmMediaPayload = Record<string, unknown>;
+export type AutomationActionPayload = ActionPayload;
+export type {
+  SendDmPayload,
+  ReplyCommentPayload,
+  PrivateReplyPayload,
+  SendDmTextMessage,
+  SendDmTextPayload,
+  SendDmMediaMessage,
+  SendDmMediaPayload,
+};
 export type AutomationActionResponse = ActionConfig;
 
 export interface CursorPaginationMeta {
@@ -44,8 +62,8 @@ export interface CursorPaginationMeta {
 }
 
 export interface AutomationListParams {
-  status?: string;
-  platform?: string;
+  status?: AutomationStatusType | string;
+  platform?: AutomationPlatformType;
   search?: string;
   cursor?: string;
   limit?: number;
@@ -126,10 +144,18 @@ export class AutomationsApi {
     return response.data!;
   }
 
-  // Toggle automation active/inactive
-  static async toggle(id: string): Promise<SuccessResponse<Automation>> {
-    const response = await httpClient.patch<Automation>(
-      `${AUTOMATIONS_BASE_URL}/${id}/toggle`
+  // Activate automation
+  static async activate(id: string): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/activate`
+    );
+    return response.data!;
+  }
+
+  // Deactivate automation
+  static async deactivate(id: string): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/deactivate`
     );
     return response.data!;
   }
@@ -142,5 +168,6 @@ export const automationsApi = {
   delete: AutomationsApi.delete,
   get: AutomationsApi.get,
   list: AutomationsApi.list,
-  toggle: AutomationsApi.toggle,
+  activate: AutomationsApi.activate,
+  deactivate: AutomationsApi.deactivate,
 };

@@ -1,7 +1,7 @@
 import { httpClient, SuccessResponse } from '../http/client';
 import { SupportTicket, CreateTicketDto } from '../types/support';
 
-const SUPPORT_BASE_URL = '/api/support';
+const SUPPORT_BASE_URL = '/api/v1/support';
 
 export class SupportApi {
   // Create support ticket

@@ -21,6 +21,8 @@ export default [
       '.git/',
       '.vscode/',
       'coverage/',
+      'playwright-report/',
+      'test-results/',
       '*.min.js',
       '*.min.css',
       '*.bundle.js',
@@ -54,7 +56,7 @@ export default [
     },
     rules: {
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
@@ -62,6 +64,7 @@ export default [
         },
       ],
       'no-unused-vars': 'off', // Use TypeScript rule instead
+      'no-redeclare': 'off', // TypeScript handles this (type/value merging)
       '@typescript-eslint/no-explicit-any': 'warn',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

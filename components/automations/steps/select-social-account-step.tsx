@@ -6,10 +6,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Instagram, Check, Loader2, ChevronLeft } from 'lucide-react';
 import type { AutomationFormData } from '../automation-wizard';
-import {
-  SocialAccountsApi,
-  type SocialAccount,
-} from '@/lib/api/social-accounts';
+import type { SocialAccount } from '@/lib/types/social-accounts';
+import { SocialAccountsApi } from '@/lib/api/social-accounts';
 import { useToast } from '@/components/ui/use-toast';
 import { AutomationPlatform } from '@/lib/constants/automations';
 
@@ -36,7 +34,7 @@ export function SelectSocialAccountStep({
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const response = await SocialAccountsApi.list({ status: 'connected' });
+        const response = await SocialAccountsApi.list({});
         setAccounts(response.data ?? []);
       } catch {
         toast({
@@ -128,8 +126,8 @@ export function SelectSocialAccountStep({
               <div className='flex items-center gap-3 p-3 sm:gap-4 sm:p-4'>
                 <Avatar className='h-10 w-10 border border-border sm:h-12 sm:w-12'>
                   <AvatarImage
-                    src={account.avatar?.url}
-                    alt={account.avatar?.id}
+                    src={account.avatar_url ?? undefined}
+                    alt={account.username}
                   />
                   <AvatarFallback>
                     {account?.username?.charAt(0)}

@@ -1,27 +1,29 @@
 import { httpClient, SuccessResponse } from '../http/client';
 import {
   CreditBalance,
-  CreditTransaction,
+  CreditTransactionsResponse,
   UsageBreakdown,
 } from '../types/credits';
 
-const CREDITS_BASE_URL = '/api/credits';
+const CREDITS_BASE_URL = '/api/v1/credits';
 
 export interface TransactionParams {
   page?: number;
   limit?: number;
-  type?: 'allocation' | 'purchase' | 'usage' | 'refund' | 'adjustment';
+  type?: string;
   date_from?: string;
   date_to?: string;
 }
 
 export interface UsageParams {
-  period?: 'today' | 'week' | 'month';
+  days?: number;
+  from?: string;
+  to?: string;
 }
 
 export class CreditsApi {
   /**
-   * Get user's current credit balance and plan information
+   * Get user's current credit balance
    */
   static async getBalance(): Promise<SuccessResponse<CreditBalance>> {
     const response = await httpClient.get<CreditBalance>(
@@ -35,8 +37,8 @@ export class CreditsApi {
    */
   static async getTransactions(
     params?: TransactionParams
-  ): Promise<SuccessResponse<CreditTransaction[]>> {
-    const response = await httpClient.get<CreditTransaction[]>(
+  ): Promise<SuccessResponse<CreditTransactionsResponse>> {
+    const response = await httpClient.get<CreditTransactionsResponse>(
       `${CREDITS_BASE_URL}/transactions`,
       { params }
     );

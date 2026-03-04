@@ -7,6 +7,7 @@ import {
   AutomationData,
 } from '@/components/automations/automation-detail';
 import { automationsApi } from '@/lib/api/automations';
+import { AutomationStatus } from '@/lib/constants/automations';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -36,13 +37,14 @@ export default function AutomationDetailPage() {
           id: apiData.id,
           name: apiData.name,
           description: apiData.description,
-          status: apiData.status === 'active' ? 'active' : 'paused',
-          platform: (firstTrigger?.platform || 'instagram') as
+          status:
+            apiData.status === AutomationStatus.ACTIVE ? 'active' : 'paused',
+          platform: (apiData.platform || 'instagram') as
             | 'instagram'
             | 'facebook',
           social_account: {
-            id: firstTrigger?.social_account_id || '',
-            username: firstTrigger?.social_account_id || 'Unknown',
+            id: apiData.social_account_id,
+            username: apiData.social_account_id,
             avatar: '/diverse-avatars.png',
           },
           trigger: {
@@ -50,22 +52,16 @@ export default function AutomationDetailPage() {
             scope: 'all',
             content_count: 0,
           },
-          condition: firstTrigger?.conditions?.[0]
-            ? {
-                keywords: [firstTrigger.conditions[0].value],
-                operator: 'contains',
-                mode: 'any',
-              }
-            : undefined,
+          condition: undefined,
           actions: (apiData.actions ?? []).map(action => ({
             type: 'send_dm' as const,
-            text: JSON.stringify(action.params),
+            text: JSON.stringify(action.payload || {}),
             delay_seconds: action.delay_seconds || 0,
           })),
           statistics: {
-            total_executions: apiData.total_runs || 0,
-            successful_executions: 0,
-            failed_executions: 0,
+            total_executions: apiData.execution_count || 0,
+            successful_executions: apiData.success_count || 0,
+            failed_executions: apiData.failure_count || 0,
             total_credits_used: 0,
             trend: {
               change: 0,
@@ -75,7 +71,7 @@ export default function AutomationDetailPage() {
           execution_history: [],
           created_at: apiData.created_at,
           updated_at: apiData.updated_at,
-          last_executed_at: apiData.last_run_at || undefined,
+          last_executed_at: apiData.last_executed_at || undefined,
         };
 
         setAutomation(mappedData);
@@ -105,7 +101,11 @@ export default function AutomationDetailPage() {
     );
 
     try {
-      await automationsApi.toggle(automation.id);
+      if (status === 'active') {
+        await automationsApi.activate(automation.id);
+      } else {
+        await automationsApi.deactivate(automation.id);
+      }
       toast({
         title: 'Status updated',
         description: `Automation ${status === 'active' ? 'activated' : 'paused'}`,

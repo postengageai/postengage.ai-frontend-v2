@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { useState, useMemo } from 'react';
 import type { DateRange } from '@/lib/types/credits';
 
-interface UsageChartProps {
+export interface UsageChartProps {
   data: Array<{
     date: string;
     consumption: number;
     purchases: number;
   }>;
   isLoading?: boolean;
-  onDateRangeChange?: (range: DateRange) => void;
+  onDateRangeChange?: (range: string) => void;
 }
 
 export function UsageChart({
@@ -24,8 +24,8 @@ export function UsageChart({
   const [selectedRange, setSelectedRange] = useState<DateRange>('30d');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const handleRangeChange = (range: DateRange) => {
-    setSelectedRange(range);
+  const handleRangeChange = (range: string) => {
+    setSelectedRange(range as DateRange);
     onDateRangeChange?.(range);
   };
 

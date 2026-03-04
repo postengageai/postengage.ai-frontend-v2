@@ -2,7 +2,7 @@ import { httpClient, SuccessResponse } from '../http/client';
 import { ApiError } from '../http/errors';
 import { User } from '../types/settings';
 
-const AUTH_BASE_URL = '/api/auth';
+const AUTH_BASE_URL = '/api/v1/auth';
 
 export interface RegisterDto {
   email: string;
@@ -20,7 +20,7 @@ export class AuthApi {
   // User registration
   static async register(request: RegisterDto): Promise<SuccessResponse<User>> {
     const response = await httpClient.post<User>(
-      `${AUTH_BASE_URL}/register`,
+      `${AUTH_BASE_URL}/signup`,
       request
     );
 
@@ -51,7 +51,7 @@ export class AuthApi {
 
   // Get current user
   static async me(): Promise<SuccessResponse<User>> {
-    const response = await httpClient.get<User>(`${AUTH_BASE_URL}/me`);
+    const response = await httpClient.get<User>(`/api/v1/users/profile`);
     return response.data!;
   }
 

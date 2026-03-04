@@ -137,7 +137,7 @@ export default function MediaViewPage() {
           <div>
             <h1 className='text-xl font-semibold'>{media.name}</h1>
             <p className='text-sm text-muted-foreground'>
-              {(media.size / 1024 / 1024).toFixed(2)} MB •{' '}
+              {(media.size_bytes / 1024 / 1024).toFixed(2)} MB •{' '}
               {new Date(media.created_at).toLocaleDateString()}
             </p>
           </div>

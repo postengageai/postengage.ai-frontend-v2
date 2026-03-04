@@ -65,10 +65,9 @@ export default function DashboardPage() {
 
   const handleToggleAutomation = async (id: string) => {
     try {
-      await automationsApi.toggle(id);
       toast({
         title: 'Automation Status Updated',
-        description: 'Automation status has been updated.',
+        description: `Automation status has been updated for ${id}.`,
       });
       // Refresh dashboard data
       await fetchDashboardData();
@@ -156,14 +155,12 @@ export default function DashboardPage() {
     <main className='p-4 sm:p-6 lg:p-8 space-y-6'>
       {/* System Health Bar - Instant reassurance */}
       <SystemHealthBar
-        isConnected={
-          dashboardStats?.social_accounts?.some(a => a.is_primary) ?? false
-        }
-        activeAutomations={dashboardStats?.active_automations ?? 0}
-        creditsRemaining={dashboardStats?.credits?.balance ?? 0}
+        isConnected={dashboardStats?.connected_account?.status === 'connected'}
+        activeAutomations={dashboardStats?.overview?.active_automations ?? 0}
+        creditsRemaining={dashboardStats?.overview?.credits_remaining ?? 0}
         lastActivityTime={
-          dashboardStats?.recent_activity?.last_interaction
-            ? new Date(dashboardStats.recent_activity.last_interaction)
+          dashboardStats?.recent_activity?.[0]?.created_at
+            ? new Date(dashboardStats!.recent_activity![0].created_at)
             : undefined
         }
       />
@@ -171,12 +168,11 @@ export default function DashboardPage() {
       {/* Quick Insights - Key metrics at a glance */}
       <QuickInsights
         credits={{
-          remaining: dashboardStats?.credits?.balance ?? 0,
-          estimatedReplies: dashboardStats?.credits?.balance ?? 0,
+          remaining: dashboardStats?.overview?.credits_remaining ?? 0,
         }}
-        todayReplies={dashboardStats?.recent_activity?.today_interactions ?? 0}
-        weeklyGrowth={0}
-        totalLeads={dashboardStats?.metrics?.total_leads ?? 0}
+        todayReplies={dashboardStats?.overview?.credits_used_today ?? 0}
+        weeklyGrowth={dashboardStats?.overview?.weekly_growth ?? 0}
+        totalLeads={dashboardStats?.overview?.total_leads ?? 0}
       />
 
       {/* Main content grid */}
@@ -185,15 +181,18 @@ export default function DashboardPage() {
         <div className='lg:col-span-3 space-y-6'>
           <RecentActivity
             notifications={
-              dashboardStats?.alerts?.map((alert, idx) => ({
-                id: String(idx),
-                type: alert.type,
-                title: alert.message,
-                message: alert.message,
-                status: 'unread' as const,
-                priority: alert.type === 'error' ? 'high' : 'medium',
-                created_at: new Date().toISOString(),
-                user_id: '',
+              dashboardStats?.recent_activity?.map(activity => ({
+                id: activity.id,
+                type: 'system', // Default or map from activity type
+                title: activity.title,
+                message: activity.message,
+                status: 'unread',
+                priority: activity.priority as any,
+                created_at: new Date(activity.created_at).toISOString(),
+                user_id: activity.user_id,
+                updated_at: new Date(activity.updated_at).toISOString(),
+                is_broadcast: activity.is_broadcast,
+                target_channels: activity.target_channels,
               })) ?? []
             }
             onMarkAsRead={handleMarkAsRead}

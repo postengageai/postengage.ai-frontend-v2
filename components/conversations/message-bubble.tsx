@@ -1,108 +1,83 @@
 'use client';
 
-import { format } from 'date-fns';
 import { Message } from '@/lib/types/conversations';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Check, CheckCheck } from 'lucide-react';
-import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface MessageBubbleProps {
   message: Message;
-  isOwn: boolean;
+  isFromCurrentUser: boolean;
+  previousMessage?: Message;
 }
 
-export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
-  const initials = message.sender.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+export function MessageBubble({
+  message,
+  isFromCurrentUser,
+}: MessageBubbleProps) {
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   return (
-    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-      {!isOwn && (
-        <Avatar className='h-8 w-8 shrink-0'>
-          {message.sender.avatar_url && (
-            <AvatarImage
-              src={message.sender.avatar_url}
-              alt={message.sender.name}
-            />
-          )}
-          <AvatarFallback>{initials}</AvatarFallback>
+    <div
+      className={cn(
+        'flex gap-2',
+        isFromCurrentUser ? 'flex-row-reverse' : 'flex-row'
+      )}
+    >
+      {!isFromCurrentUser && (
+        <Avatar className='h-8 w-8 flex-shrink-0'>
+          <AvatarImage src={undefined} alt='User' />
+          <AvatarFallback>U</AvatarFallback>
         </Avatar>
       )}
 
       <div
-        className={`flex flex-col gap-1 max-w-xs ${isOwn ? 'items-end' : ''}`}
-      >
-        {!isOwn && (
-          <div className='flex items-center gap-2 px-3'>
-            <span className='text-xs font-semibold text-foreground'>
-              {message.sender.name}
-            </span>
-            {message.sender.is_verified && (
-              <span className='text-blue-500' title='Verified'>
-                ✓
-              </span>
-            )}
-          </div>
+        className={cn(
+          'flex flex-col gap-1',
+          isFromCurrentUser ? 'items-end' : 'items-start'
         )}
-
+      >
         <div
-          className={`rounded-lg px-4 py-2 word-wrap break-words ${
-            isOwn
+          className={cn(
+            'px-3 py-2 rounded-lg max-w-xs lg:max-w-md break-words',
+            isFromCurrentUser
               ? 'bg-primary text-primary-foreground rounded-br-none'
-              : 'bg-muted text-foreground rounded-bl-none'
-          }`}
+              : 'bg-muted text-muted-foreground rounded-bl-none'
+          )}
         >
+          <p className='text-sm'>{message.text}</p>
+
           {message.attachments && message.attachments.length > 0 && (
-            <div className='mb-2 space-y-1'>
-              {message.attachments.map(attachment => (
-                <div key={attachment.id}>
-                  {attachment.type === 'image' && (
-                    <Image
-                      src={attachment.url}
-                      alt='attachment'
-                      width={320}
-                      height={240}
-                      className='max-w-xs rounded'
-                    />
-                  )}
-                  {attachment.type === 'video' && (
-                    <video
-                      src={attachment.url}
-                      controls
-                      className='max-w-xs rounded'
-                    />
-                  )}
-                  {attachment.type === 'file' && (
-                    <a
-                      href={attachment.url}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='inline-flex items-center gap-2 underline'
-                    >
-                      📎 Download
-                    </a>
-                  )}
-                </div>
+            <div className='mt-2 space-y-1'>
+              {message.attachments.map((attachment, idx) => (
+                <a
+                  key={idx}
+                  href={attachment.url}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-xs underline hover:opacity-80 block'
+                >
+                  {attachment.name || attachment.type}
+                </a>
               ))}
             </div>
           )}
-          <p className='whitespace-pre-wrap text-sm'>{message.content}</p>
         </div>
 
-        <div
-          className={`flex items-center gap-1 text-xs text-muted-foreground ${
-            isOwn ? 'flex-row-reverse' : ''
-          }`}
-        >
-          <span>{format(new Date(message.sent_at), 'HH:mm')}</span>
-          {isOwn && (
+        <div className='flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground'>
+          <span>{formatTime(message.timestamp)}</span>
+          {isFromCurrentUser && (
             <>
-              {message.read_at ? (
-                <CheckCheck className='h-3 w-3' />
+              {message.is_read ? (
+                <CheckCheck className='h-3 w-3 text-primary' />
               ) : (
                 <Check className='h-3 w-3' />
               )}

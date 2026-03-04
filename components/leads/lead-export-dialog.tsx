@@ -26,7 +26,7 @@ export function LeadExportDialog({
   filters,
 }: LeadExportDialogProps) {
   const [open, setOpen] = useState(false);
-  const [format, setFormat] = useState<'CSV' | 'JSON'>('CSV');
+  const [format, setFormat] = useState<'csv' | 'json'>('csv');
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
@@ -40,8 +40,10 @@ export function LeadExportDialog({
       });
 
       // Handle CSV export
-      if (format === 'CSV' && result.data.csv) {
-        const blob = new Blob([result.data.csv], { type: 'text/csv' });
+      if (format === 'csv' && result.data.format === 'csv') {
+        const blob = new Blob([JSON.stringify(result.data.data)], {
+          type: 'text/csv',
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -52,8 +54,8 @@ export function LeadExportDialog({
         document.body.removeChild(a);
       }
       // Handle JSON export
-      else if (format === 'JSON' && result.data) {
-        const jsonString = JSON.stringify(result.data, null, 2);
+      else if (format === 'json' && result.data.format === 'json') {
+        const jsonString = JSON.stringify(result.data.data, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -67,7 +69,7 @@ export function LeadExportDialog({
 
       toast({
         title: 'Success',
-        description: `${result.data.count} leads exported as ${format}`,
+        description: `${result.data.count} leads exported as ${format.toUpperCase()}`,
       });
 
       setOpen(false);
@@ -101,10 +103,10 @@ export function LeadExportDialog({
         <div className='space-y-4'>
           <RadioGroup
             value={format}
-            onValueChange={val => setFormat(val as 'CSV' | 'JSON')}
+            onValueChange={val => setFormat(val as 'csv' | 'json')}
           >
             <div className='flex items-center space-x-2'>
-              <RadioGroupItem value='CSV' id='csv' />
+              <RadioGroupItem value='csv' id='csv' />
               <Label htmlFor='csv' className='cursor-pointer flex-1'>
                 CSV Format
                 <p className='text-xs text-muted-foreground mt-1'>
@@ -114,7 +116,7 @@ export function LeadExportDialog({
             </div>
 
             <div className='flex items-center space-x-2'>
-              <RadioGroupItem value='JSON' id='json' />
+              <RadioGroupItem value='json' id='json' />
               <Label htmlFor='json' className='cursor-pointer flex-1'>
                 JSON Format
                 <p className='text-xs text-muted-foreground mt-1'>

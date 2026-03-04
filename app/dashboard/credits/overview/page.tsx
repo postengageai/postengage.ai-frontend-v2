@@ -33,31 +33,35 @@ export default function CreditsPage() {
   const isUsageLoading = useCreditsUsageLoading();
   const usage = useCreditsUsage();
   const isLoading = useCreditsLoading();
-  const { fetchBalance, fetchTransactions, fetchUsage, fetchInvoices } =
-    useCreditsActions();
+  const { fetchBalance, fetchTransactions, fetchUsage } = useCreditsActions();
 
   // Fetch data on component mount
   useEffect(() => {
     fetchBalance();
     fetchUsage('month');
-    fetchInvoices();
-  }, [fetchBalance, fetchUsage, fetchInvoices]);
+  }, [fetchBalance, fetchUsage]);
 
   // Fetch transactions when page changes
   useEffect(() => {
     fetchTransactions(pageSize, currentPage);
   }, [fetchTransactions, currentPage]);
 
-  const handleDateRangeChange = (period: 'today' | 'week' | 'month') => {
+  const handleDateRangeChange = (period: string) => {
     fetchUsage(period);
   };
 
   // Handle loading and null states
-  const displayBalance = balance?.balance ?? 0;
+  const displayBalance = balance?.available_credits ?? 0;
   const displayUsage = usage ?? {
-    period: 'month',
-    total_used: 0,
-    breakdown: [],
+    from: new Date().toISOString(),
+    to: new Date().toISOString(),
+    totals: {
+      purchases: 0,
+      consumption: 0,
+      adjustments: 0,
+    },
+    daily: [],
+    total_transactions: 0,
   };
 
   return (
@@ -87,21 +91,18 @@ export default function CreditsPage() {
 
       {/* Usage Summary Cards */}
       <UsageSummaryCards
-        consumed={displayUsage.total_used}
-        purchased={0}
-        totalTransactions={displayUsage.breakdown.reduce(
-          (sum, item) => sum + item.count,
-          0
-        )}
+        consumed={displayUsage.totals.consumption}
+        purchased={displayUsage.totals.purchases}
+        totalTransactions={displayUsage.total_transactions}
         isLoading={isLoading}
       />
 
       {/* Usage Chart */}
       <UsageChart
-        data={displayUsage.breakdown.map(item => ({
-          date: item.feature,
-          consumption: item.credits_used,
-          purchases: 0,
+        data={displayUsage.daily.map((item: any) => ({
+          date: item.date,
+          consumption: item.consumption,
+          purchases: item.purchases,
         }))}
         isLoading={isUsageLoading}
         onDateRangeChange={handleDateRangeChange}

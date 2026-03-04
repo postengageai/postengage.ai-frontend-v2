@@ -10,42 +10,37 @@ export class NotificationsApi {
     direction?: 'forward' | 'backward';
   }): Promise<SuccessResponse<Notification[]>> {
     const response = await httpClient.get<Notification[]>(
-      '/api/notifications',
+      '/api/v1/notifications',
       { params }
     );
     return response.data!;
   }
 
-  static async getUnreadCount(): Promise<
-    SuccessResponse<{ unread_count: number; total_count: number }>
-  > {
+  static async getUnreadCount(): Promise<SuccessResponse<{ count: number }>> {
     const response = await httpClient.get<{
-      unread_count: number;
-      total_count: number;
-    }>('/api/notifications/unread-count');
+      count: number;
+    }>('/api/v1/notifications/unread-count');
     return response.data!;
   }
 
   static async markAsRead(
     id: string
-  ): Promise<
-    SuccessResponse<{ id: string; is_read: boolean; read_at: string }>
-  > {
+  ): Promise<SuccessResponse<{ id: string; status: string; read_at: string }>> {
     const response = await httpClient.patch<{
       id: string;
-      is_read: boolean;
+      status: string;
       read_at: string;
-    }>(`/api/notifications/${id}/read`);
+    }>(`/api/v1/notifications/${id}/read`);
     return response.data!;
   }
 
   static async markAllAsRead(): Promise<
-    SuccessResponse<{ marked_count: number; message: string }>
+    SuccessResponse<{ message: string; queued: boolean }>
   > {
     const response = await httpClient.patch<{
-      marked_count: number;
       message: string;
-    }>('/api/notifications/read-all');
+      queued: boolean;
+    }>('/api/v1/notifications/read-all');
     return response.data!;
   }
 }

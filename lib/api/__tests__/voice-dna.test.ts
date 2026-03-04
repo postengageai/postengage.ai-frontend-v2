@@ -156,7 +156,7 @@ describe('VoiceDnaApi', () => {
 
       const dto = {
         brand_voice_id: 'bv-1',
-        raw_samples: [],
+        samples: [],
       };
 
       const result = await VoiceDnaApi.createVoiceDna(dto);

@@ -1,7 +1,7 @@
 import { httpClient, SuccessResponse } from '../http/client';
 import { Job, JobListParams } from '../types/jobs';
 
-const JOBS_BASE_URL = '/api/jobs';
+const JOBS_BASE_URL = '/api/v1/jobs';
 
 export class JobsApi {
   static async get(id: string): Promise<SuccessResponse<Job>> {
@@ -17,6 +17,13 @@ export class JobsApi {
     }
     if (params?.per_page) {
       searchParams.set('per_page', String(params.per_page));
+    }
+
+    if (params?.status) {
+      searchParams.set('status', params.status);
+    }
+    if (params?.type) {
+      searchParams.set('type', params.type);
     }
 
     const query = searchParams.toString();

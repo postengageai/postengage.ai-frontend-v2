@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Media } from '@/lib/api/media';
-import { InstagramMediaApi, GetMediaResponse } from '@/lib/api/instagram/media';
+import { InstagramMediaApi } from '@/lib/api/instagram/media';
 import { useToast } from '@/components/ui/use-toast';
 import Image from 'next/image';
 
@@ -71,22 +71,20 @@ export function MediaSelectorModal({
       const instagramMedia = response.data || [];
       const pagination = response.pagination;
 
-      const mappedMedia: Media[] = instagramMedia.map(
-        (item: GetMediaResponse) => ({
-          id: item.id,
-          name: item.caption || 'Instagram Media',
-          url: item.media_url || item.permalink || '',
-          thumbnail_url: item.thumbnail_url || item.media_url,
-          mime_type:
-            item.media_type === 'VIDEO' || item.media_type === 'REELS'
-              ? 'video/mp4'
-              : 'image/jpeg',
-          size: 0,
-          description: item.caption,
-          created_at: item.timestamp,
-          updated_at: item.timestamp,
-        })
-      );
+      const mappedMedia: any = instagramMedia.map((item: any) => ({
+        id: item.id,
+        name: item.caption || 'Instagram Media',
+        url: item.media_url || item.permalink || '',
+        thumbnail_url: item.thumbnail_url || item.media_url,
+        mime_type:
+          item.media_type === 'VIDEO' || item.media_type === 'REELS'
+            ? 'video/mp4'
+            : 'image/jpeg',
+        size: 0,
+
+        created_at: item.timestamp,
+        updated_at: item.timestamp,
+      }));
 
       if (isInitialLoad) {
         setMediaList(mappedMedia);
@@ -239,9 +237,7 @@ export function MediaSelectorModal({
                   )}
 
                   <div className='absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-3 pt-8 text-white opacity-0 transition-opacity group-hover:opacity-100'>
-                    <p className='line-clamp-2 text-xs'>
-                      {media.description || media.name}
-                    </p>
+                    <p className='line-clamp-2 text-xs'>{media.name}</p>
                     <div className='mt-2 flex items-center gap-3 text-[10px] opacity-90'>
                       <span className='flex items-center gap-1'>
                         <Calendar className='h-3 w-3' />

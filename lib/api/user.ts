@@ -1,7 +1,7 @@
 import { httpClient, SuccessResponse } from '../http/client';
 import { User, UpdateUserDto, ChangePasswordDto } from '../types/settings';
 
-const USERS_BASE_URL = '/api/users';
+const USERS_BASE_URL = '/api/v1/users';
 
 export class UserApi {
   // Get current user profile
@@ -14,7 +14,7 @@ export class UserApi {
   static async updateProfile(
     request: UpdateUserDto
   ): Promise<SuccessResponse<User>> {
-    const response = await httpClient.patch<User>(
+    const response = await httpClient.put<User>(
       `${USERS_BASE_URL}/profile`,
       request
     );
@@ -26,8 +26,8 @@ export class UserApi {
     const formData = new FormData();
     formData.append('avatar', file);
 
-    const response = await httpClient.post<User>(
-      `${USERS_BASE_URL}/profile/avatar`,
+    const response = await httpClient.put<User>(
+      `${USERS_BASE_URL}/upload-avatar`,
       formData,
       {
         headers: {
@@ -43,7 +43,7 @@ export class UserApi {
   static async changePassword(
     request: ChangePasswordDto
   ): Promise<SuccessResponse<User>> {
-    const response = await httpClient.patch<User>(
+    const response = await httpClient.put<User>(
       `${USERS_BASE_URL}/change-password`,
       request
     );

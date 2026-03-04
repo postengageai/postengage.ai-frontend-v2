@@ -74,7 +74,7 @@ export function ReviewStep({
 
         if (formData.bot_id && botsRes?.data) {
           const foundBot = botsRes.data.find(
-            (b: Bot) => b._id === formData.bot_id
+            (b: Bot) => b.id === formData.bot_id
           );
           setBot(foundBot || null);
         }

@@ -40,7 +40,7 @@ import type {
 } from '@/lib/types/social-accounts';
 import { SocialAccountsSkeleton } from './social-accounts-skeleton';
 
-const statusConfig: Record<
+const connectionStatusConfig: Record<
   SocialAccountStatus,
   {
     label: string;
@@ -48,12 +48,10 @@ const statusConfig: Record<
     icon: React.ElementType;
   }
 > = {
-  active: { label: 'Connected', variant: 'default', icon: CheckCircle2 },
-  inactive: {
-    label: 'Inactive',
-    variant: 'secondary',
-    icon: AlertTriangle,
-  },
+  connected: { label: 'Connected', variant: 'default', icon: CheckCircle2 },
+  expired: { label: 'Expired', variant: 'outline', icon: AlertTriangle },
+  pending: { label: 'Pending', variant: 'secondary', icon: Loader2 },
+  error: { label: 'Error', variant: 'destructive', icon: AlertTriangle },
   disconnected: {
     label: 'Disconnected',
     variant: 'destructive',
@@ -294,9 +292,9 @@ export function SocialAccounts() {
         </CardHeader>
         <CardContent className='space-y-4'>
           {accounts.map(account => {
-            const status = statusConfig[account.status];
+            const status = connectionStatusConfig[account.connection_status];
             const StatusIcon = status.icon;
-            const needsReconnect = account.status === 'disconnected';
+            const needsReconnect = account.connection_status !== 'connected';
 
             return (
               <div
@@ -310,9 +308,9 @@ export function SocialAccounts() {
               >
                 {/* Avatar & Platform */}
                 <div className='relative'>
-                  {account.avatar ? (
+                  {account.avatar_url ? (
                     <Image
-                      src={account.avatar || '/placeholder.svg'}
+                      src={account.avatar_url || '/placeholder.svg'}
                       alt={account.username}
                       width={48}
                       height={48}
@@ -346,9 +344,9 @@ export function SocialAccounts() {
                       <StatusIcon
                         className={cn(
                           'h-3 w-3',
-                          account.status === 'active'
+                          account.connection_status === 'connected'
                             ? 'text-green-500'
-                            : account.status === 'disconnected'
+                            : account.connection_status === 'disconnected'
                               ? 'text-destructive'
                               : 'text-muted-foreground'
                         )}
@@ -356,15 +354,21 @@ export function SocialAccounts() {
                       {status.label}
                     </span>
                     <span>•</span>
-                    <span>Connected {formatDate(account.connected_at)}</span>
-                    {account.status === 'active' && account.last_synced_at && (
-                      <>
-                        <span>•</span>
-                        <span>
-                          Synced {formatRelativeTime(account.last_synced_at)}
-                        </span>
-                      </>
-                    )}
+                    <span>
+                      Connected{' '}
+                      {account.connected_at
+                        ? formatDate(account.connected_at)
+                        : 'N/A'}
+                    </span>
+                    {account.connection_status === 'connected' &&
+                      account.last_synced_at && (
+                        <>
+                          <span>•</span>
+                          <span>
+                            Synced {formatRelativeTime(account.last_synced_at)}
+                          </span>
+                        </>
+                      )}
                   </div>
                 </div>
 

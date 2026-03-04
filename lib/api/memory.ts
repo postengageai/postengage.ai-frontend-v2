@@ -6,7 +6,7 @@ import type {
   MemoryUsersParams,
 } from '../types/memory';
 
-const INTELLIGENCE_BASE_URL = '/api/intelligence';
+const INTELLIGENCE_BASE_URL = '/api/v1/intelligence';
 
 export class MemoryApi {
   static async getMemoryStats(

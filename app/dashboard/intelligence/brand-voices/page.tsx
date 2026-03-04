@@ -53,8 +53,8 @@ export default function BrandVoicesPage() {
         VoiceDnaApi.listVoiceDna(),
       ]);
 
-      if (voicesResponse) {
-        setVoices(voicesResponse);
+      if (voicesResponse.data) {
+        setVoices(voicesResponse.data);
       }
       if (voiceDnaResponse?.data) {
         const map: Record<string, VoiceDna> = {};
@@ -112,7 +112,7 @@ export default function BrandVoicesPage() {
 
     try {
       await IntelligenceApi.deleteBrandVoice(id);
-      setVoices(voices.filter(v => v._id !== id));
+      setVoices(voices.filter(v => v.id !== id));
       toast({
         title: 'Success',
         description: 'Brand voice deleted successfully',
@@ -222,7 +222,7 @@ export default function BrandVoicesPage() {
               </TableHeader>
               <TableBody>
                 {filteredVoices.map(voice => (
-                  <TableRow key={voice._id} className='group'>
+                  <TableRow key={voice.id} className='group'>
                     <TableCell className='font-medium'>
                       <div className='flex flex-col'>
                         <span className='text-base'>{voice.name}</span>
@@ -267,7 +267,7 @@ export default function BrandVoicesPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{getDnaBadge(voice._id)}</TableCell>
+                    <TableCell>{getDnaBadge(voice.id)}</TableCell>
                     <TableCell className='text-right'>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -281,16 +281,16 @@ export default function BrandVoicesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end'>
                           <Link
-                            href={`/dashboard/intelligence/brand-voices/${voice._id}`}
+                            href={`/dashboard/intelligence/brand-voices/${voice.id}`}
                           >
                             <DropdownMenuItem>
                               <Pencil className='mr-2 h-4 w-4' />
                               Edit
                             </DropdownMenuItem>
                           </Link>
-                          {voiceDnaMap[voice._id] ? (
+                          {voiceDnaMap[voice.id] ? (
                             <Link
-                              href={`/dashboard/intelligence/voice-dna/${voiceDnaMap[voice._id]._id}`}
+                              href={`/dashboard/intelligence/voice-dna/${voiceDnaMap[voice.id]._id}`}
                             >
                               <DropdownMenuItem>
                                 <Dna className='mr-2 h-4 w-4' />
@@ -299,7 +299,7 @@ export default function BrandVoicesPage() {
                             </Link>
                           ) : (
                             <Link
-                              href={`/dashboard/intelligence/voice-dna?create=true&brand_voice_id=${voice._id}`}
+                              href={`/dashboard/intelligence/voice-dna?create=true&brand_voice_id=${voice.id}`}
                             >
                               <DropdownMenuItem>
                                 <Dna className='mr-2 h-4 w-4' />
@@ -309,7 +309,7 @@ export default function BrandVoicesPage() {
                           )}
                           <DropdownMenuItem
                             className='text-destructive focus:text-destructive'
-                            onClick={() => deleteVoice(voice._id)}
+                            onClick={() => deleteVoice(voice.id)}
                           >
                             <Trash className='mr-2 h-4 w-4' />
                             Delete

@@ -1,25 +1,34 @@
 export interface Media {
   id: string;
-  user_id: string;
-  filename: string;
-  original_filename: string;
-  url: string;
-  type: 'image' | 'video' | 'audio' | 'document';
-  mime_type: string;
+  name: string;
+  original_name: string;
   size_bytes: number;
-  dimensions?: {
-    width: number;
-    height: number;
-  };
-  duration_seconds?: number;
-  description?: string;
-  tags?: string[];
+  description?: string | null;
+  mime_type: string;
+  url: string;
+  thumbnail_url?: string | null;
+  width?: number | null;
+  height?: number | null;
+  duration_seconds?: number | null;
+  status: 'active' | 'inactive' | 'processing' | 'failed';
+  tags: string[];
+  category?: string | null;
+  alt_text?: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
+  _links?: Record<string, { href: string; method?: string }>;
+  size?: number;
 }
 
 export interface ListMediaParams {
   page?: number;
-  per_page?: number;
-  type?: 'image' | 'video' | 'audio' | 'document';
+  limit?: number;
+  type?: string;
+  search?: string;
+  category?: string;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }

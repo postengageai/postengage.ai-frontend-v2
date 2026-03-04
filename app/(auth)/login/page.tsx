@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -20,7 +20,7 @@ import { useAuthStore } from '@/lib/auth/store';
 import { useUserStore } from '@/lib/user/store';
 import { ApiError } from '@/lib/http/errors';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { actions, errorActions, errors } = useAuthStore();
@@ -155,5 +155,19 @@ export default function LoginPage() {
         </Link>
       </AuthCardFooter>
     </AuthCard>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='flex min-h-screen items-center justify-center'>
+          <Loader2 className='h-8 w-8 animate-spin text-primary' />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

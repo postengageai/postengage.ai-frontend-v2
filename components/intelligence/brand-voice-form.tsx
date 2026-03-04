@@ -76,51 +76,54 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const defaultValues: Partial<BrandVoiceFormValues> = initialData
-    ? {
-        name: initialData.name,
-        description: initialData.description,
-        tone_primary: initialData.tone_primary,
-        tone_intensity: initialData.tone_intensity,
-        formality: initialData.formality,
-        language: initialData.language,
-        keywords_to_include: initialData.keywords_to_include.join(', '),
-        keywords_to_avoid: initialData.keywords_to_avoid.join(', '),
-        preferred_greetings: initialData.preferred_greetings.join(', '),
-        preferred_closings: initialData.preferred_closings.join(', '),
-        response_length: initialData.response_length,
-        use_emojis: initialData.use_emojis,
-        emoji_intensity: initialData.emoji_intensity,
-        use_hashtags: initialData.use_hashtags,
-        company_name: initialData.company_name,
-        company_description: initialData.company_description,
-        website: initialData.website,
-        contact_email: initialData.contact_email,
-        operating_hours: initialData.operating_hours,
-        custom_instructions: initialData.custom_instructions,
-      }
-    : {
-        name: '',
-        description: '',
-        tone_primary: 'friendly',
-        tone_intensity: 6,
-        formality: 'casual',
-        language: 'en',
-        keywords_to_include: '',
-        keywords_to_avoid: '',
-        preferred_greetings: 'Hey!, Hi there!',
-        preferred_closings: '',
-        response_length: ResponseLengthPreference.MEDIUM,
-        use_emojis: true,
-        emoji_intensity: 2,
-        use_hashtags: false,
-        company_name: '',
-        company_description: '',
-        website: '',
-        contact_email: '',
-        operating_hours: '',
-        custom_instructions: '',
-      };
+  const defaultValues: Partial<BrandVoiceFormValues> = (
+    initialData
+      ? {
+          name: initialData.name,
+          description: initialData.description,
+          tone_primary: initialData.tone_primary,
+          tone_intensity: initialData.tone_intensity,
+          formality: initialData.formality,
+          language: initialData.language,
+          keywords_to_include: initialData.keywords_to_include.join(', '),
+          keywords_to_avoid: initialData.keywords_to_avoid.join(', '),
+          preferred_greetings:
+            initialData.preferred_greetings?.join(', ') ?? '',
+          preferred_closings: initialData.preferred_closings?.join(', ') ?? '',
+          response_length: initialData.response_length,
+          use_emojis: initialData.use_emojis,
+          emoji_intensity: initialData.emoji_intensity,
+          use_hashtags: initialData.use_hashtags ?? false,
+          company_name: initialData.company_name,
+          company_description: initialData.company_description,
+          website: initialData.website ?? '',
+          contact_email: initialData.contact_email ?? '',
+          operating_hours: initialData.operating_hours ?? '',
+          custom_instructions: initialData.custom_instructions ?? '',
+        }
+      : {
+          name: '',
+          description: '',
+          tone_primary: 'friendly',
+          tone_intensity: 6,
+          formality: 'casual',
+          language: 'en',
+          keywords_to_include: '',
+          keywords_to_avoid: '',
+          preferred_greetings: 'Hey!, Hi there!',
+          preferred_closings: '',
+          response_length: ResponseLengthPreference.MEDIUM,
+          use_emojis: true,
+          emoji_intensity: 2,
+          use_hashtags: false,
+          company_name: '',
+          company_description: '',
+          website: '',
+          contact_email: '',
+          operating_hours: '',
+          custom_instructions: '',
+        }
+  ) as Partial<BrandVoiceFormValues>;
 
   const form = useForm<BrandVoiceFormValues>({
     resolver: zodResolver(brandVoiceFormSchema),
@@ -130,7 +133,7 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
   async function onSubmit(data: BrandVoiceFormValues) {
     setIsLoading(true);
     try {
-      const formattedData: CreateBrandVoiceDto = {
+      const formattedData = {
         ...data,
         keywords_to_include: data.keywords_to_include
           ? data.keywords_to_include
@@ -159,7 +162,7 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
       };
 
       if (initialData) {
-        await IntelligenceApi.updateBrandVoice(initialData._id, formattedData);
+        await IntelligenceApi.updateBrandVoice(initialData.id, formattedData);
         toast({
           title: 'Brand Voice updated',
           description: 'Your brand voice has been updated successfully.',

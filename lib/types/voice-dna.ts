@@ -80,7 +80,8 @@ export interface VoiceDna {
 // === API DTOs ===
 export interface CreateVoiceDnaDto {
   brand_voice_id: string;
-  raw_samples: { text: string; source: string }[];
+  samples: string[];
+  source?: string;
 }
 
 export interface AddFewShotDto {

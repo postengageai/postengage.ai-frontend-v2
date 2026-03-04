@@ -68,6 +68,7 @@ export function SecurityForm() {
       await UserApi.changePassword({
         current_password: currentPassword,
         new_password: newPassword,
+        confirm_password: confirmPassword,
       });
 
       setIsSuccess(true);

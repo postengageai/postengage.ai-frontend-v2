@@ -34,6 +34,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import {
@@ -42,7 +43,7 @@ import {
   CreateBotDto,
   BrandVoice,
 } from '@/lib/types/intelligence';
-import { SocialAccount } from '@/lib/api/social-accounts';
+import type { SocialAccount } from '@/lib/types/social-accounts';
 
 const DEFAULT_BOT_BEHAVIOR: BotBehavior = {
   auto_reply_enabled: true,
@@ -128,38 +129,42 @@ export function BotForm({
   const fetchBrandVoices = async () => {
     try {
       const response = await IntelligenceApi.getBrandVoices();
-      if (response) {
-        setBrandVoices(response);
+      if (response?.data) {
+        setBrandVoices(response.data);
       }
     } catch (_error) {
       // Silent failure
     }
   };
 
-  const defaultValues: Partial<BotFormValues> = initialData
-    ? {
-        name: initialData.name,
-        description: initialData.description,
-        social_account_id: initialData.social_account_id,
-        brand_voice_id: initialData.brand_voice_id,
-        behavior: {
-          auto_reply_enabled: initialData.behavior.auto_reply_enabled,
-          max_replies_per_hour: initialData.behavior.max_replies_per_hour,
-          max_replies_per_day: initialData.behavior.max_replies_per_day,
-          reply_delay_min_seconds: initialData.behavior.reply_delay_min_seconds,
-          reply_delay_max_seconds: initialData.behavior.reply_delay_max_seconds,
-          escalation_threshold: initialData.behavior.escalation_threshold,
-          cta_aggressiveness: initialData.behavior.cta_aggressiveness,
-          should_reply_to_spam: initialData.behavior.should_reply_to_spam,
-          stop_after_escalation: initialData.behavior.stop_after_escalation,
-        },
-      }
-    : {
-        name: '',
-        description: '',
-        social_account_id: '',
-        behavior: DEFAULT_BOT_BEHAVIOR,
-      };
+  const defaultValues: Partial<BotFormValues> = (
+    initialData
+      ? {
+          name: initialData.name,
+          description: initialData.description,
+          social_account_id: initialData.social_account_id,
+          brand_voice_id: initialData.brand_voice_id,
+          behavior: {
+            auto_reply_enabled: initialData.behavior.auto_reply_enabled,
+            max_replies_per_hour: initialData.behavior.max_replies_per_hour,
+            max_replies_per_day: initialData.behavior.max_replies_per_day,
+            reply_delay_min_seconds:
+              initialData.behavior.reply_delay_min_seconds,
+            reply_delay_max_seconds:
+              initialData.behavior.reply_delay_max_seconds,
+            escalation_threshold: initialData.behavior.escalation_threshold,
+            cta_aggressiveness: initialData.behavior.cta_aggressiveness,
+            should_reply_to_spam: initialData.behavior.should_reply_to_spam,
+            stop_after_escalation: initialData.behavior.stop_after_escalation,
+          },
+        }
+      : {
+          name: '',
+          description: '',
+          social_account_id: '',
+          behavior: DEFAULT_BOT_BEHAVIOR,
+        }
+  ) as Partial<BotFormValues>;
 
   const form = useForm<BotFormValues>({
     resolver: zodResolver(botFormSchema),
@@ -170,14 +175,17 @@ export function BotForm({
     setIsLoading(true);
     try {
       if (initialData) {
-        await IntelligenceApi.updateBot(initialData._id, data);
+        await IntelligenceApi.updateBot(
+          initialData.id,
+          data as Partial<CreateBotDto>
+        );
         toast({
           title: 'Success',
           description: 'Bot updated successfully',
         });
       } else {
         const createResponse = await IntelligenceApi.createBot(
-          data as CreateBotDto
+          data as unknown as CreateBotDto
         );
         toast({
           title: 'Success',
@@ -186,7 +194,7 @@ export function BotForm({
         // If onCreated callback provided, hand off to voice setup instead of redirecting
         if (onCreated && createResponse?.data) {
           onCreated({
-            botId: createResponse.data._id,
+            botId: createResponse.data.id,
             socialAccountId: data.social_account_id,
             brandVoiceId: data.brand_voice_id,
           });
@@ -297,7 +305,7 @@ export function BotForm({
                       </FormControl>
                       <SelectContent>
                         {brandVoices.map(voice => (
-                          <SelectItem key={voice._id} value={voice._id}>
+                          <SelectItem key={voice.id} value={voice.id}>
                             {voice.name} ({voice.tone_primary})
                           </SelectItem>
                         ))}

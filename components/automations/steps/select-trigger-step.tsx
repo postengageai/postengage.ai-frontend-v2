@@ -78,9 +78,14 @@ export function SelectTriggerStep({
           )
         );
 
-        const mappedMedia: Media[] = responses.map(response => {
+        const mappedMedia: any = responses.map(response => {
           const item = response.data;
           return {
+            original_name: item.caption || 'Instagram Media',
+            size_bytes: 0,
+            status: 'active' as const,
+            tags: [],
+            is_public: true,
             id: item.id,
             name: item.caption || 'Instagram Media',
             url: item.media_url || item.permalink || '',
@@ -90,7 +95,7 @@ export function SelectTriggerStep({
                 ? 'video/mp4'
                 : 'image/jpeg',
             size: 0,
-            description: item.caption,
+
             created_at: item.timestamp,
             updated_at: item.timestamp,
           };

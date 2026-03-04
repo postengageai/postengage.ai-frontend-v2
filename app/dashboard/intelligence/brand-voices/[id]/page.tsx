@@ -42,7 +42,7 @@ export default function EditBrandVoicePage() {
     try {
       const response = await IntelligenceApi.getBrandVoice(voiceId);
       if (response) {
-        setVoice(response);
+        setVoice(response.data);
       }
       // Also fetch linked Voice DNA
       try {

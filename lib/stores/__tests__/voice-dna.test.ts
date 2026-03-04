@@ -224,7 +224,8 @@ describe('useVoiceDnaStore', () => {
 
       const result = await useVoiceDnaStore.getState().actions.create({
         brand_voice_id: 'bv-1',
-        raw_samples: [{ text: 'sample text', source: 'manual' }],
+        samples: ['sample text'],
+        source: 'manual',
       });
 
       expect(result._id).toBe('vdna-1');
@@ -239,7 +240,8 @@ describe('useVoiceDnaStore', () => {
       await expect(
         useVoiceDnaStore.getState().actions.create({
           brand_voice_id: 'bv-1',
-          raw_samples: [{ text: 'sample text', source: 'manual' }],
+          samples: ['sample text'],
+          source: 'manual',
         })
       ).rejects.toThrow('Create failed');
 

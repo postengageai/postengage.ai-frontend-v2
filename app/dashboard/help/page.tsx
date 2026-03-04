@@ -90,9 +90,9 @@ export default function HelpSupportPage() {
 
     try {
       await SupportApi.createTicket({
-        category: ticketCategory,
+        category: ticketCategory as any,
         subject: ticketSubject,
-        message: ticketMessage,
+        description: ticketMessage,
       });
 
       setTicketSubmitted(true);

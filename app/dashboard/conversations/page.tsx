@@ -103,8 +103,7 @@ export default function ConversationsPage() {
       const newMessage = await conversationsApi.sendMessage(
         selectedConversationId,
         {
-          content,
-          message_type: 'text',
+          text: content,
         }
       );
 

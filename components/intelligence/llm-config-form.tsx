@@ -113,11 +113,11 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
         initialConfig.byom_config?.monthly_token_budget || 1000000,
     },
     settings: {
-      temperature: initialConfig.settings.temperature,
+      temperature: initialConfig.settings?.temperature,
       max_response_length:
-        initialConfig.settings.max_response_length ||
+        (initialConfig.settings?.max_response_length as any) ||
         ResponseLengthPreference.MEDIUM,
-      language: initialConfig.settings.language || 'en',
+      language: initialConfig.settings?.language || 'en',
     },
   };
 
@@ -162,7 +162,7 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
               }
             : undefined,
       };
-      await IntelligenceApi.updateUserConfig(payload);
+      await IntelligenceApi.updateUserConfig(payload as Partial<UserLlmConfig>);
       toast({
         title: 'Success',
         description: 'Configuration updated successfully',

@@ -73,7 +73,7 @@ export default function NotificationsPage() {
           n.id === id
             ? {
                 ...n,
-                is_read: true,
+                status: 'read' as const,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -96,10 +96,10 @@ export default function NotificationsPage() {
       await notificationsApi.markAllAsRead();
       setNotifications(prev =>
         prev.map(n =>
-          !n.is_read
+          n.status !== 'read'
             ? {
                 ...n,
-                is_read: true,
+                status: 'read' as const,
                 read_at: new Date().toISOString(),
               }
             : n
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter(n => n.status !== 'read').length;
 
   return (
     <div className='flex flex-col h-full'>
@@ -180,7 +180,9 @@ export default function NotificationsPage() {
               <Card
                 key={notification.id}
                 className={
-                  !notification.is_read ? 'border-primary/50 bg-primary/5' : ''
+                  notification.status !== 'read'
+                    ? 'border-primary/50 bg-primary/5'
+                    : ''
                 }
               >
                 <CardContent className='p-4'>
@@ -202,7 +204,7 @@ export default function NotificationsPage() {
                           </p>
                         </div>
 
-                        {!notification.is_read && (
+                        {notification.status !== 'read' && (
                           <div className='h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1' />
                         )}
                       </div>
@@ -220,7 +222,7 @@ export default function NotificationsPage() {
 
                     {/* Actions */}
                     <div className='flex gap-2 flex-shrink-0'>
-                      {!notification.is_read && (
+                      {notification.status !== 'read' && (
                         <Button
                           variant='ghost'
                           size='sm'

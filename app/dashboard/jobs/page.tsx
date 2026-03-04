@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { JobCard } from '@/components/jobs/job-card';
 import { Job, JobStatus } from '@/lib/types/jobs';
-import { jobsApi } from '@/lib/api/jobs';
+import { JobsApi } from '@/lib/api/jobs';
 import { useToast } from '@/hooks/use-toast';
 import {
   Activity,
@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 
 const STATUS_FILTERS: { label: string; value: JobStatus }[] = [
-  { label: 'Pending', value: 'pending' },
-  { label: 'Active', value: 'active' },
+  { label: 'Queued', value: 'queued' },
+  { label: 'Processing', value: 'processing' },
   { label: 'Completed', value: 'completed' },
   { label: 'Failed', value: 'failed' },
 ];
@@ -31,11 +31,10 @@ export default function JobsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | JobStatus>('all');
   const [cancelingJobId, setCancelingJobId] = useState<string | null>(null);
-  const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
-    pending: 0,
-    active: 0,
+    queued: 0,
+    processing: 0,
     completed: 0,
     failed: 0,
   });
@@ -43,10 +42,21 @@ export default function JobsPage() {
   const fetchJobs = useCallback(async () => {
     try {
       const status = activeTab === 'all' ? undefined : activeTab;
-      const response = await jobsApi.list({ status, limit: 100 });
+      const response = await JobsApi.list({ status, per_page: 100 });
 
       if (response.data) {
         setJobs(response.data);
+
+        // Calculate stats
+        const newStats = {
+          total: response.data.length,
+          queued: response.data.filter(j => j.status === 'queued').length,
+          processing: response.data.filter(j => j.status === 'processing')
+            .length,
+          completed: response.data.filter(j => j.status === 'completed').length,
+          failed: response.data.filter(j => j.status === 'failed').length,
+        };
+        setStats(newStats);
       }
     } catch (_error) {
       toast({
@@ -59,52 +69,37 @@ export default function JobsPage() {
     }
   }, [activeTab, toast]);
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const response = await jobsApi.getStats();
-      if (response.data) {
-        setStats(response.data);
-      }
-    } catch (_error) {
-      // Error handled silently - stats will remain in loading state
-    }
-  }, []);
-
   // Initial fetch
   useEffect(() => {
     fetchJobs();
-    fetchStats();
-  }, [fetchJobs, fetchStats]);
+  }, [fetchJobs]);
 
-  // Auto-refresh for active jobs
+  // Auto-refresh for processing jobs
   useEffect(() => {
-    const hasActiveJobs = jobs.some(j => j.status === 'active');
-    if (!hasActiveJobs) return;
+    const hasProcessingJobs = jobs.some(j => j.status === 'processing');
+    if (!hasProcessingJobs) return;
 
     const interval = setInterval(() => {
       setIsRefreshing(true);
       fetchJobs();
-      fetchStats();
       setIsRefreshing(false);
     }, 5000); // Refresh every 5 seconds
 
     return () => clearInterval(interval);
-  }, [jobs, fetchJobs, fetchStats]);
+  }, [jobs, fetchJobs]);
 
   const handleCancel = async (jobId: string) => {
     if (!confirm('Are you sure you want to cancel this job?')) return;
 
     setCancelingJobId(jobId);
     try {
-      const response = await jobsApi.cancel(jobId);
-      if (response.data) {
-        setJobs(prev => prev.map(j => (j.id === jobId ? response.data : j)));
-        toast({
-          title: 'Success',
-          description: 'Job cancelled',
-        });
-      }
-      fetchStats();
+      await JobsApi.cancel(jobId);
+      setJobs(prev => prev.filter(j => j.job_id !== jobId));
+      toast({
+        title: 'Success',
+        description: 'Job cancelled',
+      });
+      await fetchJobs();
     } catch (_error) {
       toast({
         variant: 'destructive',
@@ -116,33 +111,9 @@ export default function JobsPage() {
     }
   };
 
-  const handleRetry = async (jobId: string) => {
-    setRetryingJobId(jobId);
-    try {
-      const response = await jobsApi.retry(jobId);
-      if (response.data) {
-        setJobs(prev => prev.map(j => (j.id === jobId ? response.data : j)));
-        toast({
-          title: 'Success',
-          description: 'Job retry initiated',
-        });
-      }
-      fetchStats();
-    } catch (_error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to retry job',
-      });
-    } finally {
-      setRetryingJobId(null);
-    }
-  };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchJobs();
-    await fetchStats();
     setIsRefreshing(false);
   };
 
@@ -200,10 +171,10 @@ export default function JobsPage() {
               <div className='flex items-center justify-between'>
                 <div>
                   <p className='text-xs text-muted-foreground uppercase tracking-wide'>
-                    Pending
+                    Queued
                   </p>
                   <p className='text-2xl font-bold mt-1 text-amber-500'>
-                    {stats.pending}
+                    {stats.queued}
                   </p>
                 </div>
                 <div className='w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center'>
@@ -218,10 +189,10 @@ export default function JobsPage() {
               <div className='flex items-center justify-between'>
                 <div>
                   <p className='text-xs text-muted-foreground uppercase tracking-wide'>
-                    Active
+                    Processing
                   </p>
                   <p className='text-2xl font-bold mt-1 text-blue-500'>
-                    {stats.active}
+                    {stats.processing}
                   </p>
                 </div>
                 <div className='w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center'>
@@ -295,13 +266,10 @@ export default function JobsPage() {
                 <div className='space-y-3'>
                   {filteredJobs.map(job => (
                     <JobCard
-                      key={job.id}
+                      key={job.job_id}
                       job={job}
                       onCancel={handleCancel}
-                      onRetry={handleRetry}
-                      isLoading={
-                        cancelingJobId === job.id || retryingJobId === job.id
-                      }
+                      isLoading={cancelingJobId === job.job_id}
                     />
                   ))}
                 </div>

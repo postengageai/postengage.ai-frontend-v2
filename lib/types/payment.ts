@@ -1,71 +1,112 @@
 export interface CreateOrderDto {
-  plan_id: string;
-  billing_cycle?: 'monthly' | 'annual';
+  packageId: string;
+}
+
+export interface Payment {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  order_id: string;
+  provider: string;
+  provider_payment_id: string;
+  status: string;
+  amount: number;
+  currency_id: string;
+  amount_refunded: number | null;
+  paid_at: string | null;
+  failed_at: string | null;
+  _links?: Record<string, { href: string; method?: string }>;
+}
+
+export interface Order {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  credit_package_id: string;
+  status: string;
+  amount: number;
+  currency_id: string;
+  payment_provider: string | null;
+  total_amount: number;
+  tax_rate: number;
+  discount_amount: number;
+  paid_at: string | null;
+  cancelled_at: string | null;
+  _links?: Record<string, { href: string; method?: string }>;
+}
+
+export interface BackendCreditPackage {
+  _id: string;
+  name: string;
+  description: string;
+  credit_amount: number;
+  price: number;
+  currency_id: string;
+  tax_rate: number;
+  status: string;
+  metadata?: Record<string, unknown>;
+  is_featured: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateOrderResponse {
   order_id: string;
   amount: number;
-  amount_paid: number;
   currency: string;
-  receipt: string;
-  status: 'created' | 'attempted' | 'paid';
-  attempts: number;
-  notes: {
-    plan_id: string;
-    user_id: string;
-  };
-  created_at: number;
+  key: string;
+  package: BackendCreditPackage;
+  internal_order_id: string;
 }
 
 export interface VerifyPaymentDto {
-  order_id: string;
-  payment_id: string;
-  signature: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
 }
 
 export interface VerifyPaymentResponse {
-  order_id: string;
-  payment_id: string;
-  status: 'captured' | 'pending' | 'failed';
-  amount: number;
-  currency: string;
+  success: boolean;
+  new_balance?: number;
+  message?: string;
 }
 
 export interface PaymentRecord {
   id: string;
   user_id: string;
-  order_id: string;
-  payment_id: string;
-  plan_id: string;
-  plan_name: string;
+  credit_package_id: string;
+  currency_id: string;
   amount: number;
-  currency: string;
-  billing_cycle: 'monthly' | 'annual';
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
-  razorpay_order_id: string;
-  razorpay_payment_id?: string;
-  razorpay_signature?: string;
+  total_amount: number;
+  status: 'created' | 'paid' | 'failed';
+  provider_order_id: string;
+  payment_provider: 'razorpay';
+  tax_rate: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface Plan {
+export interface CreditPackage {
   id: string;
   name: string;
-  slug: string;
   description: string;
-  price_monthly: number;
-  price_yearly: number;
+  credits: number;
+  price: number;
   currency: string;
-  features: string[];
-  limits: {
-    social_accounts: number;
-    automations: number;
-    monthly_credits: number;
-    bots: number;
-    knowledge_sources: number;
-  };
-  is_popular: boolean;
-  is_active: boolean;
+  popular: boolean;
+  savings: string;
+  tax_rate: number;
+  approx_actions: number;
+}
+
+export interface PackagesResponse {
+  costs: Record<string, number>;
+  packs: CreditPackage[];
+  location: {
+    country: string;
+    country_code: string;
+    currency: string;
+  } | null;
 }

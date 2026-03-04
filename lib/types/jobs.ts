@@ -1,15 +1,16 @@
 export type JobStatus =
-  | 'pending'
+  | 'queued'
   | 'processing'
   | 'completed'
   | 'failed'
   | 'cancelled';
 
 export type JobType =
-  | 'export_leads'
-  | 'export_analytics'
+  | 'lead_export'
+  | 'lead_import'
   | 'report_generation'
-  | 'data_sync';
+  | 'bulk_automation_update'
+  | 'account_data_export';
 
 export interface Job {
   job_id: string;
@@ -34,4 +35,6 @@ export interface Job {
 export interface JobListParams {
   page?: number;
   per_page?: number;
+  status?: JobStatus;
+  type?: JobType;
 }

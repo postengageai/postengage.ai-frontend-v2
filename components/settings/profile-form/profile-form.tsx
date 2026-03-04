@@ -58,7 +58,7 @@ export function ProfileForm() {
         // Upload avatar to server
         const response = await UserApi.uploadAvatar(file);
 
-        // Update local state with the avatar URL (now a string)
+        // Update local state with the avatar
         userActions.updateUser({
           avatar: response.data?.avatar,
         });
@@ -82,7 +82,6 @@ export function ProfileForm() {
       const updateData = {
         first_name: user.first_name,
         last_name: user.last_name,
-        bio: user.bio,
       };
 
       // Call API to update profile
@@ -140,9 +139,9 @@ export function ProfileForm() {
                 onClick={handleAvatarClick}
                 className='group relative h-20 w-20 overflow-hidden rounded-full bg-muted ring-2 ring-border transition-all hover:ring-primary'
               >
-                {user.avatar ? (
+                {user.avatar?.url ? (
                   <Image
-                    src={user.avatar || '/placeholder.svg'}
+                    src={user.avatar.url}
                     alt='Profile'
                     fill
                     className='object-cover'
@@ -196,17 +195,6 @@ export function ProfileForm() {
             </div>
           </div>
 
-          <div className='space-y-2'>
-            <Label htmlFor='bio'>Bio</Label>
-            <Input
-              id='bio'
-              type='text'
-              value={user.bio || ''}
-              onChange={e => handleInputChange('bio', e.target.value)}
-              placeholder='Tell us about yourself'
-            />
-          </div>
-
           <Separator />
 
           {/* Read-only Fields */}
@@ -256,14 +244,14 @@ export function ProfileForm() {
               <dt className='text-muted-foreground'>Email status</dt>
               <dd>
                 <Badge
-                  variant={user.email_verified ? 'default' : 'secondary'}
+                  variant={user.is_verified ? 'default' : 'secondary'}
                   className={
-                    user.email_verified
+                    user.is_verified
                       ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
                       : ''
                   }
                 >
-                  {user.email_verified ? 'Verified' : 'Unverified'}
+                  {user.is_verified ? 'Verified' : 'Unverified'}
                 </Badge>
               </dd>
             </div>

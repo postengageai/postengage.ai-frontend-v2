@@ -24,6 +24,7 @@ import {
   type Automation,
   type CreateAutomationRequest,
 } from '@/lib/api/automations';
+import type { ActionPayload } from '@/lib/types/automation-builder';
 import { toast } from '@/hooks/use-toast';
 
 interface AutomationEditWizardProps {
@@ -50,35 +51,36 @@ function apiToFormData(apiData: Automation): AutomationFormData {
   const firstTrigger = apiData.triggers?.[0];
 
   return {
-    platform: (firstTrigger?.platform ||
+    platform: (apiData.platform ||
       AutomationPlatform.INSTAGRAM) as AutomationPlatformType,
-    social_account_id: firstTrigger?.social_account_id || '',
-    social_account_name: firstTrigger?.social_account_id,
+    social_account_id: apiData.social_account_id || '',
+    social_account_name: apiData.social_account_id,
     trigger_type: (firstTrigger?.type ||
       AutomationTriggerType.NEW_COMMENT) as AutomationTriggerTypeType,
     trigger_source: AutomationTriggerSource.POST,
     trigger_scope: AutomationTriggerScope.ALL,
     content_ids: [],
-    condition: firstTrigger?.conditions?.[0]
-      ? {
-          condition_type: AutomationConditionType.KEYWORD,
-          condition_operator: (firstTrigger.conditions[0].operator ||
-            AutomationConditionOperator.CONTAINS) as AutomationConditionOperatorType,
-          condition_keyword_mode: AutomationConditionKeywordMode.ANY,
-          condition_source: AutomationConditionSource.COMMENT_TEXT,
-          condition_value: [firstTrigger.conditions[0].value],
-          status: 'active',
-        }
-      : null,
+    condition:
+      firstTrigger && firstTrigger.condition
+        ? {
+            condition_type: AutomationConditionType.KEYWORD,
+            condition_operator:
+              AutomationConditionOperator.CONTAINS as AutomationConditionOperatorType,
+            condition_keyword_mode: AutomationConditionKeywordMode.ANY,
+            condition_source: AutomationConditionSource.COMMENT_TEXT,
+            condition_value: [firstTrigger.condition],
+            status: 'active',
+          }
+        : null,
     actions:
       apiData.actions?.map((action, index) => {
-        const payload: AutomationActionPayload = action.params || {};
+        const payload: ActionPayload = (action.payload || {}) as ActionPayload;
 
         return {
           action_type:
             (action.type as unknown as AutomationActionTypeType) ||
             AutomationActionType.REPLY_COMMENT,
-          execution_order: action.order || index + 1,
+          execution_order: action.payload ? 0 : index + 1,
           delay_seconds: action.delay_seconds || 0,
           status: 'active',
           action_payload: payload,
@@ -86,7 +88,7 @@ function apiToFormData(apiData: Automation): AutomationFormData {
       }) || [],
     name: apiData.name,
     description: apiData.description,
-    status: (apiData.status === 'active'
+    status: (apiData.status === AutomationStatus.ACTIVE
       ? AutomationStatus.ACTIVE
       : AutomationStatus.INACTIVE) as AutomationStatusType,
     bot_id: apiData.bot_id,

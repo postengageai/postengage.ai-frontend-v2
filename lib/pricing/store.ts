@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Plan } from '../types/pricing';
+import { Plan, PricingResponse } from '../types/pricing';
 import { PricingApi } from '../api/pricing';
 
 interface PricingState {
@@ -20,7 +20,14 @@ export const usePricingStore = create<PricingState>(set => ({
       set({ isLoading: true, error: null });
       try {
         const response = await PricingApi.getPlans();
-        set({ data: response.data, isLoading: false });
+        // Convert CreditPackage[] to Plan[]
+        const plans = (response.data.packs || []).map(pack => ({
+          ...pack,
+          slug: pack.id,
+          is_popular: pack.popular,
+          is_active: true,
+        })) as Plan[];
+        set({ data: plans, isLoading: false });
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch pricing';

@@ -5,23 +5,29 @@ import {
   VerifyPaymentDto,
   VerifyPaymentResponse,
   PaymentRecord,
-  Plan,
+  PackagesResponse,
 } from '../types/payment';
 
 interface PaymentHistoryResponse {
-  payments: PaymentRecord[];
+  data: PaymentRecord[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 
 export class PaymentsApi {
   /**
    * Create a Razorpay payment order
-   * POST /api/payments/orders
+   * POST /api/v1/payments/orders
    */
   static async createOrder(
     data: CreateOrderDto
   ): Promise<SuccessResponse<CreateOrderResponse>> {
     const response = await httpClient.post<CreateOrderResponse>(
-      '/api/payments/orders',
+      '/api/v1/payments/orders',
       data
     );
     return response.data!;
@@ -29,13 +35,13 @@ export class PaymentsApi {
 
   /**
    * Verify a payment after Razorpay checkout
-   * POST /api/payments/verify
+   * POST /api/v1/payments/verify
    */
   static async verifyPayment(
     data: VerifyPaymentDto
   ): Promise<SuccessResponse<VerifyPaymentResponse>> {
     const response = await httpClient.post<VerifyPaymentResponse>(
-      '/api/payments/verify',
+      '/api/v1/payments/verify',
       data
     );
     return response.data!;
@@ -43,30 +49,33 @@ export class PaymentsApi {
 
   /**
    * Get payment history with pagination
-   * GET /api/payments/history?page=&per_page=
+   * GET /api/v1/payments/history?page=&per_page=
+   * @deprecated Backend does not expose this endpoint yet. Use Credits API for transaction history.
    */
-  static async getPaymentHistory(
-    page: number = 1,
-    per_page: number = 10
-  ): Promise<SuccessResponse<PaymentHistoryResponse>> {
-    const response = await httpClient.get<PaymentHistoryResponse>(
-      '/api/payments/history',
-      {
-        params: {
-          page,
-          per_page,
-        },
-      }
-    );
-    return response.data!;
-  }
+  // static async getPaymentHistory(
+  //   page: number = 1,
+  //   per_page: number = 10
+  // ): Promise<SuccessResponse<PaymentHistoryResponse>> {
+  //   const response = await httpClient.get<PaymentHistoryResponse>(
+  //     '/api/v1/payments/history',
+  //     {
+  //       params: {
+  //         page,
+  //         per_page,
+  //       },
+  //     }
+  //   );
+  //   return response.data!;
+  // }
 
   /**
-   * Get available subscription plans
-   * GET /api/payments/plans
+   * Get available credit packages
+   * GET /api/v1/payments/packages
    */
-  static async getPlans(): Promise<SuccessResponse<Plan[]>> {
-    const response = await httpClient.get<Plan[]>('/api/payments/plans');
+  static async getPackages(): Promise<SuccessResponse<PackagesResponse>> {
+    const response = await httpClient.get<PackagesResponse>(
+      '/api/v1/payments/packages'
+    );
     return response.data!;
   }
 }

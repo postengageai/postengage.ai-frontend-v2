@@ -230,7 +230,7 @@ export function ConfigureActionsStep({
     updateFormData({
       actions,
       bot_id: selectedBotId,
-      bot_name: bots.find(b => b._id === selectedBotId)?.name,
+      bot_name: bots.find(b => b.id === selectedBotId)?.name,
     });
     nextStep();
   };
@@ -326,7 +326,7 @@ export function ConfigureActionsStep({
 
                           if (hasAi) {
                             const selectedBot = bots.find(
-                              bot => bot._id === selectedBotId
+                              bot => bot.id === selectedBotId
                             );
 
                             // Calculate credit cost
@@ -496,7 +496,7 @@ export function ConfigureActionsStep({
               </SelectTrigger>
               <SelectContent>
                 {bots.map(bot => (
-                  <SelectItem key={bot._id} value={bot._id}>
+                  <SelectItem key={bot.id} value={bot.id}>
                     {bot.name}
                   </SelectItem>
                 ))}
@@ -511,9 +511,9 @@ export function ConfigureActionsStep({
               <p className='mt-2 text-xs text-muted-foreground'>
                 Responses will use bot{' '}
                 <span className='font-medium'>
-                  {bots.find(b => b._id === selectedBotId)?.name}
+                  {bots.find(b => b.id === selectedBotId)?.name}
                 </span>
-                {bots.find(b => b._id === selectedBotId)?.brand_voice_id
+                {bots.find(b => b.id === selectedBotId)?.brand_voice_id
                   ? ' with its configured brand voice.'
                   : ' with your default brand voice.'}
               </p>

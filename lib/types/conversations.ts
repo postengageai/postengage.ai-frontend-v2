@@ -1,68 +1,67 @@
 export interface ConversationParticipant {
   id: string;
-  username: string;
-  name: string;
+  username?: string;
+  name?: string;
   avatar_url?: string;
-  platform: 'instagram' | 'facebook' | 'twitter' | 'whatsapp';
-  is_verified: boolean;
-  is_business: boolean;
+}
+
+export interface MessageAttachment {
+  type: string;
+  url: string;
+  name?: string;
 }
 
 export interface Message {
   id: string;
   conversation_id: string;
+  platform_message_id: string;
   sender_id: string;
-  sender: ConversationParticipant;
-  content: string;
-  message_type: 'text' | 'image' | 'video' | 'file' | 'carousel';
-  attachments?: Array<{
-    id: string;
-    url: string;
-    type: 'image' | 'video' | 'file';
-    mime_type?: string;
-  }>;
-  sent_at: string;
-  read_at?: string;
-  is_from_bot: boolean;
-  is_ai_generated: boolean;
+  recipient_id: string;
+  text?: string | null;
+  attachments: MessageAttachment[];
+  timestamp: string;
+  is_echo: boolean;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+  _links?: Record<string, { href: string; method?: string }>;
 }
 
 export interface Conversation {
   id: string;
-  participant_id: string;
-  participant: ConversationParticipant;
   social_account_id: string;
-  platform: 'instagram' | 'facebook' | 'twitter' | 'whatsapp';
-  last_message?: Message;
+  platform: string;
+  platform_conversation_id: string;
+  participants: string[]; // IDs of participants
   last_message_at: string;
   unread_count: number;
-  is_archived: boolean;
-  status: 'active' | 'archived' | 'closed';
+  tags: string[];
+  detected_intent?: string | null;
+  language?: string | null;
+  sentiment: string;
+  total_interactions: number;
+  social_account?: unknown; // Expanded
+  messages?: Message[]; // Expanded
   created_at: string;
   updated_at: string;
-}
-
-export interface ConversationWithMessages extends Conversation {
-  messages: Message[];
-  message_count: number;
+  _links?: Record<string, { href: string; method?: string }>;
 }
 
 export interface ConversationListParams {
+  page?: number;
+  limit?: number;
   status?: string;
   platform?: string;
   search?: string;
   unread_only?: boolean;
-  page?: number;
-  limit?: number;
   sort_by?: 'recent' | 'oldest' | 'unread';
 }
 
 export interface SendMessageRequest {
-  content: string;
-  message_type?: 'text' | 'image' | 'video' | 'file';
+  text?: string;
   attachments?: Array<{
-    url: string;
-    type: 'image' | 'video' | 'file';
+    type: string;
+    url: string; // or payload
   }>;
   use_ai_reply?: boolean;
 }
