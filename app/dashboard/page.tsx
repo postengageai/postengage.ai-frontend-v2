@@ -183,11 +183,11 @@ export default function DashboardPage() {
             notifications={
               dashboardStats?.recent_activity?.map(activity => ({
                 id: activity.id,
-                type: 'system', // Default or map from activity type
+                type: activity.type,
                 title: activity.title,
                 message: activity.message,
                 status: 'unread',
-                priority: activity.priority as any,
+                priority: activity.priority,
                 created_at: new Date(activity.created_at).toISOString(),
                 user_id: activity.user_id,
                 updated_at: new Date(activity.updated_at).toISOString(),
@@ -203,7 +203,7 @@ export default function DashboardPage() {
         {/* Automation Summary & Suggestions - Secondary */}
         <div className='lg:col-span-2 space-y-6'>
           <AutomationSummary
-            automations={[]}
+            automations={dashboardStats?.automations ?? []}
             onToggle={handleToggleAutomation}
             onDelete={handleDeleteAutomation}
           />

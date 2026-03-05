@@ -17,6 +17,16 @@ export type NotificationTypeType =
 export type NotificationStatus = 'unread' | 'read' | 'archived' | 'deleted';
 export type NotificationPriority = 'high' | 'medium' | 'low' | 'urgent';
 
+export const NotificationChannel = {
+  IN_APP: 'in-app',
+  EMAIL: 'email',
+  PUSH: 'push',
+  SMS: 'sms',
+} as const;
+
+export type NotificationChannelType =
+  (typeof NotificationChannel)[keyof typeof NotificationChannel];
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -30,7 +40,7 @@ export interface Notification {
   read_at?: string | null;
   is_read?: boolean;
   is_broadcast: boolean;
-  target_channels: string[];
+  target_channels: NotificationChannelType[];
   created_at: string;
   updated_at: string;
   _links?: Record<string, { href: string; method?: string }>;

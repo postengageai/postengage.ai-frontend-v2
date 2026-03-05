@@ -21,9 +21,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { Automation } from '@/lib/api/automations';
+import type { DashboardAutomation } from '@/lib/types/dashboard';
 
 interface AutomationSummaryProps {
-  automations: Automation[];
+  automations: (Automation | DashboardAutomation)[];
   onToggle?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
@@ -34,10 +35,10 @@ export function AutomationSummary({
   onDelete,
 }: AutomationSummaryProps) {
   const activeCount = automations.filter(a => a.status === 'active').length;
-  const totalRuns = automations.reduce(
-    (acc, a) => acc + (a.total_runs || 0),
-    0
-  );
+  const totalRuns = automations.reduce((acc, a) => {
+    const runs = 'handled_count' in a ? a.handled_count : a.total_runs;
+    return acc + (runs || 0);
+  }, 0);
 
   if (automations.length === 0) {
     return <EmptyAutomationsState />;
@@ -107,7 +108,7 @@ export function AutomationSummary({
 }
 
 interface AutomationCardProps {
-  automation: Automation;
+  automation: Automation | DashboardAutomation;
   onToggle?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
@@ -118,10 +119,21 @@ function AutomationCard({
   onDelete,
 }: AutomationCardProps) {
   const isActive = automation.status === 'active';
+  const totalRuns =
+    'handled_count' in automation
+      ? automation.handled_count
+      : automation.total_runs;
+  const lastRun =
+    'last_active' in automation
+      ? automation.last_active
+      : automation.last_executed_at;
 
   const getActionIcon = () => {
     const firstAction = automation.actions?.[0];
-    switch (firstAction?.type) {
+    const type =
+      typeof firstAction === 'string' ? firstAction : firstAction?.type;
+
+    switch (type) {
       case 'send_message':
         return <Send className='h-3.5 w-3.5' />;
       default:
@@ -168,11 +180,11 @@ function AutomationCard({
           </p>
           <div className='flex items-center gap-2 mt-0.5'>
             <span className='text-xs text-muted-foreground'>
-              {automation.total_runs || 0} total runs
+              {totalRuns || 0} total runs
             </span>
             <span className='text-xs text-muted-foreground/50'>•</span>
             <span className='text-xs text-muted-foreground'>
-              {formatLastRun(automation.last_executed_at)}
+              {formatLastRun(lastRun)}
             </span>
           </div>
         </div>

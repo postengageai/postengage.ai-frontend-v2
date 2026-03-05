@@ -1,3 +1,9 @@
+import {
+  NotificationChannelType,
+  NotificationPriorityType,
+  NotificationTypeType,
+} from './notifications';
+
 export interface DashboardConnectedAccount {
   username: string;
   platform: string;
@@ -40,14 +46,7 @@ export interface DashboardSuggestion {
   id: string;
   title: string;
   description: string;
-  type:
-    | 'info'
-    | 'warning'
-    | 'action'
-    | 'connect'
-    | 'create'
-    | 'upgrade'
-    | 'optimize';
+  type: 'info' | 'warning' | 'action';
   action_label?: string;
   action_url?: string;
   priority?: 'low' | 'medium' | 'high';
@@ -65,11 +64,11 @@ export interface DashboardPerformance {
 export interface DashboardActivity {
   id: string;
   user_id: string;
-  type: string;
+  type: NotificationTypeType;
   title: string;
   message: string;
   status: string;
-  priority: string;
+  priority: NotificationPriorityType;
   created_at: string;
   updated_at: string;
   action_label?: string;
@@ -79,13 +78,7 @@ export interface DashboardActivity {
   dismissible: boolean;
   click_count: number;
   is_broadcast: boolean;
-  target_channels: string[];
-
-  // Added fields based on usage
-  description?: string;
-  automationName?: string;
-  creditCost?: number;
-  timestamp?: string;
+  target_channels: NotificationChannelType[];
 }
 
 export type Activity = DashboardActivity;
