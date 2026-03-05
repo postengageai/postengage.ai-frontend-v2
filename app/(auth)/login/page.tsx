@@ -46,10 +46,11 @@ function LoginForm() {
 
     try {
       const response = await AuthApi.login({ email, password });
+      const userData = response.data.user;
 
       // Update both auth store and legacy user store
-      actions.setUser(response.data);
-      userStoreActions.setUser(response.data);
+      actions.setUser(userData);
+      userStoreActions.setUser(userData);
       actions.setIsAuthenticated(true);
 
       // Redirect to intended page or dashboard

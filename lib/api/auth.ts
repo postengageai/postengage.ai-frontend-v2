@@ -1,6 +1,20 @@
 import { httpClient, SuccessResponse } from '../http/client';
 import { ApiError } from '../http/errors';
 import { User } from '../types/settings';
+import {
+  AuthResponse,
+  LoginResponse,
+  LogoutResponse,
+  PasswordResetConfirmDto,
+  PasswordResetRequestDto,
+  PasswordResetResponse,
+  RefreshResponse,
+  ResendVerificationDto,
+  ResendVerificationResponse,
+  SignupResponse,
+  VerifyEmailDto,
+  VerifyEmailResponse,
+} from '../types/auth';
 
 const AUTH_BASE_URL = '/api/v1/auth';
 
@@ -18,8 +32,10 @@ export interface LoginDto {
 
 export class AuthApi {
   // User registration
-  static async register(request: RegisterDto): Promise<SuccessResponse<User>> {
-    const response = await httpClient.post<User>(
+  static async register(
+    request: RegisterDto
+  ): Promise<SuccessResponse<SignupResponse>> {
+    const response = await httpClient.post<SignupResponse>(
       `${AUTH_BASE_URL}/signup`,
       request
     );
@@ -28,8 +44,10 @@ export class AuthApi {
   }
 
   // User login
-  static async login(request: LoginDto): Promise<SuccessResponse<User>> {
-    const response = await httpClient.post<User>(
+  static async login(
+    request: LoginDto
+  ): Promise<SuccessResponse<LoginResponse>> {
+    const response = await httpClient.post<LoginResponse>(
       `${AUTH_BASE_URL}/login`,
       request
     );
@@ -38,14 +56,63 @@ export class AuthApi {
   }
 
   // Logout
-  static async logout(): Promise<void> {
-    await httpClient.post(`${AUTH_BASE_URL}/logout`);
+  static async logout(): Promise<SuccessResponse<LogoutResponse>> {
+    const response = await httpClient.post<LogoutResponse>(
+      `${AUTH_BASE_URL}/logout`
+    );
+    return response.data!;
   }
 
   // Refresh access token
-  static async refresh(): Promise<SuccessResponse<User>> {
-    const response = await httpClient.post<User>(`${AUTH_BASE_URL}/refresh`);
+  static async refresh(): Promise<SuccessResponse<RefreshResponse>> {
+    const response = await httpClient.post<RefreshResponse>(
+      `${AUTH_BASE_URL}/refresh`
+    );
 
+    return response.data!;
+  }
+
+  // Verify email
+  static async verifyEmail(
+    request: VerifyEmailDto
+  ): Promise<SuccessResponse<VerifyEmailResponse>> {
+    const response = await httpClient.post<VerifyEmailResponse>(
+      `${AUTH_BASE_URL}/verify-email`,
+      request
+    );
+    return response.data!;
+  }
+
+  // Resend verification email
+  static async resendVerification(
+    request: ResendVerificationDto
+  ): Promise<SuccessResponse<ResendVerificationResponse>> {
+    const response = await httpClient.post<ResendVerificationResponse>(
+      `${AUTH_BASE_URL}/resend-verification`,
+      request
+    );
+    return response.data!;
+  }
+
+  // Request password reset (forgot password)
+  static async forgotPassword(
+    request: PasswordResetRequestDto
+  ): Promise<SuccessResponse<PasswordResetResponse>> {
+    const response = await httpClient.post<PasswordResetResponse>(
+      `${AUTH_BASE_URL}/forgot-password`,
+      request
+    );
+    return response.data!;
+  }
+
+  // Confirm password reset
+  static async resetPassword(
+    request: PasswordResetConfirmDto
+  ): Promise<SuccessResponse<PasswordResetResponse>> {
+    const response = await httpClient.post<PasswordResetResponse>(
+      `${AUTH_BASE_URL}/reset-password`,
+      request
+    );
     return response.data!;
   }
 
@@ -79,6 +146,10 @@ export const authApi = {
   login: AuthApi.login,
   logout: AuthApi.logout,
   refresh: AuthApi.refresh,
+  verifyEmail: AuthApi.verifyEmail,
+  resendVerification: AuthApi.resendVerification,
+  forgotPassword: AuthApi.forgotPassword,
+  resetPassword: AuthApi.resetPassword,
   me: AuthApi.me,
   checkAuth: AuthApi.checkAuth,
 };
