@@ -38,23 +38,45 @@ export function OAuthErrorContent() {
   const canRetry = isRetryableError(error);
   const provider = capitalizeProvider(error.details.provider);
 
+  const [isPopup, setIsPopup] = useState(false);
+
   useEffect(() => {
-    // Only auto-close if opened as a popup
-    if (!window.opener) return;
+    // Detect if this is a popup window.
+    // After cross-origin redirect, window.opener may be null even in a popup.
+    // Also check if window was opened by script (history.length === 1 in popups).
+    const openedAsPopup = !!window.opener || window.history.length <= 2;
+    setIsPopup(openedAsPopup);
+
+    if (!openedAsPopup) return;
 
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Send error message to opener before closing
-          window.opener.postMessage(
-            {
-              type: 'OAUTH_ERROR',
-              error: errorParam,
-              description: errorDescription,
-            },
-            '*'
-          );
+          const message = {
+            type: 'OAUTH_ERROR',
+            error: errorParam,
+            description: errorDescription,
+          };
+
+          // Primary: BroadcastChannel (works after cross-origin redirect)
+          try {
+            const channel = new BroadcastChannel('postengage_oauth');
+            channel.postMessage(message);
+            channel.close();
+          } catch {
+            // BroadcastChannel not supported
+          }
+
+          // Fallback: window.opener
+          try {
+            if (window.opener) {
+              window.opener.postMessage(message, window.location.origin);
+            }
+          } catch {
+            // opener inaccessible
+          }
+
           window.close();
           return 0;
         }
@@ -66,20 +88,32 @@ export function OAuthErrorContent() {
   }, [errorParam, errorDescription]);
 
   const handleRetry = () => {
-    // Redirect to social accounts settings page to retry
-    if (window.opener) {
-      window.opener.postMessage(
-        {
-          type: 'OAUTH_ERROR',
-          error: errorParam,
-          description: errorDescription,
-        },
-        '*'
-      );
-      window.close();
-    } else {
-      router.push('/dashboard/settings/social-accounts');
+    const message = {
+      type: 'OAUTH_ERROR',
+      error: errorParam,
+      description: errorDescription,
+    };
+
+    // Notify opener via BroadcastChannel + window.opener
+    try {
+      const channel = new BroadcastChannel('postengage_oauth');
+      channel.postMessage(message);
+      channel.close();
+    } catch {
+      // BroadcastChannel not supported
     }
+
+    try {
+      if (window.opener) {
+        window.opener.postMessage(message, window.location.origin);
+      }
+    } catch {
+      // opener inaccessible
+    }
+
+    // Try to close; fallback to redirect
+    window.close();
+    setTimeout(() => router.push('/dashboard/settings/social-accounts'), 300);
   };
 
   return (
@@ -138,7 +172,7 @@ export function OAuthErrorContent() {
           </Button>
         </div>
         {/* Auto-close notice */}
-        {window.opener && (
+        {isPopup && countdown > 0 && (
           <p className='mt-4 text-center text-xs text-muted-foreground'>
             Closing automatically in {countdown}s...
           </p>

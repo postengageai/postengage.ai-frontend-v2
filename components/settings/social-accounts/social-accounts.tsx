@@ -71,27 +71,46 @@ export function SocialAccounts() {
   useEffect(() => {
     loadAccounts();
 
-    // Listen for OAuth success/error message from popup
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data) {
-        if (
-          event.data.type === 'OAUTH_SUCCESS' &&
-          event.data.platform === 'instagram'
-        ) {
-          // Refresh accounts list
-          loadAccounts();
-        } else if (event.data.type === 'OAUTH_ERROR') {
-          // Show error toast or alert
-          setError(
-            event.data.description ||
-              'Failed to connect account. Please try again.'
-          );
-        }
+    // Handle incoming OAuth messages from popup (via BroadcastChannel or postMessage)
+    const handleOAuthMessage = (data: Record<string, unknown>) => {
+      if (!data || !data.type) return;
+      if (data.type === 'OAUTH_SUCCESS' && data.platform === 'instagram') {
+        loadAccounts();
+      } else if (data.type === 'OAUTH_ERROR') {
+        setError(
+          (data.description as string) ||
+            'Failed to connect account. Please try again.'
+        );
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    // Primary: BroadcastChannel (works after cross-origin redirect when window.opener is null)
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(InstagramOAuthApi.OAUTH_CHANNEL);
+      channel.onmessage = (event: MessageEvent) => {
+        handleOAuthMessage(event.data);
+      };
+    } catch {
+      // BroadcastChannel not supported in this browser
+    }
+
+    // Fallback: window.postMessage (works when window.opener is available)
+    const handlePostMessage = (event: MessageEvent) => {
+      if (event.origin === window.location.origin) {
+        handleOAuthMessage(event.data);
+      }
+    };
+
+    window.addEventListener('message', handlePostMessage);
+    return () => {
+      window.removeEventListener('message', handlePostMessage);
+      try {
+        channel?.close();
+      } catch {
+        // ignore
+      }
+    };
   }, []);
 
   const loadAccounts = async () => {

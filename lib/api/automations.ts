@@ -70,11 +70,16 @@ export interface SendDmMediaMessage {
 
 export type SendDmMessage = SendDmTextMessage | SendDmMediaMessage;
 
-export interface SendDmTextPayload {
+export interface SendDmBasePayload {
+  text?: string;
+  use_ai_reply?: boolean;
+}
+
+export interface SendDmTextPayload extends SendDmBasePayload {
   message: SendDmTextMessage;
 }
 
-export interface SendDmMediaPayload {
+export interface SendDmMediaPayload extends SendDmBasePayload {
   message: SendDmMediaMessage;
   attachment_id?: string;
 }
@@ -85,28 +90,18 @@ export interface ReplyCommentPayload {
   text: string;
   variations?: string[];
   hide_comment?: boolean;
+  use_ai_reply?: boolean;
 }
 
 export interface PrivateReplyPayload {
   text: string;
-}
-
-export interface AddTagPayload {
-  tag_name: string;
-  create_if_missing?: boolean;
-}
-
-export interface NotifyAdminPayload {
-  message: string;
-  email?: string;
+  use_ai_reply?: boolean;
 }
 
 export type AutomationActionPayload =
   | ReplyCommentPayload
   | SendDmPayload
-  | PrivateReplyPayload
-  | AddTagPayload
-  | NotifyAdminPayload;
+  | PrivateReplyPayload;
 
 export interface AutomationAction {
   action_type: AutomationActionType;
@@ -144,17 +139,17 @@ export interface AutomationConditionResponse extends AutomationCondition {
   created_at: string;
   updated_at: string;
 }
-
 export interface CreateAutomationRequest {
   name: string;
   description?: string;
   social_account_id: string;
+  bot_id?: string;
   platform: AutomationPlatform;
   status?: AutomationStatus;
   execution_mode: AutomationExecutionMode;
   trigger: AutomationTrigger;
+  conditions: AutomationCondition[];
   actions: AutomationAction[];
-  conditions?: AutomationCondition[];
   is_template?: boolean;
   template_category?: string;
   template_tags?: string[];
@@ -202,6 +197,7 @@ export interface Automation {
   platform: AutomationPlatform;
   status: AutomationStatus;
   execution_mode: AutomationExecutionMode;
+  bot_id?: string;
   paused_reason?: string | null;
   scheduled_time?: string | null;
   delayed_minutes?: number | null;

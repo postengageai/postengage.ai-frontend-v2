@@ -85,8 +85,8 @@ export default function DashboardPage() {
             createdAt: new Date(a.created_at),
           }))
         );
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error);
+      } catch (_error) {
+        // Silent error
       } finally {
         setIsLoading(false);
       }
@@ -109,8 +109,8 @@ export default function DashboardPage() {
             : n
         )
       );
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+    } catch (_error) {
+      // Silent error
     }
   };
 
@@ -128,8 +128,8 @@ export default function DashboardPage() {
             : n
         )
       );
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+    } catch (_error) {
+      // Silent error
     }
   };
 
@@ -162,8 +162,7 @@ export default function DashboardPage() {
         title: 'Success',
         description: 'Automation deleted successfully',
       });
-    } catch (error) {
-      console.error('Failed to delete automation:', error);
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'Failed to delete automation',

@@ -39,21 +39,37 @@ function OAuthSuccessContent() {
     // Trigger success animation on mount
     const timer = setTimeout(() => setShowAnimation(true), 100);
 
-    // Auto-close popup after 3 seconds if opened as popup
-    let closeTimer: NodeJS.Timeout;
-    if (window.opener) {
-      closeTimer = setTimeout(() => {
-        window.opener.postMessage(
-          { type: 'OAUTH_SUCCESS', platform, id, username },
-          '*'
-        );
-        window.close();
-      }, 3000);
-    }
+    // Notify opener and auto-close popup after 2.5 seconds.
+    // Uses BroadcastChannel as primary (works after cross-origin redirect
+    // where window.opener is null), with window.opener.postMessage as fallback.
+    const closeTimer = setTimeout(() => {
+      const message = { type: 'OAUTH_SUCCESS', platform, id, username };
+
+      // Primary: BroadcastChannel (reliable across same-origin tabs)
+      try {
+        const channel = new BroadcastChannel('postengage_oauth');
+        channel.postMessage(message);
+        channel.close();
+      } catch {
+        // BroadcastChannel not supported — fall through to opener
+      }
+
+      // Fallback: window.opener (may be null after cross-origin redirect)
+      try {
+        if (window.opener) {
+          window.opener.postMessage(message, window.location.origin);
+        }
+      } catch {
+        // opener inaccessible — ignore
+      }
+
+      // Always try to close the popup
+      window.close();
+    }, 2500);
 
     return () => {
       clearTimeout(timer);
-      if (closeTimer) clearTimeout(closeTimer);
+      clearTimeout(closeTimer);
     };
   }, [id, username, router, platform]);
 
@@ -62,16 +78,30 @@ function OAuthSuccessContent() {
   }
 
   const handleDashboardClick = () => {
-    // Close the popup window if it was opened as one, otherwise redirect
-    if (window.opener) {
-      window.opener.postMessage(
-        { type: 'OAUTH_SUCCESS', platform, id, username },
-        '*'
-      );
-      window.close();
-    } else {
-      router.push('/dashboard');
+    const message = { type: 'OAUTH_SUCCESS', platform, id, username };
+
+    // Notify the opener via BroadcastChannel + window.opener
+    try {
+      const channel = new BroadcastChannel('postengage_oauth');
+      channel.postMessage(message);
+      channel.close();
+    } catch {
+      // BroadcastChannel not supported
     }
+
+    try {
+      if (window.opener) {
+        window.opener.postMessage(message, window.location.origin);
+      }
+    } catch {
+      // opener inaccessible
+    }
+
+    // Try to close the popup; if it doesn't close (not a popup), redirect
+    window.close();
+    // window.close() is a no-op if the window wasn't opened by script,
+    // so redirect as fallback after a short delay
+    setTimeout(() => router.push('/dashboard'), 300);
   };
 
   return (

@@ -33,9 +33,6 @@ export const AutomationActionType = {
   REPLY_COMMENT: 'reply_comment',
   SEND_DM: 'send_dm',
   PRIVATE_REPLY: 'private_reply',
-  LIKE_CONTENT: 'like_content',
-  ADD_TAG: 'add_tag',
-  NOTIFY_ADMIN: 'notify_admin',
 } as const;
 
 export type AutomationActionTypeType =

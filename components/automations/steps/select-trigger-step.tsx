@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,8 @@ import {
   X,
   Check,
   Loader2,
+  AtSign,
+  UserPlus,
 } from 'lucide-react';
 import { MediaSelectorModal } from '../media-selector-modal';
 import type { AutomationFormData } from '../automation-wizard';
@@ -122,6 +125,8 @@ export function SelectTriggerStep({
       source = AutomationTriggerSource.DIRECT_MESSAGE;
     } else if (trigger === AutomationTriggerType.STORY_REPLY) {
       source = AutomationTriggerSource.STORY;
+    } else if (trigger === AutomationTriggerType.NEW_FOLLOWER) {
+      source = AutomationTriggerSource.PROFILE;
     }
 
     updateFormData({
@@ -177,15 +182,25 @@ export function SelectTriggerStep({
 
   const handleNext = () => {
     if (selectedTrigger) {
+      const isCommentTrigger =
+        selectedTrigger === AutomationTriggerType.NEW_COMMENT;
       updateFormData({
         trigger_type: selectedTrigger,
-        trigger_scope: scope,
         trigger_source:
           selectedTrigger === AutomationTriggerType.NEW_COMMENT
             ? AutomationTriggerSource.POST
-            : AutomationTriggerSource.DIRECT_MESSAGE,
-        content_ids: selectedMediaIds,
-        selected_media: selectedMedia,
+            : selectedTrigger === AutomationTriggerType.DM_RECEIVED
+              ? AutomationTriggerSource.DIRECT_MESSAGE
+              : selectedTrigger === AutomationTriggerType.STORY_REPLY
+                ? AutomationTriggerSource.STORY
+                : selectedTrigger === AutomationTriggerType.NEW_FOLLOWER
+                  ? AutomationTriggerSource.PROFILE
+                  : AutomationTriggerSource.POST,
+        ...(isCommentTrigger && {
+          trigger_scope: scope,
+          content_ids: selectedMediaIds,
+          selected_media: selectedMedia,
+        }),
       });
       nextStep();
     }
@@ -194,7 +209,9 @@ export function SelectTriggerStep({
   // Validate: if specific scope selected, must have at least 1 post
   const canContinue =
     selectedTrigger &&
-    (scope === AutomationTriggerScope.ALL || selectedMediaIds.length > 0);
+    (selectedTrigger !== AutomationTriggerType.NEW_COMMENT ||
+      scope === AutomationTriggerScope.ALL ||
+      selectedMediaIds.length > 0);
 
   return (
     <div>
@@ -329,6 +346,185 @@ export function SelectTriggerStep({
             </div>
           )}
         </button>
+
+        {/* Story Reply Trigger */}
+        <button
+          onClick={() => handleSelectTrigger(AutomationTriggerType.STORY_REPLY)}
+          className='group relative overflow-hidden rounded-lg border-2 border-border bg-card p-4 text-left transition-all hover:border-primary hover:bg-card/80 sm:p-6'
+          style={{
+            borderColor:
+              selectedTrigger === AutomationTriggerType.STORY_REPLY
+                ? 'hsl(var(--primary))'
+                : undefined,
+            backgroundColor:
+              selectedTrigger === AutomationTriggerType.STORY_REPLY
+                ? 'hsl(var(--primary) / 0.05)'
+                : undefined,
+          }}
+        >
+          <div className='flex items-start gap-3 sm:gap-4'>
+            <div
+              className='rounded-lg p-2 sm:p-3'
+              style={{
+                background:
+                  selectedTrigger === AutomationTriggerType.STORY_REPLY
+                    ? 'hsl(var(--primary) / 0.1)'
+                    : 'hsl(var(--muted))',
+              }}
+            >
+              <ImageIcon
+                className='h-6 w-6 sm:h-8 sm:w-8'
+                style={{
+                  color:
+                    selectedTrigger === AutomationTriggerType.STORY_REPLY
+                      ? 'hsl(var(--primary))'
+                      : 'hsl(var(--muted-foreground))',
+                }}
+              />
+            </div>
+            <div className='flex-1'>
+              <h3 className='text-base font-semibold text-foreground sm:text-lg'>
+                Story Reply
+              </h3>
+              <p className='mt-1 text-xs text-muted-foreground sm:text-sm'>
+                Triggers when someone replies to your story
+              </p>
+              <div className='mt-3 flex gap-2 sm:mt-4'>
+                <Badge
+                  variant='secondary'
+                  className='bg-primary/10 text-primary text-xs'
+                >
+                  Stories
+                </Badge>
+              </div>
+            </div>
+          </div>
+          {selectedTrigger === AutomationTriggerType.STORY_REPLY && (
+            <div className='absolute right-3 top-3 rounded-full bg-primary p-1 sm:right-4 sm:top-4'>
+              <Check className='h-3 w-3 text-white sm:h-4 sm:w-4' />
+            </div>
+          )}
+        </button>
+
+        {/* Mention Trigger */}
+        <button
+          onClick={() => handleSelectTrigger(AutomationTriggerType.MENTION)}
+          className='group relative overflow-hidden rounded-lg border-2 border-border bg-card p-4 text-left transition-all hover:border-primary hover:bg-card/80 sm:p-6'
+          style={{
+            borderColor:
+              selectedTrigger === AutomationTriggerType.MENTION
+                ? 'hsl(var(--primary))'
+                : undefined,
+            backgroundColor:
+              selectedTrigger === AutomationTriggerType.MENTION
+                ? 'hsl(var(--primary) / 0.05)'
+                : undefined,
+          }}
+        >
+          <div className='flex items-start gap-3 sm:gap-4'>
+            <div
+              className='rounded-lg p-2 sm:p-3'
+              style={{
+                background:
+                  selectedTrigger === AutomationTriggerType.MENTION
+                    ? 'hsl(var(--primary) / 0.1)'
+                    : 'hsl(var(--muted))',
+              }}
+            >
+              <AtSign
+                className='h-6 w-6 sm:h-8 sm:w-8'
+                style={{
+                  color:
+                    selectedTrigger === AutomationTriggerType.MENTION
+                      ? 'hsl(var(--primary))'
+                      : 'hsl(var(--muted-foreground))',
+                }}
+              />
+            </div>
+            <div className='flex-1'>
+              <h3 className='text-base font-semibold text-foreground sm:text-lg'>
+                Mention
+              </h3>
+              <p className='mt-1 text-xs text-muted-foreground sm:text-sm'>
+                Triggers when someone mentions your account
+              </p>
+              <div className='mt-3 flex gap-2 sm:mt-4'>
+                <Badge
+                  variant='secondary'
+                  className='bg-primary/10 text-primary text-xs'
+                >
+                  Mentions
+                </Badge>
+              </div>
+            </div>
+          </div>
+          {selectedTrigger === AutomationTriggerType.MENTION && (
+            <div className='absolute right-3 top-3 rounded-full bg-primary p-1 sm:right-4 sm:top-4'>
+              <Check className='h-3 w-3 text-white sm:h-4 sm:w-4' />
+            </div>
+          )}
+        </button>
+
+        {/* New Follower Trigger */}
+        <button
+          onClick={() =>
+            handleSelectTrigger(AutomationTriggerType.NEW_FOLLOWER)
+          }
+          className='group relative overflow-hidden rounded-lg border-2 border-border bg-card p-4 text-left transition-all hover:border-primary hover:bg-card/80 sm:p-6'
+          style={{
+            borderColor:
+              selectedTrigger === AutomationTriggerType.NEW_FOLLOWER
+                ? 'hsl(var(--primary))'
+                : undefined,
+            backgroundColor:
+              selectedTrigger === AutomationTriggerType.NEW_FOLLOWER
+                ? 'hsl(var(--primary) / 0.05)'
+                : undefined,
+          }}
+        >
+          <div className='flex items-start gap-3 sm:gap-4'>
+            <div
+              className='rounded-lg p-2 sm:p-3'
+              style={{
+                background:
+                  selectedTrigger === AutomationTriggerType.NEW_FOLLOWER
+                    ? 'hsl(var(--primary) / 0.1)'
+                    : 'hsl(var(--muted))',
+              }}
+            >
+              <UserPlus
+                className='h-6 w-6 sm:h-8 sm:w-8'
+                style={{
+                  color:
+                    selectedTrigger === AutomationTriggerType.NEW_FOLLOWER
+                      ? 'hsl(var(--primary))'
+                      : 'hsl(var(--muted-foreground))',
+                }}
+              />
+            </div>
+            <div className='flex-1'>
+              <h3 className='text-base font-semibold text-foreground sm:text-lg'>
+                New Follower
+              </h3>
+              <p className='mt-1 text-xs text-muted-foreground sm:text-sm'>
+                Triggers when someone follows your account
+              </p>
+              <div className='mt-3 flex gap-2 sm:mt-4'>
+                <Badge
+                  variant='secondary'
+                  className='bg-primary/10 text-primary text-xs'
+                >
+                  Followers
+                </Badge>
+              </div>
+            </div>
+          </div>
+          {selectedTrigger === AutomationTriggerType.NEW_FOLLOWER && (
+            <div className='absolute right-3 top-3 rounded-full bg-primary p-1 sm:right-4 sm:top-4'>
+              <Check className='h-3 w-3 text-white sm:h-4 sm:w-4' />
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Scope Selection for New Comment */}
@@ -438,9 +634,11 @@ export function SelectTriggerStep({
                         key={id}
                         className='group relative h-16 w-16 overflow-hidden rounded-md border border-border sm:h-20 sm:w-20'
                       >
-                        <img
+                        <Image
                           src={thumbnailUrl}
                           alt='Selected post'
+                          width={80}
+                          height={80}
                           className='h-full w-full object-cover'
                         />
                         <button

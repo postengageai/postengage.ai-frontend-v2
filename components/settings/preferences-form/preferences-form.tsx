@@ -75,11 +75,10 @@ export function PreferencesForm() {
             setTimezone(user.timezone);
           }
         }
-      } catch (err) {
+      } catch (_err) {
         setError(
           'Failed to load user preferences. Please try refreshing the page.'
         );
-        console.error('Error loading user preferences:', err);
       } finally {
         setIsLoadingData(false);
       }
@@ -113,9 +112,8 @@ export function PreferencesForm() {
 
       setIsSaved(true);
       setHasChanges(false);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to save preferences. Please try again.');
-      console.error('Error saving preferences:', err);
     } finally {
       setIsLoading(false);
     }

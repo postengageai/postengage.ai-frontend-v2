@@ -76,9 +76,8 @@ export default function ActivityPage() {
         setError(null);
         const response = await notificationsApi.getNotifications();
         setNotifications(response.data || []);
-      } catch (err) {
+      } catch {
         setError('Failed to load notifications');
-        console.error('Error fetching notifications:', err);
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +93,7 @@ export default function ActivityPage() {
       setNotifications(prev => [newNotification, ...prev]);
 
       // Flash UI indicator or show toast (optional)
-      console.log('New notification received:', newNotification);
+      // console.log('New notification received:', newNotification);
     };
 
     // Connect to socket and subscribe to notification updates
@@ -153,8 +152,8 @@ export default function ActivityPage() {
             : n
         )
       );
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
+    } catch {
+      // Ignore error
     }
   };
 
@@ -172,8 +171,8 @@ export default function ActivityPage() {
             : n
         )
       );
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+    } catch {
+      // Ignore error
     }
   };
 

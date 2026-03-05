@@ -1,11 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import { IntelligenceApi } from '@/lib/api/intelligence';
+import {
+  type Bot,
+  type UserLlmConfig,
+  LlmConfigMode,
+} from '@/lib/types/intelligence';
+import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
 import {
   ChevronLeft,
   Plus,
@@ -13,6 +29,8 @@ import {
   MessageSquare,
   Mail,
   Send,
+  Clock,
+  Bot as BotIcon,
   type LucideIcon,
 } from 'lucide-react';
 import type { AutomationFormData } from '../automation-wizard';
@@ -42,6 +60,37 @@ export function ConfigureActionsStep({
   prevStep,
 }: ConfigureActionsStepProps) {
   const [actions, setActions] = useState(formData.actions || []);
+  const [bots, setBots] = useState<Bot[]>([]);
+  const [userConfig, setUserConfig] = useState<UserLlmConfig | null>(null);
+  const [selectedBotId, setSelectedBotId] = useState<string | undefined>(
+    formData.bot_id
+  );
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [botsResponse, configResponse] = await Promise.all([
+          IntelligenceApi.getBots(
+            formData.social_account_id
+              ? { social_account_id: formData.social_account_id }
+              : undefined
+          ),
+          IntelligenceApi.getUserConfig(),
+        ]);
+        setBots(botsResponse.data || []);
+        setUserConfig(configResponse.data);
+      } catch (_error) {
+        // failed to fetch data
+      }
+    };
+
+    if (formData.social_account_id) {
+      fetchData();
+    } else {
+      setBots([]);
+    }
+  }, [formData.social_account_id]);
 
   const getAvailableActions = (): {
     type: AutomationActionTypeType;
@@ -64,16 +113,15 @@ export function ConfigureActionsStep({
           description: 'Send a private message to the commenter',
         },
       ];
-    } else {
-      return [
-        {
-          type: AutomationActionType.SEND_DM,
-          label: 'Send DM Reply',
-          icon: Send,
-          description: 'Reply to the direct message',
-        },
-      ];
     }
+    return [
+      {
+        type: AutomationActionType.SEND_DM,
+        label: 'Send DM Reply',
+        icon: Send,
+        description: 'Reply to the direct message',
+      },
+    ];
   };
 
   const addAction = (type: AutomationActionTypeType) => {
@@ -123,7 +171,67 @@ export function ConfigureActionsStep({
   };
 
   const handleNext = () => {
-    updateFormData({ actions });
+    const useAi = actions.some(action => {
+      const payload = action.action_payload as
+        | ReplyCommentPayload
+        | PrivateReplyPayload
+        | SendDmPayload;
+
+      return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+    });
+
+    if (useAi) {
+      const missingFallback = actions.filter(action => {
+        const payload = action.action_payload as
+          | ReplyCommentPayload
+          | PrivateReplyPayload
+          | SendDmPayload;
+
+        if (!('use_ai_reply' in payload) || !payload.use_ai_reply) {
+          return false;
+        }
+
+        if (action.action_type === AutomationActionType.SEND_DM) {
+          const dmPayload = payload as SendDmPayload;
+          const message =
+            dmPayload.message && dmPayload.message.type === 'text'
+              ? dmPayload.message
+              : null;
+
+          return !message || !message.text || !message.text.trim();
+        }
+
+        const textPayload = payload as
+          | ReplyCommentPayload
+          | PrivateReplyPayload;
+        return !textPayload.text || !textPayload.text.trim();
+      });
+
+      if (missingFallback.length > 0) {
+        toast({
+          title: 'Fallback message required',
+          description:
+            'When AI replies are enabled, each action must have a fallback message.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    if (useAi && !selectedBotId) {
+      toast({
+        title: 'Bot Required',
+        description: 'Please select an AI Bot to handle the automated replies.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateFormData({
+      actions,
+      bot_id: selectedBotId,
+      bot_name: bots.find(b => b._id === selectedBotId)?.name,
+    });
     nextStep();
   };
 
@@ -150,21 +258,21 @@ export function ConfigureActionsStep({
                   key={action.type}
                   onClick={() => addAction(action.type)}
                   disabled={isAdded}
-                  className='flex items-start gap-3 rounded-lg border-2 border-border bg-card p-3 text-left transition-all hover:border-primary hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50 sm:p-4'
+                  className='group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50'
                 >
-                  <div className='rounded-lg bg-primary/10 p-2'>
-                    <Icon className='h-4 w-4 text-primary sm:h-5 sm:w-5' />
+                  <div className='rounded-lg bg-primary/10 p-2 transition-colors group-hover:bg-primary group-hover:text-primary-foreground'>
+                    <Icon className='h-5 w-5 text-primary group-hover:text-primary-foreground' />
                   </div>
                   <div className='flex-1'>
                     <div className='flex flex-wrap items-center gap-2'>
-                      <p className='text-sm font-medium text-foreground sm:text-base'>
+                      <p className='font-semibold text-foreground'>
                         {action.label}
                       </p>
                       <Badge
                         variant='secondary'
-                        className='bg-primary/10 text-primary text-xs'
+                        className='bg-primary/10 text-xs text-primary'
                       >
-                        2 credits
+                        Free
                       </Badge>
                     </div>
                     <p className='mt-1 text-xs text-muted-foreground'>
@@ -181,14 +289,17 @@ export function ConfigureActionsStep({
       {actions.length > 0 && (
         <div className='space-y-4'>
           {actions.map((action, index) => (
-            <Card key={index} className='p-4 sm:p-6'>
-              <div className='mb-4 flex items-start justify-between gap-3 sm:items-center'>
-                <div className='flex items-center gap-2 sm:gap-3'>
-                  <div className='flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary sm:h-8 sm:w-8 sm:text-sm'>
+            <Card
+              key={index}
+              className='overflow-hidden border-border transition-all hover:border-primary/50'
+            >
+              <div className='flex items-center justify-between border-b bg-muted/30 px-6 py-4'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary'>
                     {action.execution_order}
                   </div>
                   <div>
-                    <p className='text-sm font-semibold text-foreground sm:text-base'>
+                    <p className='font-semibold text-foreground'>
                       {action.action_type ===
                         AutomationActionType.REPLY_COMMENT &&
                         'Reply to Comment'}
@@ -198,22 +309,89 @@ export function ConfigureActionsStep({
                       {action.action_type === AutomationActionType.SEND_DM &&
                         'Send DM Reply'}
                     </p>
-                    <p className='text-xs text-muted-foreground'>
-                      {action.delay_seconds}s delay
-                    </p>
+                    <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                      <div className='flex items-center gap-1.5'>
+                        <Clock className='h-3 w-3' />
+                        <span>{action.delay_seconds}s delay</span>
+                      </div>
+                      <div className='flex items-center gap-1.5'>
+                        {(() => {
+                          const payload = action.action_payload as
+                            | ReplyCommentPayload
+                            | PrivateReplyPayload
+                            | SendDmPayload;
+                          const hasAi =
+                            'use_ai_reply' in payload &&
+                            Boolean(payload.use_ai_reply);
+
+                          if (hasAi) {
+                            const selectedBot = bots.find(
+                              bot => bot._id === selectedBotId
+                            );
+
+                            // Calculate credit cost
+                            let creditCost = 0;
+                            const isByom =
+                              userConfig?.mode === LlmConfigMode.BYOM;
+                            const infraCost = CREDIT_COSTS.BYOM_INFRA;
+
+                            if (isByom) {
+                              creditCost = infraCost;
+                            } else {
+                              // Platform mode: Infra + AI Tier
+                              const hasKnowledge =
+                                selectedBot?.knowledge_sources &&
+                                selectedBot.knowledge_sources.length > 0;
+
+                              const aiTierCost = hasKnowledge
+                                ? CREDIT_COSTS.AI_KNOWLEDGE
+                                : CREDIT_COSTS.AI_STANDARD;
+
+                              creditCost = infraCost + aiTierCost;
+                            }
+
+                            return (
+                              <>
+                                <Badge
+                                  variant='secondary'
+                                  className='bg-primary/10 text-[10px] text-primary h-5 px-1.5'
+                                >
+                                  {creditCost} credits
+                                </Badge>
+                                <BotIcon className='h-3 w-3 text-primary ml-1' />
+                                <span className='font-medium text-primary'>
+                                  AI
+                                  {selectedBot ? ` · ${selectedBot.name}` : ''}
+                                  {isByom && ' (BYOM)'}
+                                </span>
+                              </>
+                            );
+                          }
+
+                          return (
+                            <Badge
+                              variant='secondary'
+                              className='bg-muted text-[10px] text-muted-foreground h-5 px-1.5'
+                            >
+                              Free
+                            </Badge>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <Button
                   variant='ghost'
-                  size='sm'
+                  size='icon'
                   onClick={() => removeAction(index)}
-                  className='text-destructive hover:text-destructive'
+                  className='h-8 w-8 text-muted-foreground hover:text-destructive'
                 >
                   <Trash2 className='h-4 w-4' />
                 </Button>
               </div>
 
-              <div className='space-y-4'>
+              <div className='space-y-6 p-6'>
                 {action.action_type === AutomationActionType.SEND_DM ? (
                   <InstagramDmAction
                     payload={action.action_payload as SendDmPayload}
@@ -226,7 +404,8 @@ export function ConfigureActionsStep({
                       })
                     }
                   />
-                ) : (
+                ) : action.action_type === AutomationActionType.REPLY_COMMENT ||
+                  action.action_type === AutomationActionType.PRIVATE_REPLY ? (
                   <InstagramCommentAction
                     actionType={action.action_type}
                     payload={
@@ -243,12 +422,17 @@ export function ConfigureActionsStep({
                       })
                     }
                   />
-                )}
+                ) : null}
 
-                <div>
-                  <Label className='mb-2 block text-sm font-medium'>
-                    Delay: {action.delay_seconds} seconds
-                  </Label>
+                <div className='space-y-3 rounded-lg border bg-card/50 p-4'>
+                  <div className='flex items-center justify-between'>
+                    <Label className='text-sm font-medium'>
+                      Response Delay
+                    </Label>
+                    <span className='text-xs font-medium text-muted-foreground'>
+                      {action.delay_seconds}s
+                    </span>
+                  </div>
                   <Slider
                     value={[action.delay_seconds]}
                     onValueChange={([value]) =>
@@ -259,7 +443,7 @@ export function ConfigureActionsStep({
                     step={1}
                     className='w-full'
                   />
-                  <p className='mt-1 text-xs text-muted-foreground'>
+                  <p className='text-xs text-muted-foreground'>
                     Recommended: {index === 0 ? '2-5' : '5-10'} seconds to
                     appear natural
                   </p>
@@ -281,6 +465,75 @@ export function ConfigureActionsStep({
           <p className='text-sm text-muted-foreground'>
             Add at least one action to continue
           </p>
+        </div>
+      )}
+
+      {actions.some(action => {
+        const payload = action.action_payload as
+          | ReplyCommentPayload
+          | PrivateReplyPayload
+          | SendDmPayload;
+
+        return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+      }) && (
+        <div className='mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4'>
+          <div className='mb-2 flex items-center gap-2'>
+            <BotIcon className='h-5 w-5 text-primary' />
+            <h3 className='font-semibold text-primary'>AI Configuration</h3>
+          </div>
+          <p className='mb-4 text-sm text-muted-foreground'>
+            You have enabled AI replies. Select which bot should handle these
+            responses.
+          </p>
+
+          <div className='max-w-md'>
+            <Label className='mb-2 block text-sm font-medium'>
+              Select AI Bot
+            </Label>
+            <Select value={selectedBotId} onValueChange={setSelectedBotId}>
+              <SelectTrigger>
+                <SelectValue placeholder='Select a bot...' />
+              </SelectTrigger>
+              <SelectContent>
+                {bots.map(bot => (
+                  <SelectItem key={bot._id} value={bot._id}>
+                    {bot.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {bots.length === 0 && (
+              <p className='mt-2 text-xs text-destructive'>
+                No bots found. Please create a bot first.
+              </p>
+            )}
+            {selectedBotId && (
+              <p className='mt-2 text-xs text-muted-foreground'>
+                Responses will use bot{' '}
+                <span className='font-medium'>
+                  {bots.find(b => b._id === selectedBotId)?.name}
+                </span>
+                {bots.find(b => b._id === selectedBotId)?.brand_voice_id
+                  ? ' with its configured brand voice.'
+                  : ' with your default brand voice.'}
+              </p>
+            )}
+            <div className='mt-3 flex flex-wrap gap-3 text-xs'>
+              <Link
+                href='/dashboard/intelligence/bots'
+                className='text-primary hover:underline'
+              >
+                Manage bots
+              </Link>
+              <span className='text-muted-foreground'>•</span>
+              <Link
+                href='/dashboard/intelligence/brand-voices'
+                className='text-primary hover:underline'
+              >
+                Manage brand voices
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 

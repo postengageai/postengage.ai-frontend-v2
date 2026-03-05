@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import Image from 'next/image';
+import { useState, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Image as ImageIcon, X } from 'lucide-react';
+import { FileText, Image as ImageIcon, Sparkles, X } from 'lucide-react';
 import { MediaPickerDialog } from '@/components/media/media-picker-dialog';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -56,6 +58,7 @@ export function InstagramDmAction({
 
       const mediaPayload: SendDmPayload = {
         ...payload,
+        use_ai_reply: false, // Ensure AI reply is disabled for media
         message: {
           type: type,
           payload: {
@@ -98,15 +101,61 @@ function DmTextPanel({
   payload: SendDmPayload;
   onUpdate: (updates: Partial<SendDmPayload>) => void;
 }) {
+  const switchId = useId();
   // Safe access to text property
   const textValue =
     payload.message?.type === 'text' ? payload.message.text : '';
 
   return (
-    <div>
-      <Label className='mb-2 block text-sm font-medium'>Message</Label>
+    <div className='space-y-4'>
+      <div className='flex items-center justify-between'>
+        <Label className='text-sm font-medium'>
+          {payload.use_ai_reply ? 'Fallback Message' : 'Message Content'}
+        </Label>
+        <div className='flex items-center space-x-2'>
+          <Label
+            htmlFor={switchId}
+            className='cursor-pointer text-xs text-muted-foreground'
+          >
+            Auto-generate with AI
+          </Label>
+          <Switch
+            id={switchId}
+            checked={payload.use_ai_reply || false}
+            onCheckedChange={checked =>
+              onUpdate({
+                ...payload,
+                use_ai_reply: checked,
+              })
+            }
+          />
+        </div>
+      </div>
+
+      {payload.use_ai_reply && (
+        <div className='relative mb-4 overflow-hidden rounded-lg border border-primary/20 bg-primary/5 p-4'>
+          <div className='flex items-center gap-3'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary/10'>
+              <Sparkles className='h-5 w-5 text-primary' />
+            </div>
+            <div>
+              <h3 className='text-sm font-semibold text-foreground'>
+                AI Reply Active
+              </h3>
+              <p className='text-xs text-muted-foreground'>
+                AI will generate the response.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Textarea
-        placeholder='Enter DM message...'
+        placeholder={
+          payload.use_ai_reply
+            ? 'Enter a fallback message in case AI fails...'
+            : 'Enter DM message...'
+        }
         value={textValue}
         onChange={e =>
           onUpdate({
@@ -117,8 +166,14 @@ function DmTextPanel({
             },
           })
         }
-        rows={3}
+        rows={5}
+        className='resize-none'
       />
+      {payload.use_ai_reply && (
+        <p className='text-xs text-muted-foreground'>
+          This message will be sent if the AI cannot generate a response.
+        </p>
+      )}
     </div>
   );
 }
@@ -199,12 +254,15 @@ function DmMediaPanel({
           {mediaMessage?.payload?.url ? (
             <div className='relative mt-2 overflow-hidden rounded-md border border-border bg-background'>
               {mediaMessage.type === 'image' && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={mediaMessage.payload.url}
-                  alt='Attachment preview'
-                  className='h-48 w-full object-cover'
-                />
+                <div className='relative h-48 w-full'>
+                  <Image
+                    src={mediaMessage.payload.url}
+                    alt='Attachment preview'
+                    fill
+                    className='object-cover'
+                    unoptimized
+                  />
+                </div>
               )}
               {mediaMessage.type === 'video' && (
                 <video

@@ -32,6 +32,7 @@ import {
   ExternalLink,
   Gift,
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface TransactionHistoryProps {
   transactions: CreditTransaction[];
@@ -505,12 +506,12 @@ export function TransactionHistory({
                   className='w-full gap-2 bg-transparent'
                   asChild
                 >
-                  <a
-                    href={`/automations?id=${selectedTransaction.automation_id}`}
+                  <Link
+                    href={`/dashboard/automations/${selectedTransaction.automation_id}`}
                   >
                     <ExternalLink className='h-4 w-4' />
                     View Automation
-                  </a>
+                  </Link>
                 </Button>
               )}
             </div>

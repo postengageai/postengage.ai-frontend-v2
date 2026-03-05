@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,15 @@ import {
   AutomationStatus,
   AutomationTriggerScope,
 } from '@/lib/constants/automations';
+import { IntelligenceApi } from '@/lib/api/intelligence';
+import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
+import type { Bot, UserLlmConfig } from '@/lib/types/intelligence';
+import { LlmConfigMode } from '@/lib/types/intelligence';
+import type {
+  ReplyCommentPayload,
+  PrivateReplyPayload,
+  SendDmPayload,
+} from '@/lib/api/automations';
 
 interface ReviewStepProps {
   formData: AutomationFormData;
@@ -38,6 +47,45 @@ export function ReviewStep({
   isEditMode = false,
 }: ReviewStepProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [bot, setBot] = useState<Bot | null>(null);
+  const [userConfig, setUserConfig] = useState<UserLlmConfig | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const promises: Promise<any>[] = [IntelligenceApi.getUserConfig()];
+
+        if (formData.bot_id) {
+          // We need to fetch the specific bot to check its knowledge sources
+          // Since getBots returns a list, we filter or if there's a getBot endpoint use that
+          // Assuming we can use getBots with social_account_id and filter client-side if needed
+          // or ideally getBot(id). The API client might not have getBot(id).
+          // Let's use getBots and find.
+          promises.push(
+            IntelligenceApi.getBots({
+              social_account_id: formData.social_account_id,
+            })
+          );
+        }
+
+        const [configRes, botsRes] = await Promise.all(promises);
+        setUserConfig(configRes.data);
+
+        if (formData.bot_id && botsRes?.data) {
+          const foundBot = botsRes.data.find(
+            (b: Bot) => b._id === formData.bot_id
+          );
+          setBot(foundBot || null);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch context for credit calculation', error);
+      }
+    };
+
+    fetchData();
+  }, [formData.bot_id, formData.social_account_id]);
 
   const handleSave = async (isDraft: boolean) => {
     if (isLoading) return;
@@ -55,8 +103,42 @@ export function ReviewStep({
     }
   };
 
-  // Calculate total credit cost
-  const totalCredits = formData.actions.reduce(sum => sum + 2, 0);
+  // Calculate total credit cost per execution
+  const calculateTotalCredits = () => {
+    if (!formData.actions) return 0;
+
+    return formData.actions.reduce((sum, action) => {
+      const payload = action.action_payload as
+        | ReplyCommentPayload
+        | PrivateReplyPayload
+        | SendDmPayload;
+
+      const hasAi = 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+
+      if (!hasAi) {
+        return sum; // Manual actions are free
+      }
+
+      // AI Cost Calculation
+      const isByom = userConfig?.mode === LlmConfigMode.BYOM;
+      const infraCost = CREDIT_COSTS.BYOM_INFRA;
+
+      if (isByom) {
+        return sum + infraCost;
+      }
+
+      // Platform Mode
+      const hasKnowledge =
+        bot?.knowledge_sources && bot.knowledge_sources.length > 0;
+      const aiTierCost = hasKnowledge
+        ? CREDIT_COSTS.AI_KNOWLEDGE
+        : CREDIT_COSTS.AI_STANDARD;
+
+      return sum + infraCost + aiTierCost;
+    }, 0);
+  };
+
+  const totalCredits = calculateTotalCredits();
 
   return (
     <div>
