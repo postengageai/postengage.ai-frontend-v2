@@ -74,17 +74,47 @@ export function VoiceReviewPanel({
   review,
   showFingerprint = true,
 }: VoiceReviewPanelProps) {
-  const [sampleReply, setSampleReply] = useState(review.sample_generated_reply);
+  // Normalize data to handle both legacy and flattened API responses
+  const confidenceLevel = review.confidence_level || 'medium';
+  const confidenceConfig = CONFIDENCE_CONFIG[confidenceLevel];
+
+  const source = review.voice_dna?.source || review.source || 'user_configured';
+  const fingerprint = review.voice_dna?.fingerprint || review.fingerprint;
+  const voiceDnaId = review.voice_dna?._id || review.voice_dna_id;
+
+  // Normalize summary
+  const summary = {
+    language_description:
+      review.summary?.language_description ||
+      review.voice_summary?.language ||
+      'N/A',
+    tone_description:
+      review.summary?.tone_description || review.voice_summary?.tone || 'N/A',
+    style_description:
+      review.summary?.style_description || review.voice_summary?.style || 'N/A',
+    emoji_description:
+      review.summary?.emoji_description ||
+      review.voice_summary?.emoji_usage ||
+      'N/A',
+    overall: review.summary?.overall || 'Voice analysis complete.',
+  };
+
+  const [sampleReply, setSampleReply] = useState(
+    review.sample_generated_reply || {
+      context: 'Send a test message to generate a sample reply.',
+      reply: 'Your bot reply will appear here...',
+    }
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [fingerprintOpen, setFingerprintOpen] = useState(false);
 
-  const confidenceConfig = CONFIDENCE_CONFIG[review.confidence_level];
-
   const handleGenerateSample = async () => {
+    if (!voiceDnaId) return;
+
     setIsGenerating(true);
     try {
       const response = await VoiceDnaApi.generateSampleReply({
-        voice_dna_id: review.voice_dna._id,
+        voice_dna_id: voiceDnaId,
         user_message:
           'Hey, I love your content! Can you help me with something?',
       });
@@ -111,9 +141,9 @@ export function VoiceReviewPanel({
             {confidenceConfig.label}
           </Badge>
           <Badge variant='outline'>
-            {review.voice_dna.source === 'auto_inferred'
+            {source === 'auto_inferred'
               ? 'Auto-Inferred'
-              : review.voice_dna.source === 'hybrid'
+              : source === 'hybrid'
                 ? 'Hybrid'
                 : 'Manual'}
           </Badge>
@@ -135,7 +165,7 @@ export function VoiceReviewPanel({
                   <p className='text-xs font-medium text-muted-foreground'>
                     {label}
                   </p>
-                  <p className='text-sm mt-0.5'>{review.summary[key]}</p>
+                  <p className='text-sm mt-0.5'>{summary[key]}</p>
                 </div>
               </div>
             </CardContent>
@@ -146,7 +176,7 @@ export function VoiceReviewPanel({
       {/* Overall Summary */}
       <Card className='bg-primary/5 border-primary/20'>
         <CardContent className='p-4'>
-          <p className='text-sm leading-relaxed'>{review.summary.overall}</p>
+          <p className='text-sm leading-relaxed'>{summary.overall}</p>
         </CardContent>
       </Card>
 
@@ -161,7 +191,7 @@ export function VoiceReviewPanel({
               variant='ghost'
               size='sm'
               onClick={handleGenerateSample}
-              disabled={isGenerating}
+              disabled={isGenerating || !voiceDnaId}
             >
               {isGenerating ? (
                 <Loader2 className='h-3.5 w-3.5 mr-1 animate-spin' />
@@ -189,7 +219,7 @@ export function VoiceReviewPanel({
       </Card>
 
       {/* Fingerprint (Collapsible) */}
-      {showFingerprint && review.voice_dna.fingerprint && (
+      {showFingerprint && fingerprint && (
         <Collapsible open={fingerprintOpen} onOpenChange={setFingerprintOpen}>
           <CollapsibleTrigger asChild>
             <Button variant='outline' className='w-full justify-between'>
@@ -202,10 +232,7 @@ export function VoiceReviewPanel({
           <CollapsibleContent className='pt-3'>
             <Card>
               <CardContent className='pt-4'>
-                <FingerprintRadar
-                  fingerprint={review.voice_dna.fingerprint}
-                  source={review.voice_dna.source}
-                />
+                <FingerprintRadar fingerprint={fingerprint} source={source} />
               </CardContent>
             </Card>
           </CollapsibleContent>

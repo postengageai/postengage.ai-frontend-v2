@@ -34,17 +34,48 @@ export function FingerprintDetail({
         <CollapsibleContent>
           <FingerprintRadar fingerprint={fingerprint} source={source} />
           <div className='grid grid-cols-2 gap-3 mt-4'>
-            {Object.entries(fingerprint.tone_markers).map(([key, value]) => (
-              <div key={key} className='space-y-1'>
-                <div className='flex justify-between text-xs'>
-                  <span className='text-muted-foreground capitalize'>
-                    {key.replace(/_/g, ' ')}
-                  </span>
-                  <span className='font-medium'>{value}/10</span>
-                </div>
-                <Progress value={value * 10} className='h-1.5' />
+            <div className='space-y-1'>
+              <div className='flex justify-between text-xs'>
+                <span className='text-muted-foreground capitalize'>Humor</span>
+                <span className='font-medium'>
+                  {fingerprint.humor_level}/10
+                </span>
               </div>
-            ))}
+              <Progress
+                value={fingerprint.humor_level * 10}
+                className='h-1.5'
+              />
+            </div>
+            <div className='space-y-1'>
+              <div className='flex justify-between text-xs'>
+                <span className='text-muted-foreground capitalize'>
+                  Directness
+                </span>
+                <span className='font-medium'>{fingerprint.directness}/10</span>
+              </div>
+              <Progress value={fingerprint.directness * 10} className='h-1.5' />
+            </div>
+            <div className='space-y-1'>
+              <div className='flex justify-between text-xs'>
+                <span className='text-muted-foreground capitalize'>Warmth</span>
+                <span className='font-medium'>{fingerprint.warmth}/10</span>
+              </div>
+              <Progress value={fingerprint.warmth * 10} className='h-1.5' />
+            </div>
+            <div className='space-y-1'>
+              <div className='flex justify-between text-xs'>
+                <span className='text-muted-foreground capitalize'>
+                  Assertiveness
+                </span>
+                <span className='font-medium'>
+                  {fingerprint.assertiveness}/10
+                </span>
+              </div>
+              <Progress
+                value={fingerprint.assertiveness * 10}
+                className='h-1.5'
+              />
+            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -60,50 +91,47 @@ export function FingerprintDetail({
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Avg Sentence Length</span>
               <span className='font-medium'>
-                {fingerprint.style_metrics.avg_sentence_length.toFixed(1)} words
+                {fingerprint.avg_sentence_length.toFixed(1)} words
               </span>
             </div>
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Vocabulary</span>
               <Badge variant='outline' className='capitalize'>
-                {fingerprint.style_metrics.vocabulary_complexity}
+                {fingerprint.vocabulary_complexity}
               </Badge>
             </div>
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Emoji Frequency</span>
               <div className='flex items-center gap-2'>
                 <Progress
-                  value={(fingerprint.style_metrics.emoji_frequency / 5) * 100}
+                  value={(fingerprint.emoji_frequency / 5) * 100}
                   className='h-1.5 w-16'
                 />
                 <span className='font-medium text-xs'>
-                  {fingerprint.style_metrics.emoji_frequency.toFixed(1)}/msg
+                  {fingerprint.emoji_frequency.toFixed(1)}/msg
                 </span>
               </div>
             </div>
-            {fingerprint.style_metrics.emoji_patterns.length > 0 && (
+            {fingerprint.emoji_patterns.length > 0 && (
               <div className='flex justify-between items-center text-sm'>
                 <span className='text-muted-foreground'>Top Emojis</span>
                 <span className='text-lg'>
-                  {fingerprint.style_metrics.emoji_patterns
-                    .slice(0, 8)
-                    .join(' ')}
+                  {fingerprint.emoji_patterns.slice(0, 8).join(' ')}
                 </span>
               </div>
             )}
             <div className='flex gap-2 flex-wrap'>
-              {fingerprint.style_metrics.punctuation_style
-                .exclamation_frequency > 0.3 && (
+              {fingerprint.punctuation_style.uses_exclamation && (
                 <Badge variant='secondary' className='text-xs'>
                   Exclamations!
                 </Badge>
               )}
-              {fingerprint.style_metrics.punctuation_style.ellipsis_usage && (
+              {fingerprint.punctuation_style.uses_ellipsis && (
                 <Badge variant='secondary' className='text-xs'>
                   Uses ellipsis...
                 </Badge>
               )}
-              {fingerprint.style_metrics.punctuation_style.caps_emphasis && (
+              {fingerprint.punctuation_style.uses_caps_for_emphasis && (
                 <Badge variant='secondary' className='text-xs'>
                   CAPS emphasis
                 </Badge>
@@ -124,33 +152,28 @@ export function FingerprintDetail({
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Primary Language</span>
               <Badge variant='outline' className='capitalize'>
-                {fingerprint.language_patterns.primary_language}
+                {fingerprint.primary_language}
               </Badge>
             </div>
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Code Switching</span>
               <div className='flex items-center gap-2'>
                 <Progress
-                  value={
-                    fingerprint.language_patterns.code_switching_frequency * 100
-                  }
+                  value={fingerprint.code_switching_frequency * 100}
                   className='h-1.5 w-16'
                 />
                 <span className='font-medium text-xs'>
-                  {(
-                    fingerprint.language_patterns.code_switching_frequency * 100
-                  ).toFixed(0)}
-                  %
+                  {(fingerprint.code_switching_frequency * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
-            {fingerprint.language_patterns.slang_patterns.length > 0 && (
+            {fingerprint.slang_patterns.length > 0 && (
               <div>
                 <span className='text-xs text-muted-foreground'>
                   Slang Patterns
                 </span>
                 <div className='flex gap-1 flex-wrap mt-1'>
-                  {fingerprint.language_patterns.slang_patterns.map(slang => (
+                  {fingerprint.slang_patterns.map(slang => (
                     <Badge key={slang} variant='secondary' className='text-xs'>
                       {slang}
                     </Badge>
@@ -158,13 +181,13 @@ export function FingerprintDetail({
                 </div>
               </div>
             )}
-            {fingerprint.language_patterns.filler_words.length > 0 && (
+            {fingerprint.filler_words.length > 0 && (
               <div>
                 <span className='text-xs text-muted-foreground'>
                   Filler Words
                 </span>
                 <div className='flex gap-1 flex-wrap mt-1'>
-                  {fingerprint.language_patterns.filler_words.map(word => (
+                  {fingerprint.filler_words.map(word => (
                     <Badge key={word} variant='outline' className='text-xs'>
                       {word}
                     </Badge>
@@ -187,42 +210,34 @@ export function FingerprintDetail({
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Response Style</span>
               <Badge variant='outline' className='capitalize'>
-                {fingerprint.structural_patterns.question_response_style.replace(
-                  /_/g,
-                  ' '
-                )}
+                {fingerprint.question_response_style.replace(/_/g, ' ')}
               </Badge>
             </div>
-            {fingerprint.structural_patterns.starts_with_patterns.length >
-              0 && (
+            {fingerprint.starts_with_patterns.length > 0 && (
               <div>
                 <span className='text-xs text-muted-foreground'>
                   Common Openers
                 </span>
                 <div className='flex gap-1 flex-wrap mt-1'>
-                  {fingerprint.structural_patterns.starts_with_patterns.map(
-                    (pattern, i) => (
-                      <Badge key={i} variant='secondary' className='text-xs'>
-                        &ldquo;{pattern}&rdquo;
-                      </Badge>
-                    )
-                  )}
+                  {fingerprint.starts_with_patterns.map((pattern, i) => (
+                    <Badge key={i} variant='secondary' className='text-xs'>
+                      &ldquo;{pattern}&rdquo;
+                    </Badge>
+                  ))}
                 </div>
               </div>
             )}
-            {fingerprint.structural_patterns.ends_with_patterns.length > 0 && (
+            {fingerprint.ends_with_patterns.length > 0 && (
               <div>
                 <span className='text-xs text-muted-foreground'>
                   Common Closers
                 </span>
                 <div className='flex gap-1 flex-wrap mt-1'>
-                  {fingerprint.structural_patterns.ends_with_patterns.map(
-                    (pattern, i) => (
-                      <Badge key={i} variant='secondary' className='text-xs'>
-                        &ldquo;{pattern}&rdquo;
-                      </Badge>
-                    )
-                  )}
+                  {fingerprint.ends_with_patterns.map((pattern, i) => (
+                    <Badge key={i} variant='secondary' className='text-xs'>
+                      &ldquo;{pattern}&rdquo;
+                    </Badge>
+                  ))}
                 </div>
               </div>
             )}

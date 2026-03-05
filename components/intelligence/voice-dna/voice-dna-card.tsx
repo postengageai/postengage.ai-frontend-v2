@@ -58,7 +58,6 @@ export function VoiceDnaCard({
   onDelete,
 }: VoiceDnaCardProps) {
   const statusConfig = STATUS_CONFIG[voiceDna.status];
-  const toneMarkers = voiceDna.fingerprint?.tone_markers;
 
   return (
     <Card className='group hover:shadow-md transition-shadow'>
@@ -114,42 +113,77 @@ export function VoiceDnaCard({
             <div className='flex justify-between items-center text-sm'>
               <span className='text-muted-foreground'>Language</span>
               <span className='font-medium capitalize'>
-                {voiceDna.fingerprint.language_patterns.primary_language}
+                {voiceDna.fingerprint.primary_language}
               </span>
             </div>
           )}
 
           {/* Tone Markers as mini progress bars */}
-          {toneMarkers && (
+          {voiceDna.fingerprint && (
             <div className='space-y-2'>
               <span className='text-xs text-muted-foreground'>
                 Tone Profile
               </span>
               <div className='grid grid-cols-2 gap-2'>
-                {Object.entries(toneMarkers).map(([key, value]) => (
-                  <div key={key} className='space-y-1'>
-                    <div className='flex justify-between text-xs'>
-                      <span className='text-muted-foreground capitalize'>
-                        {key.replace('_', ' ')}
-                      </span>
-                      <span>{value}/10</span>
-                    </div>
-                    <Progress value={value * 10} className='h-1.5' />
+                <div className='space-y-1'>
+                  <div className='flex justify-between text-xs'>
+                    <span className='text-muted-foreground capitalize'>
+                      Humor
+                    </span>
+                    <span>{voiceDna.fingerprint.humor_level}/10</span>
                   </div>
-                ))}
+                  <Progress
+                    value={voiceDna.fingerprint.humor_level * 10}
+                    className='h-1.5'
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <div className='flex justify-between text-xs'>
+                    <span className='text-muted-foreground capitalize'>
+                      Directness
+                    </span>
+                    <span>{voiceDna.fingerprint.directness}/10</span>
+                  </div>
+                  <Progress
+                    value={voiceDna.fingerprint.directness * 10}
+                    className='h-1.5'
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <div className='flex justify-between text-xs'>
+                    <span className='text-muted-foreground capitalize'>
+                      Warmth
+                    </span>
+                    <span>{voiceDna.fingerprint.warmth}/10</span>
+                  </div>
+                  <Progress
+                    value={voiceDna.fingerprint.warmth * 10}
+                    className='h-1.5'
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <div className='flex justify-between text-xs'>
+                    <span className='text-muted-foreground capitalize'>
+                      Assertiveness
+                    </span>
+                    <span>{voiceDna.fingerprint.assertiveness}/10</span>
+                  </div>
+                  <Progress
+                    value={voiceDna.fingerprint.assertiveness * 10}
+                    className='h-1.5'
+                  />
+                </div>
               </div>
             </div>
           )}
 
           {/* Emoji preview */}
-          {voiceDna.fingerprint?.style_metrics.emoji_patterns &&
-            voiceDna.fingerprint.style_metrics.emoji_patterns.length > 0 && (
+          {voiceDna.fingerprint?.emoji_patterns &&
+            voiceDna.fingerprint.emoji_patterns.length > 0 && (
               <div className='flex justify-between items-center text-sm'>
                 <span className='text-muted-foreground'>Top Emojis</span>
                 <span className='text-lg'>
-                  {voiceDna.fingerprint.style_metrics.emoji_patterns
-                    .slice(0, 5)
-                    .join(' ')}
+                  {voiceDna.fingerprint.emoji_patterns.slice(0, 5).join(' ')}
                 </span>
               </div>
             )}

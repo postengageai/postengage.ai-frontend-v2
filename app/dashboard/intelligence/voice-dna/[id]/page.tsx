@@ -483,21 +483,19 @@ export default function VoiceDnaDetailPage() {
                   <div className='flex justify-between items-center text-sm'>
                     <span className='text-muted-foreground'>Language</span>
                     <Badge variant='outline' className='capitalize'>
-                      {voiceDna.fingerprint.language_patterns.primary_language}
+                      {voiceDna.fingerprint.primary_language}
                     </Badge>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
                     <span className='text-muted-foreground'>Vocabulary</span>
                     <Badge variant='outline' className='capitalize'>
-                      {voiceDna.fingerprint.style_metrics.vocabulary_complexity}
+                      {voiceDna.fingerprint.vocabulary_complexity}
                     </Badge>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
                     <span className='text-muted-foreground'>Avg Sentence</span>
                     <span className='font-medium'>
-                      {voiceDna.fingerprint.style_metrics.avg_sentence_length.toFixed(
-                        1
-                      )}{' '}
+                      {voiceDna.fingerprint.avg_sentence_length.toFixed(1)}{' '}
                       words
                     </span>
                   </div>
@@ -506,18 +504,17 @@ export default function VoiceDnaDetailPage() {
                       Response Style
                     </span>
                     <Badge variant='secondary' className='capitalize text-xs'>
-                      {voiceDna.fingerprint.structural_patterns.question_response_style.replace(
+                      {voiceDna.fingerprint.question_response_style.replace(
                         /_/g,
                         ' '
                       )}
                     </Badge>
                   </div>
-                  {voiceDna.fingerprint.style_metrics.emoji_patterns.length >
-                    0 && (
+                  {voiceDna.fingerprint.emoji_patterns.length > 0 && (
                     <div className='flex justify-between items-center text-sm'>
                       <span className='text-muted-foreground'>Top Emojis</span>
                       <span className='text-lg'>
-                        {voiceDna.fingerprint.style_metrics.emoji_patterns
+                        {voiceDna.fingerprint.emoji_patterns
                           .slice(0, 5)
                           .join(' ')}
                       </span>

@@ -34,22 +34,22 @@ export function FingerprintRadar({
   const data = [
     {
       marker: 'Humor',
-      value: fingerprint.tone_markers.humor_level,
+      value: fingerprint.humor_level,
       fullMark: 10,
     },
     {
       marker: 'Directness',
-      value: fingerprint.tone_markers.directness,
+      value: fingerprint.directness,
       fullMark: 10,
     },
     {
       marker: 'Warmth',
-      value: fingerprint.tone_markers.warmth,
+      value: fingerprint.warmth,
       fullMark: 10,
     },
     {
       marker: 'Assertiveness',
-      value: fingerprint.tone_markers.assertiveness,
+      value: fingerprint.assertiveness,
       fullMark: 10,
     },
   ];

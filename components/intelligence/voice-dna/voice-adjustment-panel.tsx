@@ -50,17 +50,13 @@ export function VoiceAdjustmentPanel({
   const { toast } = useToast();
 
   // Tone sliders
-  const [humor, setHumor] = useState(
-    voiceDna.fingerprint?.tone_markers.humor_level ?? 5
-  );
+  const [humor, setHumor] = useState(voiceDna.fingerprint?.humor_level ?? 5);
   const [directness, setDirectness] = useState(
-    voiceDna.fingerprint?.tone_markers.directness ?? 5
+    voiceDna.fingerprint?.directness ?? 5
   );
-  const [warmth, setWarmth] = useState(
-    voiceDna.fingerprint?.tone_markers.warmth ?? 5
-  );
+  const [warmth, setWarmth] = useState(voiceDna.fingerprint?.warmth ?? 5);
   const [assertiveness, setAssertiveness] = useState(
-    voiceDna.fingerprint?.tone_markers.assertiveness ?? 5
+    voiceDna.fingerprint?.assertiveness ?? 5
   );
 
   // Pending examples
@@ -102,7 +98,7 @@ export function VoiceAdjustmentPanel({
     };
 
     // Tone adjustments (only if changed)
-    const orig = voiceDna.fingerprint?.tone_markers;
+    const orig = voiceDna.fingerprint;
     if (orig) {
       const toneChanges: Partial<{
         humor_level: number;

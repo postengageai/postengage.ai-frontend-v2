@@ -9,37 +9,36 @@ export type VoiceDnaSource = 'user_configured' | 'auto_inferred' | 'hybrid';
 
 // === Core Fingerprint ===
 export interface VoiceDnaFingerprint {
-  style_metrics: {
-    avg_sentence_length: number;
-    vocabulary_complexity: 'simple' | 'moderate' | 'advanced';
-    emoji_patterns: string[];
-    emoji_frequency: number;
-    punctuation_style: {
-      exclamation_frequency: number;
-      ellipsis_usage: boolean;
-      caps_emphasis: boolean;
-    };
+  // Style metrics
+  avg_sentence_length: number;
+  vocabulary_complexity: 'simple' | 'moderate' | 'advanced';
+  emoji_patterns: string[];
+  emoji_frequency: number;
+  punctuation_style: {
+    uses_exclamation: boolean;
+    uses_ellipsis: boolean;
+    uses_caps_for_emphasis: boolean;
   };
-  language_patterns: {
-    primary_language: string;
-    code_switching_frequency: number;
-    slang_patterns: string[];
-    filler_words: string[];
-  };
-  tone_markers: {
-    humor_level: number;
-    directness: number;
-    warmth: number;
-    assertiveness: number;
-  };
-  structural_patterns: {
-    starts_with_patterns: string[];
-    ends_with_patterns: string[];
-    question_response_style:
-      | 'direct_answer'
-      | 'answer_then_elaborate'
-      | 'story_then_answer';
-  };
+
+  // Language patterns
+  primary_language: string;
+  code_switching_frequency: number;
+  slang_patterns: string[];
+  filler_words: string[];
+
+  // Tone markers
+  humor_level: number;
+  directness: number;
+  warmth: number;
+  assertiveness: number;
+
+  // Structural patterns
+  starts_with_patterns: string[];
+  ends_with_patterns: string[];
+  question_response_style:
+    | 'direct_answer'
+    | 'question_then_answer'
+    | 'story_then_answer';
 }
 
 // === Few-Shot Example ===
@@ -47,16 +46,14 @@ export interface FewShotExample {
   context: string;
   reply: string;
   tags: string[];
-  source: 'creator_manual' | 'creator_edited' | 'ai_approved' | 'curated';
-  added_at: string;
 }
 
 // === Negative Example ===
+// Backend uses the same structure as FewShotExample for negative examples
 export interface NegativeExample {
+  context: string;
   reply: string;
-  reason: string;
   tags: string[];
-  added_at: string;
 }
 
 // === Main Voice DNA Document ===
@@ -67,12 +64,23 @@ export interface VoiceDna {
   status: VoiceDnaStatus;
   source: VoiceDnaSource;
   fingerprint: VoiceDnaFingerprint | null;
-  raw_samples: { text: string; source: string; timestamp?: string }[];
+  raw_samples: {
+    text: string;
+    source: string;
+    timestamp?: string;
+    _id?: string;
+  }[];
   few_shot_examples: FewShotExample[];
   negative_examples: NegativeExample[];
+  samples_analyzed: number;
+  analysis_model?: string;
+  last_analyzed_at?: string;
+  analysis_error?: string;
+  confidence_score?: number;
+  confidence_level?: 'high' | 'medium' | 'low';
   feedback_signals_processed: number;
   auto_refinement_count: number;
-  analysis_error?: string;
+  last_feedback_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -116,20 +124,33 @@ export interface AutoInferResult {
 
 // === Voice Review ===
 export interface VoiceReview {
-  voice_dna: VoiceDna;
-  summary: {
+  // Legacy nested structure (deprecated)
+  voice_dna?: VoiceDna;
+  summary?: {
     language_description: string;
     tone_description: string;
     style_description: string;
     emoji_description: string;
     overall: string;
   };
-  sample_generated_reply: {
+  sample_generated_reply?: {
     context: string;
     reply: string;
   };
-  confidence_level: 'high' | 'medium' | 'low';
+  confidence_level?: 'high' | 'medium' | 'low';
   recommended_adjustments?: string[];
+
+  // New flattened structure (active)
+  voice_dna_id?: string;
+  status?: VoiceDnaStatus;
+  source?: VoiceDnaSource;
+  fingerprint?: VoiceDnaFingerprint;
+  voice_summary?: {
+    language: string;
+    tone: string;
+    style: string;
+    emoji_usage: string;
+  };
 }
 
 // === Voice Feedback ===
