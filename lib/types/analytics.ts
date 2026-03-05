@@ -36,11 +36,13 @@ export interface AnalyticsActivityResponse {
   period: AnalyticsDateRange;
   activity: {
     data: DailyActivity[];
-    meta: {
+    pagination: {
       total: number;
       page: number;
       limit: number;
       totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
     };
   };
 }
@@ -68,16 +70,10 @@ export interface IntelligenceAnalyticsResponse {
   items: IntelligenceAnalyticsItem[];
 }
 
-// Analytics API Response types
-export interface IntelligenceAnalyticsParams {
-  period: AnalyticsPeriod;
-  bot_id?: string;
-}
-
-export interface QualityAnalyticsParams {
-  period?: 'daily' | 'weekly' | 'monthly';
-  bot_id?: string;
-  include_quality?: boolean;
-  include_diversity?: boolean;
-  include_intents?: boolean;
+export interface GetAnalyticsDto {
+  period?: AnalyticsPeriod;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
 }

@@ -3,40 +3,17 @@ import {
   AnalyticsOverviewResponse,
   AnalyticsActivityResponse,
   IntelligenceAnalyticsResponse,
-  AnalyticsPeriod,
+  GetAnalyticsDto,
 } from '../types/analytics';
 
 const ANALYTICS_BASE_URL = '/api/v1/analytics';
-
-export interface OverviewParams {
-  period?: AnalyticsPeriod;
-  social_account_id?: string;
-  start_date?: string;
-  end_date?: string;
-}
-
-export interface ActivityParams {
-  period?: AnalyticsPeriod;
-  social_account_id?: string;
-  page?: number;
-  limit?: number;
-  start_date?: string;
-  end_date?: string;
-}
-
-export interface IntelligenceParams {
-  period?: AnalyticsPeriod;
-  social_account_id?: string;
-  start_date?: string;
-  end_date?: string;
-}
 
 export class AnalyticsApi {
   /**
    * Get high-level analytics overview for a specific period
    */
   static async getOverview(
-    params?: OverviewParams
+    params?: GetAnalyticsDto
   ): Promise<SuccessResponse<AnalyticsOverviewResponse>> {
     const response = await httpClient.get<AnalyticsOverviewResponse>(
       `${ANALYTICS_BASE_URL}/overview`,
@@ -49,7 +26,7 @@ export class AnalyticsApi {
    * Get detailed activity timeline with pagination
    */
   static async getActivity(
-    params?: ActivityParams
+    params?: GetAnalyticsDto
   ): Promise<SuccessResponse<AnalyticsActivityResponse>> {
     const response = await httpClient.get<AnalyticsActivityResponse>(
       `${ANALYTICS_BASE_URL}/activity`,
@@ -62,7 +39,7 @@ export class AnalyticsApi {
    * Get intelligence and bot performance metrics
    */
   static async getIntelligence(
-    params?: IntelligenceParams
+    params?: GetAnalyticsDto
   ): Promise<SuccessResponse<IntelligenceAnalyticsResponse>> {
     const response = await httpClient.get<IntelligenceAnalyticsResponse>(
       `${ANALYTICS_BASE_URL}/intelligence`,

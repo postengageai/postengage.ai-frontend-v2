@@ -7,10 +7,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { IntelligenceApi } from '@/lib/api/intelligence';
+import { IntelligenceApi } from '@/lib/api/intelligence'; // Keep for getQualityAnalytics
+import { analyticsApi } from '@/lib/api/analytics';
 import {
   AnalyticsPeriod,
   IntelligenceAnalyticsItem,
+  GetAnalyticsDto,
 } from '@/lib/types/analytics';
 import type { IntelligenceQualityAnalytics } from '@/lib/types/quality';
 import {
@@ -91,7 +93,7 @@ export default function IntelligenceAnalyticsPage() {
       setIsLoading(true);
       try {
         const [response, qualityResponse] = await Promise.all([
-          IntelligenceApi.getIntelligenceAnalytics({ period }),
+          analyticsApi.getIntelligence({ period }),
           IntelligenceApi.getQualityAnalytics({
             period: 'weekly',
             include_quality: true,
