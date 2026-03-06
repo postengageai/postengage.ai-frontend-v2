@@ -36,6 +36,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
+import { parseApiError } from '@/lib/http/errors';
 import {
   BrandVoice,
   CreateBrandVoiceDto,
@@ -173,10 +174,11 @@ export function BrandVoiceForm({ initialData }: BrandVoiceFormProps) {
         router.push('/dashboard/intelligence/brand-voices');
       }
       router.refresh();
-    } catch (_error) {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
-        title: 'Error',
-        description: 'Something went wrong. Please try again.',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     } finally {

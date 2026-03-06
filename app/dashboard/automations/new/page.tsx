@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { AutomationWizard } from '@/components/automations/automation-wizard';
 import {
   AutomationsApi,
@@ -22,10 +23,11 @@ export default function NewAutomationPage() {
       });
 
       router.push('/dashboard/automations');
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
-        title: 'Error',
-        description: 'Failed to create automation',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     }

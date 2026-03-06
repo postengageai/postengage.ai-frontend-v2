@@ -22,6 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 import { type Media } from '@/lib/api/media';
 import { InstagramMediaApi, GetMediaResponse } from '@/lib/api/instagram/media';
+import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/components/ui/use-toast';
 import Image from 'next/image';
 
@@ -95,10 +96,11 @@ export function MediaSelectorModal({
       }
 
       setNextCursor(pagination?.next_cursor || null);
-    } catch (_error) {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
-        title: 'Error',
-        description: 'Failed to load media. Please try again.',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     } finally {

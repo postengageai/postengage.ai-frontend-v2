@@ -18,7 +18,7 @@ import { FormError } from '@/components/auth/form-error';
 import { AuthApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/auth/store';
 import { useUserActions } from '@/lib/user/store';
-import { ApiError } from '@/lib/http/errors';
+import { ApiError, parseApiError } from '@/lib/http/errors';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,6 +28,8 @@ export default function LoginPage() {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Field-level errors from backend validation
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const isFormValid = email.includes('@') && password.length > 0;
 
@@ -39,27 +41,25 @@ export default function LoginPage() {
     actions.setLoading(true);
     errors.clearErrors();
     setShowResendVerification(false);
+    setFieldErrors({});
 
     try {
-      // Use the AuthApi class for proper API integration
       const response = await AuthApi.login({ email, password });
 
-      // Update auth store with user data
       userActions.setUser(response.data.user);
       actions.setIsAuthenticated(true);
 
-      // Redirect to dashboard on success
       router.push('/dashboard');
-      router.refresh(); // Refresh to update auth state
+      router.refresh();
     } catch (error: unknown) {
-      // console.error('Login error:', error);
-
-      // Handle specific error cases
-      if (
-        error instanceof ApiError &&
-        error.code === 'AUTH_EMAIL_NOT_VERIFIED_000008'
-      ) {
+      // PE-AUTH-007 = email not verified
+      if (error instanceof ApiError && error.code === 'PE-AUTH-007') {
         setShowResendVerification(true);
+      }
+
+      // Surface any field-level validation errors (e.g. missing password)
+      if (error instanceof ApiError && error.isValidationError) {
+        setFieldErrors(error.getFieldErrors());
       }
 
       errors.setError('loginError', error as ApiError);
@@ -69,6 +69,11 @@ export default function LoginPage() {
     }
   };
 
+  // Map the stored ApiError to a human-friendly title + message
+  const errorDisplay = errors.loginError
+    ? parseApiError(errors.loginError)
+    : null;
+
   return (
     <AuthCard>
       <AuthCardHeader
@@ -77,9 +82,12 @@ export default function LoginPage() {
       />
 
       <form onSubmit={handleSubmit} className='space-y-5'>
-        {errors.loginError && (
+        {errorDisplay && (
           <div className='space-y-3'>
-            <FormError message={errors.loginError.message} />
+            <FormError
+              title={errorDisplay.title}
+              message={errorDisplay.message}
+            />
             {showResendVerification && (
               <p className='text-sm text-center'>
                 <Link
@@ -102,10 +110,15 @@ export default function LoginPage() {
             onChange={e => {
               setEmail(e.target.value);
               errors.clearErrors();
+              setFieldErrors({});
             }}
             placeholder='you@example.com'
             disabled={isLoading}
+            className={fieldErrors.email ? 'border-destructive' : ''}
           />
+          {fieldErrors.email && (
+            <p className='text-xs text-destructive'>{fieldErrors.email}</p>
+          )}
         </div>
 
         <div className='space-y-2'>
@@ -125,10 +138,15 @@ export default function LoginPage() {
             onChange={e => {
               setPassword(e.target.value);
               errors.clearErrors();
+              setFieldErrors({});
             }}
             placeholder='Enter your password'
             disabled={isLoading}
+            className={fieldErrors.password ? 'border-destructive' : ''}
           />
+          {fieldErrors.password && (
+            <p className='text-xs text-destructive'>{fieldErrors.password}</p>
+          )}
         </div>
 
         <Button

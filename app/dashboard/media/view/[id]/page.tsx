@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Download, FileText, Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import axios from 'axios';
 
 export default function MediaViewPage() {
@@ -40,11 +41,12 @@ export default function MediaViewPage() {
             setMedia(response.data);
           }
         }
-      } catch {
+      } catch (_error) {
+        const err = parseApiError(_error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load media details',
+          title: err.title,
+          description: err.message,
         });
         router.push('/dashboard/media');
       } finally {
@@ -100,10 +102,11 @@ export default function MediaViewPage() {
           description: 'Download cancelled',
         });
       } else {
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to download file',
+          title: err.title,
+          description: err.message,
         });
       }
     } finally {

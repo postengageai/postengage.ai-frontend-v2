@@ -33,6 +33,7 @@ import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { BrandVoice } from '@/lib/types/intelligence';
 import type { VoiceDna } from '@/lib/types/voice-dna';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BrandVoicesPage() {
@@ -64,10 +65,11 @@ export default function BrandVoicesPage() {
         setVoiceDnaMap(map);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load brand voices',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -118,10 +120,11 @@ export default function BrandVoicesPage() {
         description: 'Brand voice deleted successfully',
       });
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete brand voice',
+        title: err.title,
+        description: err.message,
       });
     }
   };

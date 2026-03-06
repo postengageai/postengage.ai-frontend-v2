@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
+import { parseApiError } from '@/lib/http/errors';
 import type { VoiceDna, AdjustVoiceDto } from '@/lib/types/voice-dna';
 import { useToast } from '@/hooks/use-toast';
 
@@ -116,11 +117,12 @@ export function VoiceAdjustmentPanel({
         setNewFewShots([]);
         setNewNegatives([]);
       }
-    } catch {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save adjustments',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsSaving(false);

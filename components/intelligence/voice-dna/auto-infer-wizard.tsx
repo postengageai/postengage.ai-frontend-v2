@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
+import { parseApiError } from '@/lib/http/errors';
 import type {
   AutoInferResult,
   TriggerAutoInferDto,
@@ -171,11 +172,12 @@ export function AutoInferWizard({
           setVoiceReview(reviewResponse.data);
           setStep('review');
         }
-      } catch {
+      } catch (error) {
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load voice review',
+          title: err.title,
+          description: err.message,
         });
         setStep('review');
       }

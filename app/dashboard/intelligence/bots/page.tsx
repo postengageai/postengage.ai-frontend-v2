@@ -31,6 +31,7 @@ import {
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { Bot as BotType, BotStatus } from '@/lib/types/intelligence';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BotsPage() {
@@ -49,10 +50,11 @@ export default function BotsPage() {
         setBots(response.data);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load bots',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -80,10 +82,11 @@ export default function BotsPage() {
         description: `Bot ${!bot.is_active ? 'activated' : 'paused'} successfully`,
       });
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update bot status',
+        title: err.title,
+        description: err.message,
       });
     }
   };
@@ -99,10 +102,11 @@ export default function BotsPage() {
         description: 'Bot deleted successfully',
       });
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete bot',
+        title: err.title,
+        description: err.message,
       });
     }
   };

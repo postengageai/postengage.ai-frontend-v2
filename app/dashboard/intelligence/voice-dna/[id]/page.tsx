@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { FingerprintRadar } from '@/components/intelligence/voice-dna/fingerprint-radar';
@@ -136,11 +137,12 @@ export default function VoiceDnaDetailPage() {
           fetchReview();
         }
       }
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load Voice DNA',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -170,11 +172,12 @@ export default function VoiceDnaDetailPage() {
             'Analyzing your writing style with the latest samples...',
         });
       }
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to trigger re-analysis',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsReanalyzing(false);

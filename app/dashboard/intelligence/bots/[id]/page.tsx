@@ -35,6 +35,7 @@ import { BotForm } from '@/components/intelligence/bot-form';
 import { BotHealthScoreDisplay } from '@/components/intelligence/quality/bot-health-score';
 import { FlaggedReviewQueue } from '@/components/intelligence/quality/flagged-review-queue';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditBotPage() {
@@ -101,10 +102,11 @@ export default function EditBotPage() {
         // Optional data — failures are fine
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load bot details',
+        title: err.title,
+        description: err.message,
       });
       router.push('/dashboard/intelligence/bots');
     } finally {

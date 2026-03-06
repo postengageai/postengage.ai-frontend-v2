@@ -16,6 +16,7 @@ import {
   AutomationConditionKeywordMode,
 } from '@/lib/constants/automations';
 import { toast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/button';
 import {
   AutomationActionResponse,
@@ -164,10 +165,11 @@ export default function AutomationDetailPage() {
         setAutomation(mappedData);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load automation details',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -200,10 +202,11 @@ export default function AutomationDetailPage() {
     } catch (_error) {
       // Revert on failure (reload data)
       fetchAutomation(automation.id);
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update automation status',
+        title: err.title,
+        description: err.message,
       });
     }
   };
@@ -226,10 +229,11 @@ export default function AutomationDetailPage() {
       });
       router.push('/dashboard/automations');
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete automation',
+        title: err.title,
+        description: err.message,
       });
     }
   };

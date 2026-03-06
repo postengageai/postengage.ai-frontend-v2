@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { RelationshipStageBadge } from './relationship-stage';
 import { MemoryApi } from '@/lib/api/memory';
+import { parseApiError } from '@/lib/http/errors';
 import type {
   UserRelationshipMemory,
   RelationshipStage,
@@ -76,11 +77,12 @@ export function EntityBrowser({ botId, onSelectUser }: EntityBrowserProps) {
         setUsers(response.data);
         setPagination(response.pagination);
       }
-    } catch (_error) {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load tracked users',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

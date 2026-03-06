@@ -22,6 +22,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Input } from '@/components/ui/input';
 
 // Lazy-loaded chart components for code-splitting
@@ -102,10 +103,11 @@ export default function IntelligenceAnalyticsPage() {
           items: data.items || [],
         });
       } catch (_error) {
+        const err = parseApiError(_error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load intelligence analytics',
+          title: err.title,
+          description: err.message,
         });
       } finally {
         setIsLoading(false);

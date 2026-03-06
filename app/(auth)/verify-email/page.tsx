@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { AuthCard } from '@/components/auth/auth-card';
 import { AuthApi } from '@/lib/api/auth';
 import { FormSuccess } from '@/components/auth/form-success';
+import { parseApiError } from '@/lib/http/errors';
 
 type VerificationState = 'waiting' | 'verifying' | 'success' | 'error';
 
@@ -47,15 +48,13 @@ function VerifyEmailContent() {
       setState('success');
       // Redirect to dashboard after 2 seconds
       setTimeout(() => router.push('/dashboard'), 2000);
-    } catch (error) {
+    } catch (err: unknown) {
       setState('error');
-      setError({
+      const parsed = parseApiError(err, {
         title: 'Verification failed',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'This link is invalid or has already been used.',
+        message: 'This link is invalid or has already been used.',
       });
+      setError({ title: parsed.title, message: parsed.message });
     }
   };
 

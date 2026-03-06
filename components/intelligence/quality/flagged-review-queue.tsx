@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { IntelligenceApi } from '@/lib/api/intelligence';
+import { parseApiError } from '@/lib/http/errors';
 import type { FlaggedReply } from '@/lib/types/quality';
 import type { PaginationMeta } from '@/lib/http/client';
 import { useToast } from '@/hooks/use-toast';
@@ -34,11 +35,12 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
         setReplies(response.data);
         setPagination(response.pagination);
       }
-    } catch (_error) {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load flagged replies',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

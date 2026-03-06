@@ -20,6 +20,7 @@ import {
 } from '@/components/auth/password-strength';
 import { FormError } from '@/components/auth/form-error';
 import { AuthApi } from '@/lib/api/auth';
+import { parseApiError } from '@/lib/http/errors';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function SignupPage() {
   const [error, setError] = useState<{ title: string; message: string } | null>(
     null
   );
+  // Field-level errors returned by the backend (PE-VAL-001)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -47,6 +50,14 @@ export default function SignupPage() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData(prev => ({ ...prev, [field]: e.target.value }));
       setError(null);
+      // Clear the specific field error when user starts typing
+      if (fieldErrors[field]) {
+        setFieldErrors(prev => {
+          const n = { ...prev };
+          delete n[field];
+          return n;
+        });
+      }
     };
 
   const handleBlur = (field: keyof typeof touched) => () => {
@@ -65,6 +76,7 @@ export default function SignupPage() {
 
     setIsLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       await AuthApi.signup({
@@ -74,16 +86,15 @@ export default function SignupPage() {
         password: formData.password,
       });
 
-      // Redirect to verification pending page
       router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-    } catch (error) {
-      setError({
-        title: 'Signup failed',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Unable to create your account. Please try again.',
-      });
+    } catch (err: unknown) {
+      const parsed = parseApiError(err, { title: 'Signup failed' });
+      setError({ title: parsed.title, message: parsed.message });
+
+      // Show backend field errors directly on the relevant inputs
+      if (Object.keys(parsed.fields).length > 0) {
+        setFieldErrors(parsed.fields);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -111,11 +122,17 @@ export default function SignupPage() {
               placeholder='Jane'
               disabled={isLoading}
               className={
-                touched.firstName && formData.firstName.length < 2
+                (touched.firstName && formData.firstName.length < 2) ||
+                fieldErrors.first_name
                   ? 'border-destructive'
                   : ''
               }
             />
+            {fieldErrors.first_name && (
+              <p className='text-xs text-destructive'>
+                {fieldErrors.first_name}
+              </p>
+            )}
           </div>
           <div className='space-y-2'>
             <Label htmlFor='lastName'>Last name</Label>
@@ -128,11 +145,17 @@ export default function SignupPage() {
               placeholder='Creator'
               disabled={isLoading}
               className={
-                touched.lastName && formData.lastName.length < 2
+                (touched.lastName && formData.lastName.length < 2) ||
+                fieldErrors.last_name
                   ? 'border-destructive'
                   : ''
               }
             />
+            {fieldErrors.last_name && (
+              <p className='text-xs text-destructive'>
+                {fieldErrors.last_name}
+              </p>
+            )}
           </div>
         </div>
 
@@ -147,11 +170,15 @@ export default function SignupPage() {
             placeholder='you@example.com'
             disabled={isLoading}
             className={
-              touched.email && !formData.email.includes('@')
+              (touched.email && !formData.email.includes('@')) ||
+              fieldErrors.email
                 ? 'border-destructive'
                 : ''
             }
           />
+          {fieldErrors.email && (
+            <p className='text-xs text-destructive'>{fieldErrors.email}</p>
+          )}
         </div>
 
         <div className='space-y-2'>
@@ -164,8 +191,12 @@ export default function SignupPage() {
             onBlur={handleBlur('password')}
             placeholder='Create a strong password'
             disabled={isLoading}
+            className={fieldErrors.password ? 'border-destructive' : ''}
           />
           <PasswordStrength password={formData.password} />
+          {fieldErrors.password && (
+            <p className='text-xs text-destructive'>{fieldErrors.password}</p>
+          )}
         </div>
 
         <Button

@@ -20,6 +20,7 @@ import type { VoiceDna } from '@/lib/types/voice-dna';
 import { BrandVoiceForm } from '@/components/intelligence/brand-voice-form';
 import { FingerprintRadar } from '@/components/intelligence/voice-dna/fingerprint-radar';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditBrandVoicePage() {
@@ -54,10 +55,11 @@ export default function EditBrandVoicePage() {
         // No Voice DNA linked — that's fine
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load brand voice details',
+        title: err.title,
+        description: err.message,
       });
       router.push('/dashboard/intelligence/brand-voices');
     } finally {

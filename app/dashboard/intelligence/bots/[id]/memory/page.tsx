@@ -14,6 +14,7 @@ import { IntelligenceApi } from '@/lib/api/intelligence';
 import type { MemoryStats } from '@/lib/types/memory';
 import type { UserRelationshipMemory } from '@/lib/types/memory';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 
 export default function BotMemoryPage() {
   const params = useParams();
@@ -45,10 +46,11 @@ export default function BotMemoryPage() {
         setStats(statsResponse.data);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load memory data',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthApi } from '@/lib/api/auth';
 import { AuthCard, AuthCardHeader } from '@/components/auth/auth-card';
+import { parseApiError } from '@/lib/http/errors';
 import {
   PasswordStrength,
   isPasswordValid,
@@ -56,12 +57,13 @@ export function ResetPasswordForm() {
       await AuthApi.resetPassword({ token, password });
 
       setState('success');
-    } catch {
+    } catch (err: unknown) {
       setState('error');
-      setError({
-        title: 'Connection issue',
-        message: "We're having trouble connecting. Please try again.",
+      const parsed = parseApiError(err, {
+        title: 'Reset failed',
+        message: "We couldn't reset your password. The link may have expired.",
       });
+      setError({ title: parsed.title, message: parsed.message });
     } finally {
       setIsSubmitting(false);
     }

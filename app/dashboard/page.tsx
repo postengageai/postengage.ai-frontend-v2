@@ -10,6 +10,7 @@ import { dashboardApi } from '@/lib/api/dashboard';
 import { notificationsApi } from '@/lib/api/notifications';
 import { automationsApi } from '@/lib/api/automations';
 import { useToast } from '@/components/ui/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import type {
   Automation,
   ConnectedAccount,
@@ -163,9 +164,10 @@ export default function DashboardPage() {
         description: 'Automation deleted successfully',
       });
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete automation',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     }

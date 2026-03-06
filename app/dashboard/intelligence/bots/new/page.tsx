@@ -8,6 +8,7 @@ import { SocialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
 import { BotForm } from '@/components/intelligence/bot-form';
 import { VoiceSetupStep } from '@/components/intelligence/voice-dna/voice-setup-step';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type PageStep = 'config' | 'voice-setup';
@@ -37,10 +38,11 @@ export default function NewBotPage() {
         setSocialAccounts(response.data);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load social accounts',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

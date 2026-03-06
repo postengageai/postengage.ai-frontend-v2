@@ -46,6 +46,7 @@ import {
 } from '@/lib/constants/automations';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 
 export default function AutomationsPage() {
   const [automations, setAutomations] = useState<Automation[]>([]);
@@ -72,10 +73,11 @@ export default function AutomationsPage() {
         setAutomations(response.data);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load automations',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -114,7 +116,7 @@ export default function AutomationsPage() {
         title: 'Status updated',
         description: `Automation ${newStatus === AutomationStatus.ACTIVE ? 'activated' : 'deactivated'}`,
       });
-    } catch {
+    } catch (_error) {
       // Revert on failure
       setAutomations(prev =>
         prev.map(a =>
@@ -123,10 +125,11 @@ export default function AutomationsPage() {
             : a
         )
       );
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update automation status',
+        title: err.title,
+        description: err.message,
       });
     }
   };
@@ -148,10 +151,11 @@ export default function AutomationsPage() {
         description: 'The automation has been successfully deleted.',
       });
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete automation',
+        title: err.title,
+        description: err.message,
       });
     }
   };

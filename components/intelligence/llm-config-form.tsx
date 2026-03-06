@@ -34,6 +34,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
+import { parseApiError } from '@/lib/http/errors';
 import {
   UserLlmConfig,
   LlmConfigMode,
@@ -167,11 +168,12 @@ export function LlmConfigForm({ initialConfig }: LlmConfigFormProps) {
         title: 'Success',
         description: 'Configuration updated successfully',
       });
-    } catch (_error) {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update configuration',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

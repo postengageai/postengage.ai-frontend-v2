@@ -37,6 +37,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { IntelligenceApi } from '@/lib/api/intelligence';
+import { parseApiError } from '@/lib/http/errors';
 import {
   Bot,
   BotBehavior,
@@ -194,13 +195,12 @@ export function BotForm({
       }
       router.push('/dashboard/intelligence/bots');
       router.refresh();
-    } catch (_error) {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: initialData
-          ? 'Failed to update bot'
-          : 'Failed to create bot',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

@@ -5,6 +5,7 @@ import { Plus, Dna } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { VoiceDnaCard } from '@/components/intelligence/voice-dna/voice-dna-card';
 import { VoiceDnaCreateDialog } from '@/components/intelligence/voice-dna/voice-dna-create-dialog';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
@@ -36,11 +37,12 @@ export default function VoiceDnaPage() {
       if (brandVoiceResponse?.data) {
         setBrandVoices(brandVoiceResponse.data);
       }
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load Voice DNA data',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -66,11 +68,12 @@ export default function VoiceDnaPage() {
             "Analysis has been queued. You'll be notified when it's ready.",
         });
       }
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to create Voice DNA',
+        title: err.title,
+        description: err.message,
       });
       throw new Error('Failed to create');
     }
@@ -89,11 +92,12 @@ export default function VoiceDnaPage() {
             'Voice DNA is being re-analyzed with the latest samples.',
         });
       }
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to trigger re-analysis',
+        title: err.title,
+        description: err.message,
       });
     }
   };

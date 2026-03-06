@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { KnowledgeSource } from '@/lib/types/intelligence';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BotKnowledgePage() {
@@ -51,10 +52,11 @@ export default function BotKnowledgePage() {
         setSources(response.data);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load knowledge sources',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);
@@ -80,10 +82,11 @@ export default function BotKnowledgePage() {
         });
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to add knowledge source',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsAdding(false);
@@ -101,10 +104,11 @@ export default function BotKnowledgePage() {
         description: 'Knowledge source deleted successfully',
       });
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete knowledge source',
+        title: err.title,
+        description: err.message,
       });
     }
   };

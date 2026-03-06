@@ -8,6 +8,7 @@ import { LlmConfigForm } from '@/components/intelligence/llm-config-form';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { UserLlmConfig } from '@/lib/types/intelligence';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 
 export default function IntelligenceSettingsPage() {
   const { toast } = useToast();
@@ -25,10 +26,11 @@ export default function IntelligenceSettingsPage() {
         setConfig(response.data);
       }
     } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load configuration',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsLoading(false);

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
+import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/hooks/use-toast';
 
 interface FeedbackCollectorProps {
@@ -57,11 +58,12 @@ export function FeedbackCollector({
         description: 'Thanks! Your feedback helps improve the bot.',
       });
       onFeedbackSubmitted?.();
-    } catch {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to submit feedback',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsSubmitting(false);

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaApi } from '@/lib/api/media';
+import { parseApiError } from '@/lib/http/errors';
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -172,15 +173,11 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
           description: 'Upload cancelled',
         });
       } else {
-        const errorMessage =
-          axios.isAxiosError(error) && error.response?.data?.message
-            ? error.response.data.message
-            : 'Failed to upload media';
-
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: errorMessage,
+          title: err.title,
+          description: err.message,
         });
       }
     } finally {

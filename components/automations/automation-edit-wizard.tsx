@@ -35,7 +35,8 @@ import {
   type SendDmMediaMessage,
   type SendDmMediaPayload,
 } from '@/lib/api/automations';
-import { toast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
+import { useToast } from '@/hooks/use-toast';
 
 interface AutomationEditWizardProps {
   automationId: string;
@@ -171,6 +172,7 @@ export function AutomationEditWizard({
   const [initialData, setInitialData] = useState<AutomationFormData | null>(
     null
   );
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAutomation = async () => {
@@ -181,11 +183,12 @@ export function AutomationEditWizard({
           const formData = apiToFormData(response.data);
           setInitialData(formData);
         }
-      } catch (_error) {
+      } catch (error) {
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load automation details',
+          title: err.title,
+          description: err.message,
         });
       } finally {
         setIsLoading(false);
@@ -195,7 +198,7 @@ export function AutomationEditWizard({
     if (automationId) {
       fetchAutomation();
     }
-  }, [automationId]);
+  }, [automationId, toast]);
 
   if (isLoading) {
     return (

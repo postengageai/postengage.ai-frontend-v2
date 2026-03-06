@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { SupportApi } from '@/lib/api/support';
 
 const faqItems = [
@@ -104,10 +105,11 @@ export default function HelpSupportPage() {
         title: 'Success',
         description: 'Support ticket submitted successfully',
       });
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
-        title: 'Error',
-        description: 'Failed to submit support ticket. Please try again.',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     } finally {
