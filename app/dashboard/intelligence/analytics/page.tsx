@@ -195,7 +195,7 @@ export default function IntelligenceAnalyticsPage() {
               <CardContent>
                 <div className='text-2xl font-bold'>
                   {state.items.reduce(
-                    (acc, item) => acc + item.total_processed,
+                    (acc, item) => acc + (item.total_processed ?? 0),
                     0
                   )}
                 </div>
@@ -213,17 +213,19 @@ export default function IntelligenceAnalyticsPage() {
               <CardContent>
                 <div className='text-2xl font-bold'>
                   {state.items.length > 0
-                    ? Math.round(
-                        (state.items.reduce(
-                          (acc, item) => acc + item.replied_count,
+                    ? (() => {
+                        const totalProcessed = state.items.reduce(
+                          (acc, item) => acc + (item.total_processed ?? 0),
                           0
-                        ) /
-                          state.items.reduce(
-                            (acc, item) => acc + item.total_processed,
-                            0
-                          )) *
-                          100
-                      )
+                        );
+                        const totalReplied = state.items.reduce(
+                          (acc, item) => acc + (item.replied_count ?? 0),
+                          0
+                        );
+                        return totalProcessed > 0
+                          ? Math.round((totalReplied / totalProcessed) * 100)
+                          : 0;
+                      })()
                     : 0}
                   %
                 </div>
@@ -243,7 +245,7 @@ export default function IntelligenceAnalyticsPage() {
                   {state.items.length > 0
                     ? Math.round(
                         state.items.reduce(
-                          (acc, item) => acc + item.avg_latency_ms,
+                          (acc, item) => acc + (item.avg_latency_ms ?? 0),
                           0
                         ) / state.items.length
                       )
@@ -262,7 +264,7 @@ export default function IntelligenceAnalyticsPage() {
               <CardContent>
                 <div className='text-2xl font-bold'>
                   {state.items.reduce(
-                    (acc, item) => acc + item.actions_taken,
+                    (acc, item) => acc + (item.actions_taken ?? 0),
                     0
                   )}
                 </div>
