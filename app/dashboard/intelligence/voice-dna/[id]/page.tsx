@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
   RefreshCw,
-  Trash,
   Loader2,
   AlertTriangle,
   ChevronRight,
@@ -32,17 +31,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { IntelligenceApi } from '@/lib/api/intelligence';
@@ -82,7 +70,6 @@ const SOURCE_LABELS: Record<string, string> = {
 
 export default function VoiceDnaDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   const id = params.id as string;
 
@@ -194,20 +181,6 @@ export default function VoiceDnaDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      await VoiceDnaApi.deleteVoiceDna(id);
-      toast({ title: 'Deleted', description: 'Voice DNA has been removed.' });
-      router.push('/dashboard/intelligence/voice-dna');
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete Voice DNA',
-      });
-    }
-  };
-
   const handleAddFewShot = async (dto: {
     context: string;
     reply: string;
@@ -224,7 +197,7 @@ export default function VoiceDnaDetailPage() {
 
   const handleAddNegative = async (dto: {
     reply: string;
-    reason: string;
+    context: string;
     tags?: string[];
   }) => {
     const response = await VoiceDnaApi.addNegativeExample(id, dto);
@@ -340,32 +313,6 @@ export default function VoiceDnaDetailPage() {
             />
             Re-analyze
           </Button>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant='destructive' size='icon'>
-                <Trash className='h-4 w-4' />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Voice DNA</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete this Voice DNA and all its
-                  examples. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </div>
 

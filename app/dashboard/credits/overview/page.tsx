@@ -35,15 +35,13 @@ export default function CreditsPage() {
   const isUsageLoading = useCreditsUsageLoading();
   const usage = useCreditsUsage();
   const isLoading = useCreditsLoading();
-  const { fetchBalance, fetchTransactions, fetchUsage, fetchInvoices } =
-    useCreditsActions();
+  const { fetchBalance, fetchTransactions, fetchUsage } = useCreditsActions();
 
   // Fetch data on component mount
   useEffect(() => {
     fetchBalance();
     fetchUsage();
-    fetchInvoices();
-  }, [fetchBalance, fetchUsage, fetchInvoices]);
+  }, [fetchBalance, fetchUsage]);
 
   // Fetch transactions when page changes
   useEffect(() => {

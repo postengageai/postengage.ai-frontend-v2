@@ -9,9 +9,6 @@ import {
   VoiceReview,
   VoiceFeedbackDto,
   AdjustVoiceDto,
-  ContinuousLearningStats,
-  GenerateSampleReplyDto,
-  SampleReplyResult,
 } from '../types/voice-dna';
 
 const VOICE_DNA_BASE_URL = '/api/v1/intelligence/voice-dna';
@@ -78,7 +75,7 @@ export class VoiceDnaApi {
     return response.data;
   }
 
-  // Add a negative example
+  // Add a negative example (uses same backend DTO as few-shot: context, reply, tags)
   static async addNegativeExample(
     id: string,
     data: AddNegativeExampleDto
@@ -114,18 +111,9 @@ export class VoiceDnaApi {
     return response.data;
   }
 
-  // Delete a Voice DNA record
-  static async deleteVoiceDna(id: string): Promise<SuccessResponse<void>> {
-    const response = await httpClient.delete<void>(
-      `${VOICE_DNA_BASE_URL}/${id}`
-    );
-    if (response.error) throw response.error;
-    return response.data;
-  }
+  // === Auto-Inference & Voice Review ===
 
-  // === Phase 5: Auto-Inference & Voice Review ===
-
-  // Trigger auto-inference
+  // Trigger auto-inference (backend only accepts bot_id and optional brand_voice_id)
   static async triggerAutoInfer(
     data: TriggerAutoInferDto
   ): Promise<SuccessResponse<AutoInferResult>> {
@@ -160,36 +148,14 @@ export class VoiceDnaApi {
     return response.data;
   }
 
-  // Adjust voice (tone sliders, add/remove examples)
+  // Adjust voice (add/remove examples, trigger reanalysis)
+  // Note: tone adjustment (adjust_tone) is not supported by the backend.
   static async adjustVoice(
     voiceDnaId: string,
     data: AdjustVoiceDto
   ): Promise<SuccessResponse<VoiceDna>> {
     const response = await httpClient.post<VoiceDna>(
       `${VOICE_DNA_BASE_URL}/${voiceDnaId}/adjust`,
-      data
-    );
-    if (response.error) throw response.error;
-    return response.data;
-  }
-
-  // Get continuous learning stats
-  static async getContinuousLearningStats(
-    voiceDnaId: string
-  ): Promise<SuccessResponse<ContinuousLearningStats>> {
-    const response = await httpClient.get<ContinuousLearningStats>(
-      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/learning`
-    );
-    if (response.error) throw response.error;
-    return response.data;
-  }
-
-  // Generate sample reply (dry-run)
-  static async generateSampleReply(
-    data: GenerateSampleReplyDto
-  ): Promise<SuccessResponse<SampleReplyResult>> {
-    const response = await httpClient.post<SampleReplyResult>(
-      `${VOICE_DNA_BASE_URL}/sample-reply`,
       data
     );
     if (response.error) throw response.error;

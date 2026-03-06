@@ -22,7 +22,6 @@ interface VoiceDnaState {
     addNegative: (id: string, dto: AddNegativeExampleDto) => Promise<void>;
     deleteNegative: (id: string, index: number) => Promise<void>;
     triggerReanalyze: (id: string) => Promise<void>;
-    deleteVoiceDna: (id: string) => Promise<void>;
     setSelected: (voiceDna: VoiceDna | null) => void;
     updateInList: (voiceDna: VoiceDna) => void;
     reset: () => void;
@@ -196,22 +195,6 @@ export const useVoiceDnaStore = create<VoiceDnaState>(set => ({
           error instanceof Error
             ? error.message
             : 'Failed to trigger re-analysis';
-        set({ error: errorMessage });
-        throw error;
-      }
-    },
-
-    deleteVoiceDna: async (id: string) => {
-      try {
-        await VoiceDnaApi.deleteVoiceDna(id);
-        set(state => ({
-          voiceDnaList: state.voiceDnaList.filter(v => v._id !== id),
-          selectedVoiceDna:
-            state.selectedVoiceDna?._id === id ? null : state.selectedVoiceDna,
-        }));
-      } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to delete Voice DNA';
         set({ error: errorMessage });
         throw error;
       }

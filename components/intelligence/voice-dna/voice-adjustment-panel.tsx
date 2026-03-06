@@ -12,8 +12,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -39,7 +37,7 @@ interface PendingFewShot {
 
 interface PendingNegative {
   reply: string;
-  reason: string;
+  context: string;
 }
 
 export function VoiceAdjustmentPanel({
@@ -49,16 +47,6 @@ export function VoiceAdjustmentPanel({
 }: VoiceAdjustmentPanelProps) {
   const { toast } = useToast();
 
-  // Tone sliders
-  const [humor, setHumor] = useState(voiceDna.fingerprint?.humor_level ?? 5);
-  const [directness, setDirectness] = useState(
-    voiceDna.fingerprint?.directness ?? 5
-  );
-  const [warmth, setWarmth] = useState(voiceDna.fingerprint?.warmth ?? 5);
-  const [assertiveness, setAssertiveness] = useState(
-    voiceDna.fingerprint?.assertiveness ?? 5
-  );
-
   // Pending examples
   const [newFewShots, setNewFewShots] = useState<PendingFewShot[]>([]);
   const [newNegatives, setNewNegatives] = useState<PendingNegative[]>([]);
@@ -67,7 +55,7 @@ export function VoiceAdjustmentPanel({
   const [fewShotContext, setFewShotContext] = useState('');
   const [fewShotReply, setFewShotReply] = useState('');
   const [negativeReply, setNegativeReply] = useState('');
-  const [negativeReason, setNegativeReason] = useState('');
+  const [negativeContext, setNegativeContext] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAndReanalyzing, setIsSavingAndReanalyzing] = useState(false);
@@ -83,13 +71,13 @@ export function VoiceAdjustmentPanel({
   };
 
   const addNegative = () => {
-    if (!negativeReply.trim() || !negativeReason.trim()) return;
+    if (!negativeReply.trim() || !negativeContext.trim()) return;
     setNewNegatives(prev => [
       ...prev,
-      { reply: negativeReply, reason: negativeReason },
+      { reply: negativeReply, context: negativeContext },
     ]);
     setNegativeReply('');
-    setNegativeReason('');
+    setNegativeContext('');
   };
 
   const buildDto = (triggerReanalysis: boolean): AdjustVoiceDto => {
@@ -97,25 +85,12 @@ export function VoiceAdjustmentPanel({
       trigger_reanalysis: triggerReanalysis,
     };
 
-    // Tone adjustments (only if changed)
-    const orig = voiceDna.fingerprint;
-    if (orig) {
-      const toneChanges: Partial<{
-        humor_level: number;
-        directness: number;
-        warmth: number;
-        assertiveness: number;
-      }> = {};
-      if (humor !== orig.humor_level) toneChanges.humor_level = humor;
-      if (directness !== orig.directness) toneChanges.directness = directness;
-      if (warmth !== orig.warmth) toneChanges.warmth = warmth;
-      if (assertiveness !== orig.assertiveness)
-        toneChanges.assertiveness = assertiveness;
-      if (Object.keys(toneChanges).length > 0) dto.adjust_tone = toneChanges;
+    if (newFewShots.length > 0) {
+      dto.add_few_shot_examples = newFewShots.map(fs => JSON.stringify(fs));
     }
-
-    if (newFewShots.length > 0) dto.add_few_shot = newFewShots;
-    if (newNegatives.length > 0) dto.add_negative = newNegatives;
+    if (newNegatives.length > 0) {
+      dto.add_negative_examples = newNegatives.map(neg => JSON.stringify(neg));
+    }
 
     return dto;
   };
@@ -161,30 +136,6 @@ export function VoiceAdjustmentPanel({
           Adjust Voice
         </h3>
       </div>
-
-      {/* Tone Sliders */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <CardTitle className='text-sm font-medium'>
-            Tone Adjustments
-          </CardTitle>
-          <CardDescription>Fine-tune how your bot sounds</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-5'>
-          <ToneSlider label='Humor' value={humor} onChange={setHumor} />
-          <ToneSlider
-            label='Directness'
-            value={directness}
-            onChange={setDirectness}
-          />
-          <ToneSlider label='Warmth' value={warmth} onChange={setWarmth} />
-          <ToneSlider
-            label='Assertiveness'
-            value={assertiveness}
-            onChange={setAssertiveness}
-          />
-        </CardContent>
-      </Card>
 
       {/* Add Few-Shot Examples */}
       <Card>
@@ -269,16 +220,16 @@ export function VoiceAdjustmentPanel({
               className='text-sm'
             />
             <Input
-              placeholder='Why is this bad? (reason)...'
-              value={negativeReason}
-              onChange={e => setNegativeReason(e.target.value)}
+              placeholder='Why should the bot avoid this?...'
+              value={negativeContext}
+              onChange={e => setNegativeContext(e.target.value)}
               className='text-sm'
             />
             <Button
               size='sm'
               variant='outline'
               onClick={addNegative}
-              disabled={!negativeReply.trim() || !negativeReason.trim()}
+              disabled={!negativeReply.trim() || !negativeContext.trim()}
             >
               <Plus className='h-3.5 w-3.5 mr-1' />
               Add Negative
@@ -298,7 +249,7 @@ export function VoiceAdjustmentPanel({
                   <div className='flex-1 min-w-0'>
                     <p className='text-xs truncate'>{neg.reply}</p>
                     <p className='text-[10px] text-muted-foreground'>
-                      Reason: {neg.reason}
+                      Reason: {neg.context}
                     </p>
                   </div>
                   <Button
@@ -350,34 +301,6 @@ export function VoiceAdjustmentPanel({
           </Button>
         )}
       </div>
-    </div>
-  );
-}
-
-// --- Sub-component ---
-
-function ToneSlider({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-between'>
-        <Label className='text-sm'>{label}</Label>
-        <span className='text-sm font-medium'>{value}/10</span>
-      </div>
-      <Slider
-        min={0}
-        max={10}
-        step={1}
-        value={[value]}
-        onValueChange={vals => onChange(vals[0])}
-      />
     </div>
   );
 }

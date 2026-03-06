@@ -1,28 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Check,
-  X,
-  Pencil,
-  AlertTriangle,
-  Shield,
-  MessageSquare,
-} from 'lucide-react';
+import { AlertTriangle, Shield, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import type { FlaggedReply } from '@/lib/types/quality';
 import type { PaginationMeta } from '@/lib/http/client';
@@ -38,10 +20,6 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [showReviewed, setShowReviewed] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
-  const [rejectDialogId, setRejectDialogId] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchReplies = useCallback(async () => {
@@ -70,66 +48,6 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
   useEffect(() => {
     fetchReplies();
   }, [fetchReplies]);
-
-  const handleApprove = async (replyId: string) => {
-    setActionLoading(replyId);
-    try {
-      await IntelligenceApi.approveReply(replyId);
-      setReplies(prev => prev.filter(r => r._id !== replyId));
-      toast({ title: 'Reply approved and sent' });
-    } catch (_error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to approve reply',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleReject = async (replyId: string) => {
-    setActionLoading(replyId);
-    try {
-      await IntelligenceApi.rejectReply(replyId);
-      setReplies(prev => prev.filter(r => r._id !== replyId));
-      setRejectDialogId(null);
-      toast({ title: 'Reply rejected' });
-    } catch (_error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to reject reply',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleEditApprove = async (replyId: string) => {
-    if (!editText.trim()) return;
-    setActionLoading(replyId);
-    try {
-      await IntelligenceApi.editAndApproveReply(replyId, editText);
-      setReplies(prev => prev.filter(r => r._id !== replyId));
-      setEditingId(null);
-      setEditText('');
-      toast({ title: 'Edited reply approved and sent' });
-    } catch (_error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to edit and approve reply',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const startEdit = (reply: FlaggedReply) => {
-    setEditingId(reply._id);
-    setEditText(reply.generated_reply);
-  };
 
   const totalPages = pagination?.total_pages || 1;
 
@@ -244,80 +162,13 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
                 <p className='text-sm'>{reply.original_message}</p>
               </div>
 
-              {/* Generated reply / Edit mode */}
-              {editingId === reply._id ? (
-                <div className='space-y-2'>
-                  <p className='text-[10px] text-muted-foreground'>
-                    Edit reply before approving:
-                  </p>
-                  <Textarea
-                    value={editText}
-                    onChange={e => setEditText(e.target.value)}
-                    rows={3}
-                    className='text-sm'
-                  />
-                  <div className='flex gap-2'>
-                    <Button
-                      size='sm'
-                      onClick={() => handleEditApprove(reply._id)}
-                      disabled={actionLoading === reply._id || !editText.trim()}
-                    >
-                      <Check className='h-3.5 w-3.5 mr-1' />
-                      Confirm & Send
-                    </Button>
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      onClick={() => {
-                        setEditingId(null);
-                        setEditText('');
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className='rounded-md border p-3'>
-                  <p className='text-[10px] text-muted-foreground mb-1'>
-                    Bot reply
-                  </p>
-                  <p className='text-sm'>{reply.generated_reply}</p>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              {!reply.reviewed && editingId !== reply._id && (
-                <div className='flex gap-2'>
-                  <Button
-                    size='sm'
-                    className='bg-green-600 hover:bg-green-700'
-                    onClick={() => handleApprove(reply._id)}
-                    disabled={actionLoading === reply._id}
-                  >
-                    <Check className='h-3.5 w-3.5 mr-1' />
-                    Approve
-                  </Button>
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    onClick={() => startEdit(reply)}
-                    disabled={actionLoading === reply._id}
-                  >
-                    <Pencil className='h-3.5 w-3.5 mr-1' />
-                    Edit & Approve
-                  </Button>
-                  <Button
-                    size='sm'
-                    variant='destructive'
-                    onClick={() => setRejectDialogId(reply._id)}
-                    disabled={actionLoading === reply._id}
-                  >
-                    <X className='h-3.5 w-3.5 mr-1' />
-                    Reject
-                  </Button>
-                </div>
-              )}
+              {/* Generated reply */}
+              <div className='rounded-md border p-3'>
+                <p className='text-[10px] text-muted-foreground mb-1'>
+                  Bot reply
+                </p>
+                <p className='text-sm'>{reply.generated_reply}</p>
+              </div>
 
               {reply.reviewed && (
                 <Badge variant='secondary' className='text-xs'>
@@ -355,31 +206,6 @@ export function FlaggedReviewQueue({ botId }: FlaggedReviewQueueProps) {
           </div>
         </div>
       )}
-
-      {/* Reject confirmation dialog */}
-      <AlertDialog
-        open={!!rejectDialogId}
-        onOpenChange={() => setRejectDialogId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reject this reply?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This reply will not be sent. The bot will learn from this feedback
-              to improve future responses.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-              onClick={() => rejectDialogId && handleReject(rejectDialogId)}
-            >
-              Reject Reply
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

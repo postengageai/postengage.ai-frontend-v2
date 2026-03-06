@@ -41,17 +41,6 @@ export class MemoryApi {
     return response.data;
   }
 
-  static async getUserMemory(
-    botId: string,
-    platformUserId: string
-  ): Promise<SuccessResponse<UserRelationshipMemory>> {
-    const response = await httpClient.get<UserRelationshipMemory>(
-      `${INTELLIGENCE_BASE_URL}/bots/${botId}/memory/users/${platformUserId}`
-    );
-    if (response.error) throw response.error;
-    return response.data;
-  }
-
   static async searchEntities(
     botId: string,
     query: string

@@ -98,25 +98,6 @@ export default function VoiceDnaPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this Voice DNA?')) return;
-
-    try {
-      await VoiceDnaApi.deleteVoiceDna(id);
-      setVoiceDnaList(prev => prev.filter(v => v._id !== id));
-      toast({
-        title: 'Deleted',
-        description: 'Voice DNA has been removed.',
-      });
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete Voice DNA',
-      });
-    }
-  };
-
   if (isLoading) {
     return (
       <div className='p-6 space-y-6'>
@@ -169,7 +150,6 @@ export default function VoiceDnaPage() {
               voiceDna={voiceDna}
               brandVoiceName={getBrandVoiceName(voiceDna.brand_voice_id)}
               onReanalyze={handleReanalyze}
-              onDelete={handleDelete}
             />
           ))}
         </div>

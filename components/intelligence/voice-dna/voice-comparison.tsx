@@ -1,79 +1,38 @@
 'use client';
 
-import { useState } from 'react';
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { VoiceDnaApi } from '@/lib/api/voice-dna';
+import { Badge } from '@/components/ui/badge';
 
 interface VoiceComparisonProps {
   voiceDnaId: string;
 }
 
-export function VoiceComparison({ voiceDnaId }: VoiceComparisonProps) {
-  const [userMessage, setUserMessage] = useState(
-    'Hey, I love your content! Can you help me with something?'
-  );
-  const [genericReply] = useState(
-    "Thank you for your message! I'd be happy to help. What do you need assistance with?"
-  );
-  const [personalizedReply, setPersonalizedReply] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+const GENERIC_REPLY =
+  "Thank you for your message! I'd be happy to help. What do you need assistance with?";
+const USER_MESSAGE =
+  'Hey, I love your content! Can you help me with something?';
 
-  const handleGenerate = async () => {
-    if (!userMessage.trim()) return;
-    setIsGenerating(true);
-    try {
-      const response = await VoiceDnaApi.generateSampleReply({
-        voice_dna_id: voiceDnaId,
-        user_message: userMessage,
-      });
-      if (response?.data) {
-        setPersonalizedReply(response.data.generated_reply);
-      }
-    } catch {
-      setPersonalizedReply('Could not generate sample. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
+export function VoiceComparison({
+  voiceDnaId: _voiceDnaId,
+}: VoiceComparisonProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className='text-base font-semibold flex items-center gap-2'>
           <Sparkles className='h-4 w-4' />
           Voice Comparison
+          <Badge variant='secondary' className='text-xs ml-auto'>
+            Coming Soon
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
-        {/* Input */}
-        <div className='flex gap-2'>
-          <Input
-            placeholder='Type a sample user message...'
-            value={userMessage}
-            onChange={e => setUserMessage(e.target.value)}
-            className='text-sm'
-          />
-          <Button
-            size='sm'
-            onClick={handleGenerate}
-            disabled={isGenerating || !userMessage.trim()}
-          >
-            {isGenerating ? (
-              <Loader2 className='h-3.5 w-3.5 animate-spin' />
-            ) : (
-              <RefreshCw className='h-3.5 w-3.5' />
-            )}
-          </Button>
-        </div>
-
         {/* User message */}
         <div className='flex justify-center'>
           <div className='rounded-xl bg-muted px-4 py-2.5 max-w-[90%] text-center'>
             <p className='text-[10px] text-muted-foreground mb-1'>User says:</p>
-            <p className='text-sm'>{userMessage}</p>
+            <p className='text-sm'>{USER_MESSAGE}</p>
           </div>
         </div>
 
@@ -85,21 +44,17 @@ export function VoiceComparison({ voiceDnaId }: VoiceComparisonProps) {
               Without Voice DNA
             </p>
             <div className='rounded-md bg-muted/50 p-3'>
-              <p className='text-sm text-muted-foreground'>{genericReply}</p>
+              <p className='text-sm text-muted-foreground'>{GENERIC_REPLY}</p>
             </div>
           </div>
 
           {/* With Voice DNA */}
           <div className='rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2'>
             <p className='text-xs font-medium text-primary'>With Voice DNA</p>
-            <div className='rounded-md bg-primary/10 p-3'>
-              {personalizedReply ? (
-                <p className='text-sm'>{personalizedReply}</p>
-              ) : (
-                <p className='text-sm text-muted-foreground italic'>
-                  Click the generate button to see the difference
-                </p>
-              )}
+            <div className='rounded-md bg-primary/10 p-3 flex items-center justify-center min-h-[60px]'>
+              <p className='text-sm text-muted-foreground italic text-center'>
+                Live voice comparison coming soon
+              </p>
             </div>
           </div>
         </div>

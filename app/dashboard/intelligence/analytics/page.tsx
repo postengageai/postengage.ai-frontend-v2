@@ -12,7 +12,6 @@ import {
   AnalyticsPeriod,
   IntelligenceAnalyticsItem,
 } from '@/lib/types/analytics';
-import type { IntelligenceQualityAnalytics } from '@/lib/types/quality';
 import {
   Select,
   SelectContent,
@@ -83,22 +82,15 @@ export default function IntelligenceAnalyticsPage() {
     periodLabel: '',
     items: [],
   });
-  const [qualityData, setQualityData] =
-    useState<IntelligenceQualityAnalytics | null>(null);
+  const qualityData = null;
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [response, qualityResponse] = await Promise.all([
-          IntelligenceApi.getIntelligenceAnalytics({ period }),
-          IntelligenceApi.getQualityAnalytics({
-            period: 'weekly',
-            include_quality: true,
-            include_diversity: true,
-            include_intents: true,
-          }).catch(() => null),
-        ]);
+        const response = await IntelligenceApi.getIntelligenceAnalytics({
+          period,
+        });
 
         const data = response.data;
         const label =
@@ -109,10 +101,6 @@ export default function IntelligenceAnalyticsPage() {
           periodLabel: label,
           items: data.items || [],
         });
-
-        if (qualityResponse?.data) {
-          setQualityData(qualityResponse.data);
-        }
       } catch (_error) {
         toast({
           variant: 'destructive',

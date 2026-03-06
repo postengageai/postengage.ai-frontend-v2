@@ -47,9 +47,9 @@ const ANALYSIS_MESSAGES = [
 
 export function AutoInferWizard({
   botId,
-  socialAccountId,
+  socialAccountId: _socialAccountId,
   brandVoiceId,
-  source = 'manual_trigger',
+  source: _source = 'manual_trigger',
   onComplete,
   onSkip,
 }: AutoInferWizardProps) {
@@ -133,9 +133,7 @@ export function AutoInferWizard({
     try {
       const dto: TriggerAutoInferDto = {
         bot_id: botId,
-        social_account_id: socialAccountId,
         brand_voice_id: brandVoiceId,
-        source,
       };
       const response = await VoiceDnaApi.triggerAutoInfer(dto);
       if (response?.data) {

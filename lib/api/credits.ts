@@ -60,15 +60,4 @@ export class CreditsApi {
     );
     return response.data!;
   }
-
-  // Get invoices (if available)
-  static async getInvoices(
-    query?: PaginationDto
-  ): Promise<SuccessResponse<CreditTransaction[]>> {
-    const response = await httpClient.get<CreditTransaction[]>(
-      `${CREDITS_BASE_URL}/invoices`,
-      { params: query }
-    );
-    return response.data!;
-  }
 }

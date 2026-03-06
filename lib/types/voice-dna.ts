@@ -49,7 +49,8 @@ export interface FewShotExample {
 }
 
 // === Negative Example ===
-// Backend uses the same structure as FewShotExample for negative examples
+// Backend uses the same DTO (AddFewShotExampleDto) for negative examples.
+// 'context' holds the reason why this reply style should be avoided.
 export interface NegativeExample {
   context: string;
   reply: string;
@@ -91,24 +92,26 @@ export interface CreateVoiceDnaDto {
   raw_samples: { text: string; source: string }[];
 }
 
+// Used for adding few-shot examples
 export interface AddFewShotDto {
   context: string;
   reply: string;
   tags?: string[];
 }
 
+// Negative examples use the same backend DTO as few-shot (AddFewShotExampleDto).
+// 'context' = why this reply should be avoided, 'reply' = the bad reply text.
 export interface AddNegativeExampleDto {
+  context: string;
   reply: string;
-  reason: string;
   tags?: string[];
 }
 
-// === Auto-Inference (Phase 5) ===
+// === Auto-Inference ===
+// Backend TriggerAutoInferDto only accepts bot_id and optional brand_voice_id.
 export interface TriggerAutoInferDto {
   bot_id: string;
-  social_account_id: string;
   brand_voice_id?: string;
-  source?: 'onboarding' | 'manual_trigger' | 'settings';
 }
 
 export interface AutoInferResult {
@@ -154,56 +157,23 @@ export interface VoiceReview {
 }
 
 // === Voice Feedback ===
+// Matches backend VoiceFeedbackDto exactly.
 export interface VoiceFeedbackDto {
   voice_dna_id: string;
-  bot_id: string;
-  feedback_type: 'approve' | 'edit' | 'reject';
-  original_reply?: string;
-  edited_reply?: string;
-  context?: string;
-  reason?: string;
+  log_id: string;
+  feedback_status: 'approved' | 'edited' | 'rejected';
+  original_text: string;
+  context_text: string;
+  edited_text?: string;
 }
 
 // === Voice Adjustment ===
+// Matches backend AdjustVoiceDto exactly.
+// Few-shot and negative examples are serialized as JSON strings.
+// Note: tone adjustment is not supported by the backend.
 export interface AdjustVoiceDto {
-  add_few_shot?: { context: string; reply: string; tags?: string[] }[];
-  remove_few_shot_indices?: number[];
-  add_negative?: { reply: string; reason: string }[];
-  remove_negative_indices?: number[];
-  adjust_tone?: Partial<{
-    humor_level: number;
-    directness: number;
-    warmth: number;
-    assertiveness: number;
-  }>;
+  add_few_shot_examples?: string[];
+  remove_few_shot_indices?: string[];
+  add_negative_examples?: string[];
   trigger_reanalysis?: boolean;
-}
-
-// === Continuous Learning Stats ===
-export interface ContinuousLearningStats {
-  voice_dna_id: string;
-  total_feedback_processed: number;
-  feedback_breakdown: {
-    approved: number;
-    edited: number;
-    rejected: number;
-  };
-  few_shot_examples_count: number;
-  negative_examples_count: number;
-  auto_refinement_count: number;
-  last_refinement_at?: string;
-  next_refinement_at_signals: number;
-  learning_velocity: 'fast' | 'moderate' | 'slow';
-}
-
-// === Sample Reply Generation ===
-export interface GenerateSampleReplyDto {
-  voice_dna_id: string;
-  user_message: string;
-}
-
-export interface SampleReplyResult {
-  user_message: string;
-  generated_reply: string;
-  confidence: number;
 }

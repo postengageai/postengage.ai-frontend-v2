@@ -14,7 +14,6 @@ vi.mock('../../api/voice-dna', () => ({
     addNegativeExample: vi.fn(),
     deleteNegativeExample: vi.fn(),
     reanalyzeVoiceDna: vi.fn(),
-    deleteVoiceDna: vi.fn(),
   },
 }));
 
@@ -408,42 +407,6 @@ describe('useVoiceDnaStore', () => {
       expect(useVoiceDnaStore.getState().selectedVoiceDna?.status).toBe(
         'analyzing'
       );
-    });
-  });
-
-  describe('deleteVoiceDna', () => {
-    it('removes from list and clears selected', async () => {
-      vi.mocked(VoiceDnaApi.deleteVoiceDna).mockResolvedValue(
-        mockSuccessResponse(undefined as unknown as void)
-      );
-
-      useVoiceDnaStore.setState({
-        voiceDnaList: [mockVoiceDna, mockVoiceDna2],
-        selectedVoiceDna: mockVoiceDna,
-      });
-
-      await useVoiceDnaStore.getState().actions.deleteVoiceDna('vdna-1');
-
-      const state = useVoiceDnaStore.getState();
-      expect(state.voiceDnaList).toHaveLength(1);
-      expect(state.voiceDnaList[0]._id).toBe('vdna-2');
-      expect(state.selectedVoiceDna).toBeNull();
-    });
-
-    it('does not clear selected if deleting different item', async () => {
-      vi.mocked(VoiceDnaApi.deleteVoiceDna).mockResolvedValue(
-        mockSuccessResponse(undefined as unknown as void)
-      );
-
-      useVoiceDnaStore.setState({
-        voiceDnaList: [mockVoiceDna, mockVoiceDna2],
-        selectedVoiceDna: mockVoiceDna,
-      });
-
-      await useVoiceDnaStore.getState().actions.deleteVoiceDna('vdna-2');
-
-      expect(useVoiceDnaStore.getState().selectedVoiceDna?._id).toBe('vdna-1');
-      expect(useVoiceDnaStore.getState().voiceDnaList).toHaveLength(1);
     });
   });
 

@@ -1,15 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Globe,
-  Palette,
-  PenTool,
-  Smile,
-  Lightbulb,
-  RefreshCw,
-  Loader2,
-} from 'lucide-react';
+import { Globe, Palette, PenTool, Smile, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +11,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import type { VoiceReview } from '@/lib/types/voice-dna';
-import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { FingerprintRadar } from './fingerprint-radar';
 
 interface VoiceReviewPanelProps {
@@ -80,7 +71,6 @@ export function VoiceReviewPanel({
 
   const source = review.voice_dna?.source || review.source || 'user_configured';
   const fingerprint = review.voice_dna?.fingerprint || review.fingerprint;
-  const voiceDnaId = review.voice_dna?._id || review.voice_dna_id;
 
   // Normalize summary
   const summary = {
@@ -99,37 +89,12 @@ export function VoiceReviewPanel({
     overall: review.summary?.overall || 'Voice analysis complete.',
   };
 
-  const [sampleReply, setSampleReply] = useState(
-    review.sample_generated_reply || {
-      context: 'Send a test message to generate a sample reply.',
-      reply: 'Your bot reply will appear here...',
-    }
-  );
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [fingerprintOpen, setFingerprintOpen] = useState(false);
-
-  const handleGenerateSample = async () => {
-    if (!voiceDnaId) return;
-
-    setIsGenerating(true);
-    try {
-      const response = await VoiceDnaApi.generateSampleReply({
-        voice_dna_id: voiceDnaId,
-        user_message:
-          'Hey, I love your content! Can you help me with something?',
-      });
-      if (response?.data) {
-        setSampleReply({
-          context: response.data.user_message,
-          reply: response.data.generated_reply,
-        });
-      }
-    } catch {
-      // Keep existing sample on failure
-    } finally {
-      setIsGenerating(false);
-    }
+  const sampleReply = review.sample_generated_reply || {
+    context: 'Send a test message to generate a sample reply.',
+    reply: 'Your bot reply will appear here...',
   };
+
+  const [fingerprintOpen, setFingerprintOpen] = useState(false);
 
   return (
     <div className='space-y-4'>
@@ -183,24 +148,9 @@ export function VoiceReviewPanel({
       {/* Sample Reply Preview */}
       <Card>
         <CardHeader className='pb-3'>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='text-sm font-medium'>
-              How your bot would reply
-            </CardTitle>
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={handleGenerateSample}
-              disabled={isGenerating || !voiceDnaId}
-            >
-              {isGenerating ? (
-                <Loader2 className='h-3.5 w-3.5 mr-1 animate-spin' />
-              ) : (
-                <RefreshCw className='h-3.5 w-3.5 mr-1' />
-              )}
-              New Sample
-            </Button>
-          </div>
+          <CardTitle className='text-sm font-medium'>
+            How your bot would reply
+          </CardTitle>
         </CardHeader>
         <CardContent className='space-y-3'>
           {/* User message */}

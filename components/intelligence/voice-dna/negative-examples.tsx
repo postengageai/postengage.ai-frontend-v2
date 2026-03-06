@@ -48,19 +48,19 @@ export function NegativeExamples({
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newExample, setNewExample] = useState({
     reply: '',
-    reason: '',
+    context: '',
     tags: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAdd = async () => {
-    if (!newExample.reply.trim() || !newExample.reason.trim()) return;
+    if (!newExample.reply.trim() || !newExample.context.trim()) return;
 
     setIsSubmitting(true);
     try {
       await onAdd({
         reply: newExample.reply.trim(),
-        reason: newExample.reason.trim(),
+        context: newExample.context.trim(),
         tags: newExample.tags
           ? newExample.tags
               .split(',')
@@ -68,7 +68,7 @@ export function NegativeExamples({
               .filter(Boolean)
           : undefined,
       });
-      setNewExample({ reply: '', reason: '', tags: '' });
+      setNewExample({ reply: '', context: '', tags: '' });
       setIsAddOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -114,13 +114,16 @@ export function NegativeExamples({
                 />
               </div>
               <div className='space-y-2'>
-                <Label htmlFor='neg-reason'>Reason (why is this bad?)</Label>
+                <Label htmlFor='neg-context'>Reason (why is this bad?)</Label>
                 <Textarea
-                  id='neg-reason'
+                  id='neg-context'
                   placeholder='e.g., "Too formal and robotic. Sounds like a corporate chatbot, not me."'
-                  value={newExample.reason}
+                  value={newExample.context}
                   onChange={e =>
-                    setNewExample(prev => ({ ...prev, reason: e.target.value }))
+                    setNewExample(prev => ({
+                      ...prev,
+                      context: e.target.value,
+                    }))
                   }
                   rows={2}
                 />
@@ -151,7 +154,7 @@ export function NegativeExamples({
                 onClick={handleAdd}
                 disabled={
                   !newExample.reply.trim() ||
-                  !newExample.reason.trim() ||
+                  !newExample.context.trim() ||
                   isSubmitting
                 }
               >
@@ -190,10 +193,7 @@ export function NegativeExamples({
                     {example.reply}
                   </p>
                   <p className='text-xs text-destructive mt-1'>
-                    Reason: {example.reason}
-                  </p>
-                  <p className='text-xs text-muted-foreground mt-1'>
-                    Added {new Date(example.added_at).toLocaleDateString()}
+                    Reason: {example.context}
                   </p>
                 </div>
                 <AlertDialog>

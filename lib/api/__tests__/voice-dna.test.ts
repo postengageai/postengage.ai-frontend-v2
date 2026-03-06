@@ -5,8 +5,6 @@ import type {
   VoiceDna,
   AutoInferResult,
   VoiceReview,
-  ContinuousLearningStats,
-  SampleReplyResult,
 } from '../../types/voice-dna';
 
 // Mock the httpClient module
@@ -245,20 +243,6 @@ describe('VoiceDnaApi', () => {
     });
   });
 
-  describe('deleteVoiceDna', () => {
-    it('calls DELETE on voice-dna endpoint', async () => {
-      vi.mocked(httpClient.delete).mockResolvedValue(
-        makeApiResponse(undefined)
-      );
-
-      await VoiceDnaApi.deleteVoiceDna('vdna-1');
-
-      expect(httpClient.delete).toHaveBeenCalledWith(
-        '/api/v1/intelligence/voice-dna/vdna-1'
-      );
-    });
-  });
-
   // === Phase 5 Methods ===
 
   describe('triggerAutoInfer', () => {
@@ -277,8 +261,7 @@ describe('VoiceDnaApi', () => {
 
       const dto = {
         bot_id: 'bot-1',
-        social_account_id: 'sa-1',
-        source: 'onboarding' as const,
+        brand_voice_id: 'bv-1',
       };
       const result = await VoiceDnaApi.triggerAutoInfer(dto);
 
@@ -325,9 +308,10 @@ describe('VoiceDnaApi', () => {
 
       const dto = {
         voice_dna_id: 'vdna-1',
-        bot_id: 'bot-1',
-        feedback_type: 'approve' as const,
-        original_reply: 'test reply',
+        log_id: 'log-1',
+        feedback_status: 'approved' as const,
+        original_text: 'test reply',
+        context_text: 'User asked a question',
       };
       await VoiceDnaApi.submitVoiceFeedback(dto);
 
@@ -345,7 +329,7 @@ describe('VoiceDnaApi', () => {
       );
 
       const dto = {
-        adjust_tone: { humor_level: 0.8 },
+        add_few_shot_examples: ['{"context":"hi","reply":"hey!"}'],
         trigger_reanalysis: true,
       };
       const result = await VoiceDnaApi.adjustVoice('vdna-1', dto);
@@ -355,53 +339,6 @@ describe('VoiceDnaApi', () => {
         dto
       );
       expect(result.data._id).toBe('vdna-1');
-    });
-  });
-
-  describe('getContinuousLearningStats', () => {
-    it('calls GET for learning stats', async () => {
-      const mockStats: ContinuousLearningStats = {
-        voice_dna_id: 'vdna-1',
-        total_feedback_processed: 50,
-        feedback_breakdown: { approved: 30, edited: 15, rejected: 5 },
-        few_shot_examples_count: 10,
-        negative_examples_count: 3,
-        auto_refinement_count: 2,
-        last_refinement_at: '2026-01-15T00:00:00Z',
-        next_refinement_at_signals: 8,
-        learning_velocity: 'fast',
-      };
-      vi.mocked(httpClient.get).mockResolvedValue(makeApiResponse(mockStats));
-
-      const result = await VoiceDnaApi.getContinuousLearningStats('vdna-1');
-
-      expect(httpClient.get).toHaveBeenCalledWith(
-        '/api/v1/intelligence/voice-dna/vdna-1/learning'
-      );
-      expect(result.data.learning_velocity).toBe('fast');
-    });
-  });
-
-  describe('generateSampleReply', () => {
-    it('calls POST with sample reply data', async () => {
-      const mockResult: SampleReplyResult = {
-        user_message: 'How much does it cost?',
-        generated_reply: 'Hey! Pricing starts at $29/mo 🔥',
-        confidence: 0.92,
-      };
-      vi.mocked(httpClient.post).mockResolvedValue(makeApiResponse(mockResult));
-
-      const dto = {
-        voice_dna_id: 'vdna-1',
-        user_message: 'How much does it cost?',
-      };
-      const result = await VoiceDnaApi.generateSampleReply(dto);
-
-      expect(httpClient.post).toHaveBeenCalledWith(
-        '/api/v1/intelligence/voice-dna/sample-reply',
-        dto
-      );
-      expect(result.data.confidence).toBe(0.92);
     });
   });
 });

@@ -7,8 +7,6 @@ import type {
   TriggerAutoInferDto,
   VoiceFeedbackDto,
   AdjustVoiceDto,
-  GenerateSampleReplyDto,
-  ContinuousLearningStats,
   VoiceReview,
 } from '@/lib/types/voice-dna';
 
@@ -18,71 +16,70 @@ import type {
  * used across all Voice DNA components.
  */
 
+// Flat fingerprint structure matching the backend schema
 const sampleFingerprint: VoiceDnaFingerprint = {
-  style_metrics: {
-    avg_sentence_length: 10,
-    vocabulary_complexity: 'simple',
-    emoji_patterns: ['🔥', '💪', '🙌'],
-    emoji_frequency: 0.6,
-    punctuation_style: {
-      exclamation_frequency: 0.5,
-      ellipsis_usage: false,
-      caps_emphasis: false,
-    },
+  avg_sentence_length: 10,
+  vocabulary_complexity: 'simple',
+  emoji_patterns: ['🔥', '💪', '🙌'],
+  emoji_frequency: 0.6,
+  punctuation_style: {
+    uses_exclamation: true,
+    uses_ellipsis: false,
+    uses_caps_for_emphasis: false,
   },
-  language_patterns: {
-    primary_language: 'en',
-    code_switching_frequency: 0.4,
-    slang_patterns: ['yo', 'bro'],
-    filler_words: [],
-  },
-  tone_markers: {
-    humor_level: 0.7,
-    directness: 0.8,
-    warmth: 0.6,
-    assertiveness: 0.5,
-  },
-  structural_patterns: {
-    starts_with_patterns: ['yo!'],
-    ends_with_patterns: ['later'],
-    question_response_style: 'direct_answer',
-  },
+  primary_language: 'en',
+  code_switching_frequency: 0.4,
+  slang_patterns: ['yo', 'bro'],
+  filler_words: [],
+  humor_level: 0.7,
+  directness: 0.8,
+  warmth: 0.6,
+  assertiveness: 0.5,
+  starts_with_patterns: ['yo!'],
+  ends_with_patterns: ['later'],
+  question_response_style: 'direct_answer',
 };
 
 describe('VoiceDna types', () => {
   describe('VoiceDnaFingerprint', () => {
     it('has all required tone dimensions', () => {
-      const { tone_markers } = sampleFingerprint;
-      expect(tone_markers).toHaveProperty('humor_level');
-      expect(tone_markers).toHaveProperty('directness');
-      expect(tone_markers).toHaveProperty('warmth');
-      expect(tone_markers).toHaveProperty('assertiveness');
+      expect(sampleFingerprint).toHaveProperty('humor_level');
+      expect(sampleFingerprint).toHaveProperty('directness');
+      expect(sampleFingerprint).toHaveProperty('warmth');
+      expect(sampleFingerprint).toHaveProperty('assertiveness');
     });
 
     it('tone values are within 0-1 range', () => {
-      const { tone_markers } = sampleFingerprint;
-      for (const [, value] of Object.entries(tone_markers)) {
+      const { humor_level, directness, warmth, assertiveness } =
+        sampleFingerprint;
+      for (const value of [humor_level, directness, warmth, assertiveness]) {
         expect(value).toBeGreaterThanOrEqual(0);
         expect(value).toBeLessThanOrEqual(1);
       }
     });
 
     it('code_switching_frequency is within 0-1 range', () => {
-      expect(
-        sampleFingerprint.language_patterns.code_switching_frequency
-      ).toBeGreaterThanOrEqual(0);
-      expect(
-        sampleFingerprint.language_patterns.code_switching_frequency
-      ).toBeLessThanOrEqual(1);
+      expect(sampleFingerprint.code_switching_frequency).toBeGreaterThanOrEqual(
+        0
+      );
+      expect(sampleFingerprint.code_switching_frequency).toBeLessThanOrEqual(1);
     });
 
     it('emoji frequency is within 0-1 range', () => {
+      expect(sampleFingerprint.emoji_frequency).toBeGreaterThanOrEqual(0);
+      expect(sampleFingerprint.emoji_frequency).toBeLessThanOrEqual(1);
+    });
+
+    it('punctuation_style has boolean flags', () => {
+      expect(typeof sampleFingerprint.punctuation_style.uses_exclamation).toBe(
+        'boolean'
+      );
+      expect(typeof sampleFingerprint.punctuation_style.uses_ellipsis).toBe(
+        'boolean'
+      );
       expect(
-        sampleFingerprint.style_metrics.emoji_frequency
-      ).toBeGreaterThanOrEqual(0);
-      expect(
-        sampleFingerprint.style_metrics.emoji_frequency
-      ).toBeLessThanOrEqual(1);
+        typeof sampleFingerprint.punctuation_style.uses_caps_for_emphasis
+      ).toBe('boolean');
     });
   });
 
@@ -92,38 +89,41 @@ describe('VoiceDna types', () => {
         context: 'User asks about return policy',
         reply: 'Hey! Yeah we do 30-day returns, no questions asked 🔥',
         tags: ['returns', 'policy'],
-        source: 'creator_manual',
-        added_at: '2026-01-15T00:00:00Z',
       };
       expect(example.context).toBeTruthy();
       expect(example.reply).toBeTruthy();
       expect(example.tags).toHaveLength(2);
     });
 
-    it('has required source and added_at', () => {
+    it('tags can be empty array', () => {
       const example: FewShotExample = {
         context: 'General greeting',
         reply: 'Yo! What can I help with?',
         tags: [],
-        source: 'ai_approved',
-        added_at: '2026-01-15T00:00:00Z',
       };
-      expect(example.source).toBe('ai_approved');
-      expect(example.added_at).toBeTruthy();
+      expect(example.tags).toHaveLength(0);
     });
   });
 
   describe('NegativeExample', () => {
-    it('has required reply, reason, and added_at', () => {
+    it('has required reply and context (reason why reply is bad)', () => {
       const example: NegativeExample = {
         reply: 'Dear valued customer, we appreciate your inquiry...',
-        reason: 'Too formal, sounds corporate',
+        context: 'Too formal, sounds corporate',
         tags: ['formal'],
-        added_at: '2026-01-15T00:00:00Z',
       };
       expect(example.reply).toBeTruthy();
-      expect(example.reason).toBeTruthy();
-      expect(example.added_at).toBeTruthy();
+      expect(example.context).toBeTruthy();
+    });
+
+    it('uses context field (not reason) for explanation', () => {
+      const example: NegativeExample = {
+        reply: 'I am unable to assist with that request.',
+        context: 'Too robotic, avoid corporate-speak',
+        tags: [],
+      };
+      expect(example.context).toBeTruthy();
+      expect((example as Record<string, unknown>).reason).toBeUndefined();
     });
   });
 
@@ -134,6 +134,7 @@ describe('VoiceDna types', () => {
         'analyzing',
         'ready',
         'failed',
+        'stale',
       ] as const;
       const vdna: VoiceDna = {
         _id: 'test',
@@ -145,6 +146,7 @@ describe('VoiceDna types', () => {
         few_shot_examples: [],
         negative_examples: [],
         raw_samples: [],
+        samples_analyzed: 0,
         feedback_signals_processed: 0,
         auto_refinement_count: 0,
         created_at: '2026-01-01',
@@ -157,155 +159,138 @@ describe('VoiceDna types', () => {
 
 describe('Phase 5 DTO contracts', () => {
   describe('TriggerAutoInferDto', () => {
-    it('requires bot_id and social_account_id', () => {
+    it('requires only bot_id', () => {
       const dto: TriggerAutoInferDto = {
         bot_id: 'bot-1',
-        social_account_id: 'sa-1',
       };
       expect(dto.bot_id).toBeTruthy();
-      expect(dto.social_account_id).toBeTruthy();
     });
 
-    it('optional fields can be set', () => {
+    it('brand_voice_id is optional', () => {
       const dto: TriggerAutoInferDto = {
         bot_id: 'bot-1',
-        social_account_id: 'sa-1',
         brand_voice_id: 'bv-1',
-        source: 'onboarding',
       };
-      expect(dto.source).toBe('onboarding');
       expect(dto.brand_voice_id).toBe('bv-1');
     });
 
-    it('source must be one of valid values', () => {
-      const validSources = ['onboarding', 'manual_trigger', 'settings'];
-      const dto: TriggerAutoInferDto = {
-        bot_id: 'bot-1',
-        social_account_id: 'sa-1',
-        source: 'onboarding',
-      };
-      expect(validSources).toContain(dto.source);
+    it('does not include social_account_id or source fields', () => {
+      const dto: TriggerAutoInferDto = { bot_id: 'bot-1' };
+      expect(
+        (dto as Record<string, unknown>).social_account_id
+      ).toBeUndefined();
+      expect((dto as Record<string, unknown>).source).toBeUndefined();
     });
   });
 
   describe('VoiceFeedbackDto', () => {
-    it('approve feedback requires minimal fields', () => {
+    it('approved feedback requires core fields', () => {
       const dto: VoiceFeedbackDto = {
         voice_dna_id: 'vdna-1',
-        bot_id: 'bot-1',
-        feedback_type: 'approve',
-        original_reply: 'Looks good!',
+        log_id: 'log-1',
+        feedback_status: 'approved',
+        original_text: 'Looks good!',
+        context_text: 'User asked about pricing',
       };
-      expect(dto.feedback_type).toBe('approve');
+      expect(dto.feedback_status).toBe('approved');
+      expect(dto.voice_dna_id).toBeTruthy();
+      expect(dto.log_id).toBeTruthy();
     });
 
-    it('edit feedback includes edited_reply', () => {
+    it('edited feedback includes edited_text', () => {
       const dto: VoiceFeedbackDto = {
         voice_dna_id: 'vdna-1',
-        bot_id: 'bot-1',
-        feedback_type: 'edit',
-        original_reply: 'Hey there!',
-        edited_reply: 'Hey! How can I help?',
+        log_id: 'log-2',
+        feedback_status: 'edited',
+        original_text: 'Hey there!',
+        context_text: 'General greeting',
+        edited_text: 'Hey! How can I help?',
       };
-      expect(dto.edited_reply).toBeTruthy();
+      expect(dto.edited_text).toBeTruthy();
     });
 
-    it('reject feedback includes reason', () => {
+    it('rejected feedback uses feedback_status rejected', () => {
       const dto: VoiceFeedbackDto = {
         voice_dna_id: 'vdna-1',
-        bot_id: 'bot-1',
-        feedback_type: 'reject',
-        original_reply: 'Dear sir...',
-        reason: 'Too formal',
+        log_id: 'log-3',
+        feedback_status: 'rejected',
+        original_text: 'Dear sir...',
+        context_text: 'Formal reply context',
       };
-      expect(dto.reason).toBeTruthy();
+      expect(dto.feedback_status).toBe('rejected');
+    });
+
+    it('feedback_status is one of approved | edited | rejected', () => {
+      const validStatuses = ['approved', 'edited', 'rejected'];
+      const dto: VoiceFeedbackDto = {
+        voice_dna_id: 'vdna-1',
+        log_id: 'log-1',
+        feedback_status: 'approved',
+        original_text: 'ok',
+        context_text: 'context',
+      };
+      expect(validStatuses).toContain(dto.feedback_status);
     });
   });
 
   describe('AdjustVoiceDto', () => {
-    it('can adjust tone only', () => {
+    it('can add few-shot examples as JSON strings', () => {
       const dto: AdjustVoiceDto = {
-        adjust_tone: { humor_level: 0.9, warmth: 0.8 },
-      };
-      expect(dto.adjust_tone?.humor_level).toBe(0.9);
-      expect(dto.add_few_shot).toBeUndefined();
-    });
-
-    it('can add few-shot examples', () => {
-      const dto: AdjustVoiceDto = {
-        add_few_shot: [
-          { context: 'test', reply: 'yo test!' },
-          { context: 'hello', reply: 'hey there!', tags: ['greeting'] },
+        add_few_shot_examples: [
+          JSON.stringify({ context: 'test', reply: 'yo test!' }),
+          JSON.stringify({
+            context: 'hello',
+            reply: 'hey there!',
+            tags: ['greeting'],
+          }),
         ],
       };
-      expect(dto.add_few_shot).toHaveLength(2);
+      expect(dto.add_few_shot_examples).toHaveLength(2);
+      expect(typeof dto.add_few_shot_examples![0]).toBe('string');
+    });
+
+    it('can add negative examples as JSON strings', () => {
+      const dto: AdjustVoiceDto = {
+        add_negative_examples: [
+          JSON.stringify({
+            context: 'too corporate',
+            reply: 'Dear valued customer...',
+          }),
+        ],
+      };
+      expect(dto.add_negative_examples).toHaveLength(1);
+    });
+
+    it('can trigger reanalysis', () => {
+      const dto: AdjustVoiceDto = {
+        trigger_reanalysis: true,
+      };
+      expect(dto.trigger_reanalysis).toBe(true);
     });
 
     it('can combine multiple adjustments', () => {
       const dto: AdjustVoiceDto = {
-        adjust_tone: { directness: 0.9 },
-        add_few_shot: [{ context: 'q', reply: 'a' }],
-        add_negative: [{ reply: 'bad', reason: 'too long' }],
+        add_few_shot_examples: [JSON.stringify({ context: 'q', reply: 'a' })],
+        add_negative_examples: [
+          JSON.stringify({ context: 'bad style', reply: 'bad reply' }),
+        ],
         trigger_reanalysis: true,
       };
       expect(dto.trigger_reanalysis).toBe(true);
-      expect(dto.add_few_shot).toHaveLength(1);
-      expect(dto.add_negative).toHaveLength(1);
+      expect(dto.add_few_shot_examples).toHaveLength(1);
+      expect(dto.add_negative_examples).toHaveLength(1);
     });
 
-    it('can remove examples by index', () => {
+    it('can remove few-shot examples by string indices', () => {
       const dto: AdjustVoiceDto = {
-        remove_few_shot_indices: [0, 2],
-        remove_negative_indices: [1],
+        remove_few_shot_indices: ['0', '2'],
       };
-      expect(dto.remove_few_shot_indices).toEqual([0, 2]);
-    });
-  });
-
-  describe('GenerateSampleReplyDto', () => {
-    it('requires voice_dna_id and user_message', () => {
-      const dto: GenerateSampleReplyDto = {
-        voice_dna_id: 'vdna-1',
-        user_message: 'How much does this cost?',
-      };
-      expect(dto.voice_dna_id).toBeTruthy();
-      expect(dto.user_message).toBeTruthy();
-    });
-  });
-
-  describe('ContinuousLearningStats', () => {
-    it('feedback breakdown adds up to total', () => {
-      const stats: ContinuousLearningStats = {
-        voice_dna_id: 'vdna-1',
-        total_feedback_processed: 50,
-        feedback_breakdown: { approved: 30, edited: 15, rejected: 5 },
-        few_shot_examples_count: 10,
-        negative_examples_count: 3,
-        auto_refinement_count: 2,
-        last_refinement_at: '2026-01-15',
-        next_refinement_at_signals: 8,
-        learning_velocity: 'fast',
-      };
-      const sum =
-        stats.feedback_breakdown.approved +
-        stats.feedback_breakdown.edited +
-        stats.feedback_breakdown.rejected;
-      expect(sum).toBe(stats.total_feedback_processed);
+      expect(dto.remove_few_shot_indices).toEqual(['0', '2']);
     });
 
-    it('learning velocity is one of valid values', () => {
-      const validVelocities = ['fast', 'moderate', 'slow'];
-      const stats: ContinuousLearningStats = {
-        voice_dna_id: 'vdna-1',
-        total_feedback_processed: 10,
-        feedback_breakdown: { approved: 5, edited: 3, rejected: 2 },
-        few_shot_examples_count: 5,
-        negative_examples_count: 1,
-        auto_refinement_count: 0,
-        next_refinement_at_signals: 10,
-        learning_velocity: 'moderate',
-      };
-      expect(validVelocities).toContain(stats.learning_velocity);
+    it('does not support adjust_tone field', () => {
+      const dto: AdjustVoiceDto = { trigger_reanalysis: false };
+      expect((dto as Record<string, unknown>).adjust_tone).toBeUndefined();
     });
   });
 
@@ -322,6 +307,7 @@ describe('Phase 5 DTO contracts', () => {
           few_shot_examples: [],
           negative_examples: [],
           raw_samples: [],
+          samples_analyzed: 5,
           feedback_signals_processed: 0,
           auto_refinement_count: 0,
           created_at: '2026-01-01',
@@ -341,12 +327,29 @@ describe('Phase 5 DTO contracts', () => {
         confidence_level: 'high',
       };
 
-      expect(review.summary.language_description).toBeTruthy();
-      expect(review.summary.tone_description).toBeTruthy();
-      expect(review.summary.style_description).toBeTruthy();
-      expect(review.summary.emoji_description).toBeTruthy();
-      expect(review.summary.overall).toBeTruthy();
+      expect(review.summary!.language_description).toBeTruthy();
+      expect(review.summary!.tone_description).toBeTruthy();
+      expect(review.summary!.style_description).toBeTruthy();
+      expect(review.summary!.emoji_description).toBeTruthy();
+      expect(review.summary!.overall).toBeTruthy();
       expect(['high', 'medium', 'low']).toContain(review.confidence_level);
+    });
+
+    it('supports flattened structure with voice_summary', () => {
+      const review: VoiceReview = {
+        voice_dna_id: 'vdna-1',
+        status: 'ready',
+        source: 'auto_inferred',
+        voice_summary: {
+          language: 'English with Hinglish',
+          tone: 'Warm and direct',
+          style: 'Casual, punchy',
+          emoji_usage: 'Frequent',
+        },
+        confidence_level: 'medium',
+      };
+      expect(review.voice_summary!.language).toBeTruthy();
+      expect(review.confidence_level).toBe('medium');
     });
   });
 });
