@@ -308,7 +308,7 @@ export default function EditBotPage() {
               <span className='text-sm'>
                 Examples:{' '}
                 <span className='font-medium'>
-                  {voiceDna.few_shot_examples.length}
+                  {voiceDna.few_shot_examples?.length ?? 0}
                 </span>
               </span>
               <span className='text-sm'>

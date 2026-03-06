@@ -161,4 +161,30 @@ export class VoiceDnaApi {
     if (response.error) throw response.error;
     return response.data;
   }
+
+  // Test voice — generate a sample reply using this Voice DNA
+  static async testVoice(
+    voiceDnaId: string,
+    data: { message: string; intent?: string; platform?: string }
+  ): Promise<
+    SuccessResponse<{
+      reply: string;
+      confidence: number;
+      latency_ms: number;
+      model: string;
+      prompt_tokens: number;
+      completion_tokens: number;
+    }>
+  > {
+    const response = await httpClient.post<{
+      reply: string;
+      confidence: number;
+      latency_ms: number;
+      model: string;
+      prompt_tokens: number;
+      completion_tokens: number;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/test`, data);
+    if (response.error) throw response.error;
+    return response.data;
+  }
 }
