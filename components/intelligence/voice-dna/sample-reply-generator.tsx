@@ -145,7 +145,10 @@ export function SampleReplyGenerator({
               </CardTitle>
               <CardDescription>
                 Send test messages to see how your bot replies. Context is
-                remembered across messages — just like a real DM thread.
+                remembered across messages — just like a real DM thread.{' '}
+                <span className='text-foreground/60'>
+                  1 credit per message to prevent spam &amp; abuse.
+                </span>
               </CardDescription>
             </div>
 
