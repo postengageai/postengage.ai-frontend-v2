@@ -66,6 +66,7 @@ export function SocialAccounts() {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
@@ -180,6 +181,21 @@ export function SocialAccounts() {
       setError(errorMessage);
     } finally {
       setReconnectingId(null);
+    }
+  };
+
+  const handleSync = async (accountId: string) => {
+    try {
+      setSyncingId(accountId);
+      await InstagramOAuthApi.sync(accountId);
+      // Reload to show updated username / last_synced_at
+      await loadAccounts();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to sync account';
+      setError(errorMessage);
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -386,21 +402,37 @@ export function SocialAccounts() {
                       Reconnect
                     </Button>
                   ) : (
-                    !account.is_primary && (
+                    <>
+                      {!account.is_primary && (
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => handleSetPrimary(account.id)}
+                          disabled={settingPrimaryId === account.id}
+                        >
+                          {settingPrimaryId === account.id ? (
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          ) : (
+                            <Star className='mr-2 h-4 w-4' />
+                          )}
+                          Set primary
+                        </Button>
+                      )}
                       <Button
                         variant='ghost'
                         size='sm'
-                        onClick={() => handleSetPrimary(account.id)}
-                        disabled={settingPrimaryId === account.id}
+                        onClick={() => handleSync(account.id)}
+                        disabled={syncingId === account.id}
+                        title='Re-sync profile data from Instagram'
                       >
-                        {settingPrimaryId === account.id ? (
+                        {syncingId === account.id ? (
                           <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                         ) : (
-                          <Star className='mr-2 h-4 w-4' />
+                          <RefreshCw className='mr-2 h-4 w-4' />
                         )}
-                        Set primary
+                        Sync
                       </Button>
-                    )
+                    </>
                   )}
                   <Button
                     variant='ghost'

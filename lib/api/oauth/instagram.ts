@@ -28,6 +28,21 @@ export class InstagramOAuthApi {
     return response.data!;
   }
 
+  static async sync(accountId: string): Promise<
+    SuccessResponse<{
+      message: string;
+      username: string;
+      last_synced_at: string;
+    }>
+  > {
+    const response = await httpClient.post<{
+      message: string;
+      username: string;
+      last_synced_at: string;
+    }>(`${this.BASE_URL}/${accountId}/sync`);
+    return response.data!;
+  }
+
   /**
    * BroadcastChannel name used for cross-tab OAuth communication.
    * After a cross-origin redirect (Instagram → our app), window.opener
