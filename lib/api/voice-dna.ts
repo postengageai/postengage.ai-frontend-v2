@@ -100,13 +100,17 @@ export class VoiceDnaApi {
     return response.data;
   }
 
-  // Trigger re-analysis
+  // Trigger re-analysis — returns a queued-status partial object, NOT full VoiceDna
   static async reanalyzeVoiceDna(
     id: string
-  ): Promise<SuccessResponse<VoiceDna>> {
-    const response = await httpClient.post<VoiceDna>(
-      `${VOICE_DNA_BASE_URL}/${id}/reanalyze`
-    );
+  ): Promise<
+    SuccessResponse<{ voice_dna_id: string; status: string; message: string }>
+  > {
+    const response = await httpClient.post<{
+      voice_dna_id: string;
+      status: string;
+      message: string;
+    }>(`${VOICE_DNA_BASE_URL}/${id}/reanalyze`);
     if (response.error) throw response.error;
     return response.data;
   }

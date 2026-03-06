@@ -248,15 +248,18 @@ export default function VoiceDnaDetailPage() {
   const handleReanalyze = async () => {
     setIsReanalyzing(true);
     try {
-      const response = await VoiceDnaApi.reanalyzeVoiceDna(id);
-      if (response?.data) {
-        setVoiceDna(response.data);
-        toast({
-          title: 'Re-analysis Started',
-          description:
-            'Analyzing your writing style with the latest samples...',
-        });
-      }
+      await VoiceDnaApi.reanalyzeVoiceDna(id);
+      // Only update the status field — the reanalyze endpoint returns a partial
+      // object (voice_dna_id + status + message), NOT the full VoiceDna.
+      // Replacing voiceDna with that partial response would crash all components
+      // that expect fingerprint/few_shot_examples arrays to exist.
+      setVoiceDna(prev =>
+        prev ? { ...prev, status: 'pending' as const } : prev
+      );
+      toast({
+        title: 'Re-analysis Started',
+        description: 'Analyzing your writing style with the latest samples...',
+      });
     } catch (_error) {
       const err = parseApiError(_error);
       toast({
