@@ -166,7 +166,9 @@ export class VoiceDnaApi {
     return response.data;
   }
 
-  // Test voice — generate a sample reply using this Voice DNA
+  // Test voice — generate a sample reply using this Voice DNA.
+  // Conversation context is cached in Redis on the backend (30-min TTL)
+  // so consecutive messages feel like a real DM thread.
   static async testVoice(
     voiceDnaId: string,
     data: { message: string; intent?: string; platform?: string }
@@ -188,6 +190,18 @@ export class VoiceDnaApi {
       prompt_tokens: number;
       completion_tokens: number;
     }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/test`, data);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Clear cached test conversation context so the next test starts fresh.
+  static async clearTestContext(
+    voiceDnaId: string
+  ): Promise<SuccessResponse<{ success: boolean; message: string }>> {
+    const response = await httpClient.delete<{
+      success: boolean;
+      message: string;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/test`);
     if (response.error) throw response.error;
     return response.data;
   }

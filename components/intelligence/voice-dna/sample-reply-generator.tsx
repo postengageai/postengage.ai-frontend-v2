@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Send, Loader2, Clock, Zap, RotateCcw } from 'lucide-react';
+import {
+  Sparkles,
+  Send,
+  Loader2,
+  Clock,
+  Zap,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -57,7 +65,10 @@ export function SampleReplyGenerator({
 }: SampleReplyGeneratorProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
+  /** Total messages sent in this session — reflects backend Redis context depth */
+  const [contextDepth, setContextDepth] = useState(0);
   const { toast } = useToast();
 
   const handleGenerate = async (text?: string) => {
@@ -74,8 +85,9 @@ export function SampleReplyGenerator({
       if (response?.data) {
         setResults(prev => [
           { ...response.data, message: input },
-          ...prev.slice(0, 4), // keep last 5
+          ...prev.slice(0, 4), // keep last 5 visible
         ]);
+        setContextDepth(prev => prev + 1);
         if (!text) setMessage('');
       }
     } catch (error) {
@@ -87,6 +99,29 @@ export function SampleReplyGenerator({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleClearContext = async () => {
+    setIsClearing(true);
+    try {
+      await VoiceDnaApi.clearTestContext(voiceDnaId);
+      setResults([]);
+      setContextDepth(0);
+      toast({
+        title: 'New conversation started',
+        description:
+          'Context cleared — the bot will start fresh on your next message.',
+      });
+    } catch (error) {
+      const err = parseApiError(error);
+      toast({
+        variant: 'destructive',
+        title: err.title,
+        description: err.message,
+      });
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -102,13 +137,46 @@ export function SampleReplyGenerator({
       {/* Input card */}
       <Card>
         <CardHeader className='pb-3'>
-          <CardTitle className='text-base font-semibold flex items-center gap-2'>
-            <Sparkles className='h-4 w-4' />
-            Test Your Voice
-          </CardTitle>
-          <CardDescription>
-            Send a test message to see how your bot would reply in your voice.
-          </CardDescription>
+          <div className='flex items-start justify-between gap-2'>
+            <div>
+              <CardTitle className='text-base font-semibold flex items-center gap-2'>
+                <Sparkles className='h-4 w-4' />
+                Test Your Voice
+              </CardTitle>
+              <CardDescription>
+                Send test messages to see how your bot replies. Context is
+                remembered across messages — just like a real DM thread.
+              </CardDescription>
+            </div>
+
+            {/* New Conversation button — only visible once context is active */}
+            {contextDepth > 0 && (
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => void handleClearContext()}
+                disabled={isClearing || isLoading}
+                className='shrink-0 gap-1.5 text-muted-foreground hover:text-destructive'
+              >
+                {isClearing ? (
+                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                ) : (
+                  <Trash2 className='h-3.5 w-3.5' />
+                )}
+                New conversation
+              </Button>
+            )}
+          </div>
+
+          {/* Live context depth indicator */}
+          {contextDepth > 0 && (
+            <div className='flex items-center gap-1.5 mt-1'>
+              <div className='h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse' />
+              <span className='text-[11px] text-muted-foreground'>
+                {contextDepth} message{contextDepth !== 1 ? 's' : ''} in context
+              </span>
+            </div>
+          )}
         </CardHeader>
         <CardContent className='space-y-4'>
           {/* Preset chips */}
@@ -117,7 +185,7 @@ export function SampleReplyGenerator({
               <button
                 key={preset.label}
                 onClick={() => void handleGenerate(preset.text)}
-                disabled={isLoading}
+                disabled={isLoading || isClearing}
                 className='text-xs px-2.5 py-1 rounded-full border border-border bg-muted/40 hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               >
                 {preset.label}
@@ -134,11 +202,11 @@ export function SampleReplyGenerator({
               onKeyDown={handleKeyDown}
               rows={2}
               className='resize-none flex-1'
-              disabled={isLoading}
+              disabled={isLoading || isClearing}
             />
             <Button
               onClick={() => void handleGenerate()}
-              disabled={isLoading || !message.trim()}
+              disabled={isLoading || isClearing || !message.trim()}
               size='icon'
               className='shrink-0 h-10 w-10'
             >
@@ -205,7 +273,7 @@ export function SampleReplyGenerator({
                   </Badge>
                   <button
                     onClick={() => void handleGenerate(result.message)}
-                    disabled={isLoading}
+                    disabled={isLoading || isClearing}
                     className='ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40'
                   >
                     <RotateCcw className='h-3 w-3' />
