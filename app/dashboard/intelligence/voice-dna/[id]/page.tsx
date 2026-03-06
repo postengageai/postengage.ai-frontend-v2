@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ChevronRight,
   SlidersHorizontal,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,9 +32,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
+import { socketService } from '@/lib/socket/socket.service';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { FingerprintRadar } from '@/components/intelligence/voice-dna/fingerprint-radar';
 import { FingerprintDetail } from '@/components/intelligence/voice-dna/fingerprint-detail';
@@ -82,39 +85,132 @@ export default function VoiceDnaDetailPage() {
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [adjustSheetOpen, setAdjustSheetOpen] = useState(false);
 
+  // Real-time analysis progress state
+  const [analysisProgress, setAnalysisProgress] = useState<{
+    step: string;
+    progress: number;
+    message: string;
+  } | null>(null);
+
+  const fetchReview = useCallback(async () => {
+    try {
+      const reviewResponse = await VoiceDnaApi.getVoiceReview(id);
+      if (reviewResponse?.data) {
+        setVoiceReview(reviewResponse.data);
+      }
+    } catch {
+      // Review endpoint may not exist yet
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchVoiceDna();
   }, [id]);
 
-  // Poll for status updates when analyzing
+  // ── Real-time socket events for analysis progress ──────────────────────
   useEffect(() => {
-    if (voiceDna?.status === 'analyzing' || voiceDna?.status === 'pending') {
-      const interval = setInterval(async () => {
-        try {
-          const response = await VoiceDnaApi.getVoiceDna(id);
-          if (response?.data) {
-            setVoiceDna(response.data);
-            if (
-              response.data.status !== 'analyzing' &&
-              response.data.status !== 'pending'
-            ) {
-              clearInterval(interval);
-              if (response.data.status === 'ready') {
-                toast({
-                  title: 'Analysis Complete',
-                  description: 'Your Voice DNA is ready!',
-                });
-                fetchReview();
-              }
-            }
-          }
-        } catch {
-          // Silently fail on poll
-        }
-      }, 5000);
-      return () => clearInterval(interval);
+    const isAnalyzingNow =
+      voiceDna?.status === 'analyzing' || voiceDna?.status === 'pending';
+
+    if (!isAnalyzingNow) {
+      setAnalysisProgress(null);
+      return;
     }
-  }, [voiceDna?.status, id, toast]);
+
+    // Ensure socket is connected
+    socketService.connect();
+
+    const onProgress = (data: {
+      voice_dna_id: string;
+      step: string;
+      progress: number;
+      message: string;
+    }) => {
+      if (data.voice_dna_id !== id) return;
+      setAnalysisProgress({
+        step: data.step,
+        progress: data.progress,
+        message: data.message,
+      });
+    };
+
+    const onComplete = (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      status: 'ready';
+      confidence_level?: string;
+      examples_count: number;
+      primary_language?: string;
+    }) => {
+      if (data.voice_dna_id !== id) return;
+      setAnalysisProgress({
+        step: 'complete',
+        progress: 100,
+        message: 'Voice DNA ready!',
+      });
+      // Refresh full document and load review
+      VoiceDnaApi.getVoiceDna(id)
+        .then(res => {
+          if (res?.data) setVoiceDna(res.data);
+        })
+        .catch(() => {});
+      fetchReview();
+      toast({
+        title: 'Analysis Complete',
+        description: 'Your Voice DNA is ready!',
+      });
+    };
+
+    const onFailed = (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      error: string;
+    }) => {
+      if (data.voice_dna_id !== id) return;
+      setAnalysisProgress(null);
+      // Refresh to get updated failed status
+      VoiceDnaApi.getVoiceDna(id)
+        .then(res => {
+          if (res?.data) setVoiceDna(res.data);
+        })
+        .catch(() => {});
+      toast({
+        variant: 'destructive',
+        title: 'Analysis Failed',
+        description: data.error || 'An error occurred during analysis.',
+      });
+    };
+
+    socketService.subscribeToVoiceDnaProgress(onProgress);
+    socketService.subscribeToVoiceDnaComplete(onComplete);
+    socketService.subscribeToVoiceDnaFailed(onFailed);
+
+    // Fallback polling every 8s (in case socket events are missed)
+    const interval = setInterval(async () => {
+      try {
+        const response = await VoiceDnaApi.getVoiceDna(id);
+        if (response?.data) {
+          setVoiceDna(response.data);
+          if (
+            response.data.status !== 'analyzing' &&
+            response.data.status !== 'pending'
+          ) {
+            clearInterval(interval);
+            if (response.data.status === 'ready') fetchReview();
+          }
+        }
+      } catch {
+        /* Silently fail */
+      }
+    }, 8000);
+
+    return () => {
+      clearInterval(interval);
+      socketService.unsubscribeFromVoiceDnaProgress(onProgress);
+      socketService.unsubscribeFromVoiceDnaComplete(onComplete);
+      socketService.unsubscribeFromVoiceDnaFailed(onFailed);
+    };
+  }, [voiceDna?.status, id, toast, fetchReview]);
 
   const fetchVoiceDna = async () => {
     try {
@@ -146,17 +242,6 @@ export default function VoiceDnaDetailPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchReview = async () => {
-    try {
-      const reviewResponse = await VoiceDnaApi.getVoiceReview(id);
-      if (reviewResponse?.data) {
-        setVoiceReview(reviewResponse.data);
-      }
-    } catch {
-      // Review endpoint may not exist yet
     }
   };
 
@@ -370,15 +455,55 @@ export default function VoiceDnaDetailPage() {
 
       {isAnalyzing && (
         <Card>
-          <CardContent className='flex items-center gap-3 py-6'>
-            <Loader2 className='h-6 w-6 animate-spin text-primary shrink-0' />
-            <div>
-              <p className='text-sm font-medium'>Analysis in Progress</p>
-              <p className='text-sm text-muted-foreground'>
-                Analyzing your writing style... This usually takes 30-60
-                seconds.
-              </p>
+          <CardContent className='py-6 space-y-4'>
+            <div className='flex items-center gap-3'>
+              {analysisProgress?.progress === 100 ? (
+                <CheckCircle2 className='h-6 w-6 text-green-500 shrink-0' />
+              ) : (
+                <Loader2 className='h-6 w-6 animate-spin text-primary shrink-0' />
+              )}
+              <div className='flex-1 min-w-0'>
+                <p className='text-sm font-medium'>Analysis in Progress</p>
+                <p className='text-sm text-muted-foreground truncate'>
+                  {analysisProgress?.message ??
+                    'Analysing your writing style… This usually takes 30–60 seconds.'}
+                </p>
+              </div>
+              {analysisProgress && (
+                <span className='text-sm font-semibold tabular-nums text-primary shrink-0'>
+                  {analysisProgress.progress}%
+                </span>
+              )}
             </div>
+
+            {/* Progress bar — only shown when we have socket data */}
+            {analysisProgress && (
+              <Progress value={analysisProgress.progress} className='h-2' />
+            )}
+
+            {/* Step labels */}
+            {analysisProgress && (
+              <div className='flex gap-1.5 flex-wrap'>
+                {[
+                  { key: 'validating', label: 'Validating', pct: 10 },
+                  { key: 'metrics', label: 'Style metrics', pct: 30 },
+                  { key: 'tone_analysis', label: 'AI tone analysis', pct: 40 },
+                  { key: 'curating', label: 'Curating examples', pct: 70 },
+                  { key: 'saving', label: 'Saving', pct: 95 },
+                ].map(({ key, label, pct }) => (
+                  <span
+                    key={key}
+                    className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                      analysisProgress.progress >= pct
+                        ? 'border-primary/40 bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

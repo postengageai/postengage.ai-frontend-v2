@@ -80,7 +80,86 @@ class SocketService {
     this.socket.off('notification', callback);
   }
 
-  // Voice DNA specific methods
+  // ─── Voice DNA events ─────────────────────────────────────────────────────
+
+  /** Real-time analysis progress (0–100). */
+  subscribeToVoiceDnaProgress(
+    callback: (data: {
+      voice_dna_id: string;
+      step: string;
+      progress: number;
+      message: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:progress', callback);
+  }
+
+  unsubscribeFromVoiceDnaProgress(
+    callback: (data: {
+      voice_dna_id: string;
+      step: string;
+      progress: number;
+      message: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:progress', callback);
+  }
+
+  /** Fired when analysis completes successfully. */
+  subscribeToVoiceDnaComplete(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      status: 'ready';
+      confidence_level?: string;
+      examples_count: number;
+      primary_language?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:complete', callback);
+  }
+
+  unsubscribeFromVoiceDnaComplete(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      status: 'ready';
+      confidence_level?: string;
+      examples_count: number;
+      primary_language?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:complete', callback);
+  }
+
+  /** Fired when analysis fails. */
+  subscribeToVoiceDnaFailed(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      error: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:failed', callback);
+  }
+
+  unsubscribeFromVoiceDnaFailed(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      error: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:failed', callback);
+  }
+
+  /** Legacy: generic status change event (backward compat). */
   subscribeToVoiceDnaStatus(
     callback: (data: {
       voice_dna_id: string;
