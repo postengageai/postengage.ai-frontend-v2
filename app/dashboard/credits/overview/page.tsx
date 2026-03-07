@@ -90,7 +90,7 @@ export default function CreditsPage() {
 
       {/* Usage Summary Cards */}
       <UsageSummaryCards
-        consumed={displayUsage.totals.consumption}
+        consumed={Math.abs(displayUsage.totals.consumption)}
         purchased={displayUsage.totals.purchases}
         totalTransactions={displayUsage.total_transactions}
         isLoading={isLoading}
@@ -100,7 +100,8 @@ export default function CreditsPage() {
       <UsageChart
         data={displayUsage.daily.map(d => ({
           date: d.date,
-          consumption: d.consumption,
+          // Backend returns consumption as a negative number — normalise to positive
+          consumption: Math.abs(d.consumption),
           purchases: d.purchases,
         }))}
         isLoading={isUsageLoading}

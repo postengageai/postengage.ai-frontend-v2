@@ -222,232 +222,240 @@ export function VoiceDnaCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-xl max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-xl flex flex-col max-h-[90vh] p-0 gap-0'>
+        {/* Sticky header — never scrolls away */}
+        <DialogHeader className='px-6 pt-6 pb-4 shrink-0 border-b'>
           <DialogTitle>Create Voice DNA</DialogTitle>
           <DialogDescription>
             Choose how you want to capture your unique writing style.
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-5 py-2'>
-          {/* Mode Selector */}
-          <div className='grid grid-cols-3 gap-2'>
-            {MODE_OPTIONS.map(opt => (
-              <button
-                key={opt.id}
-                type='button'
-                onClick={() => {
-                  setMode(opt.id);
-                  setAutoResult(null);
-                  setAutoTriggered(false);
-                }}
-                className={cn(
-                  'relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-center transition-all duration-200 cursor-pointer',
-                  mode === opt.id
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border hover:border-border/80 hover:bg-muted/40 text-muted-foreground'
-                )}
-              >
-                {mode === opt.id && (
-                  <span className='absolute top-2 right-2 h-4 w-4 rounded-full bg-primary flex items-center justify-center'>
-                    <Check className='h-2.5 w-2.5 text-primary-foreground' />
-                  </span>
-                )}
-                <span
-                  className={cn(
-                    'p-2 rounded-lg',
-                    mode === opt.id ? 'bg-primary/10' : 'bg-muted'
-                  )}
-                >
-                  {opt.icon}
-                </span>
-                <div>
-                  <p className='text-xs font-semibold'>{opt.title}</p>
-                  <p className='text-[10px] leading-tight mt-0.5 text-muted-foreground'>
-                    {opt.description}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Brand Voice Selection */}
-          <div className='space-y-2'>
-            <Label>Brand Voice</Label>
-            <Select
-              value={selectedBrandVoiceId}
-              onValueChange={setSelectedBrandVoiceId}
-              disabled={isLoadingData}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder='Select a brand voice...' />
-              </SelectTrigger>
-              <SelectContent>
-                {brandVoices.map(bv => (
-                  <SelectItem key={bv._id} value={bv._id}>
-                    {bv.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Bot Selection (for auto + hybrid) */}
-          {(mode === 'auto' || mode === 'hybrid') && (
-            <div className='space-y-2'>
-              <Label>Bot to scan</Label>
-              <p className='text-xs text-muted-foreground'>
-                {mode === 'auto'
-                  ? "We'll scan this bot's Instagram posts and past replies to detect your writing style automatically."
-                  : "We'll auto-scan this bot and combine the results with the samples you provide below."}
-              </p>
-              <div className='flex gap-2'>
-                <Select
-                  value={selectedBotId}
-                  onValueChange={val => {
-                    setSelectedBotId(val);
+        {/* Scrollable body */}
+        <div className='flex-1 overflow-y-auto px-6 py-5'>
+          <div className='space-y-5'>
+            {/* Mode Selector */}
+            <div className='grid grid-cols-3 gap-2'>
+              {MODE_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  type='button'
+                  onClick={() => {
+                    setMode(opt.id);
                     setAutoResult(null);
                     setAutoTriggered(false);
                   }}
-                  disabled={isLoadingData}
-                >
-                  <SelectTrigger className='flex-1'>
-                    <SelectValue placeholder='Select a bot...' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bots.map(b => (
-                      <SelectItem key={b._id} value={b._id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={handleTriggerAutoScan}
-                  disabled={!selectedBotId || isTriggering}
-                  className='shrink-0'
-                >
-                  {isTriggering ? (
-                    <Loader2 className='h-4 w-4 animate-spin' />
-                  ) : (
-                    <Sparkles className='h-4 w-4' />
-                  )}
-                  <span className='ml-1.5 hidden sm:inline'>Scan</span>
-                </Button>
-              </div>
-
-              {/* Auto-scan result */}
-              {autoResult && (
-                <div
                   className={cn(
-                    'rounded-lg border p-3 text-sm space-y-1',
-                    autoResult.status === 'queued' ||
-                      autoResult.status === 'already_exists'
-                      ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30'
-                      : 'border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30'
+                    'relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-center transition-all duration-200 cursor-pointer',
+                    mode === opt.id
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-border/80 hover:bg-muted/40 text-muted-foreground'
                   )}
                 >
-                  <div className='flex items-center gap-2 font-medium'>
-                    {autoResult.status === 'queued' ||
-                    autoResult.status === 'already_exists' ? (
-                      <Check className='h-4 w-4 text-green-600' />
-                    ) : (
-                      <Sparkles className='h-4 w-4 text-yellow-600' />
-                    )}
-                    {autoResult.status === 'queued'
-                      ? 'Analysis queued successfully'
-                      : autoResult.status === 'already_exists'
-                        ? 'Voice DNA already exists'
-                        : `Found ${autoResult.samples_collected} samples — need ${MIN_SAMPLES} minimum`}
-                  </div>
-                  {(autoResult.caption_samples > 0 ||
-                    autoResult.reply_samples > 0) && (
-                    <p className='text-xs text-muted-foreground'>
-                      {autoResult.caption_samples} Instagram posts ·{' '}
-                      {autoResult.reply_samples} manual replies
-                    </p>
+                  {mode === opt.id && (
+                    <span className='absolute top-2 right-2 h-4 w-4 rounded-full bg-primary flex items-center justify-center'>
+                      <Check className='h-2.5 w-2.5 text-primary-foreground' />
+                    </span>
                   )}
-                  {autoResult.status === 'insufficient_samples' &&
-                    mode === 'auto' && (
+                  <span
+                    className={cn(
+                      'p-2 rounded-lg',
+                      mode === opt.id ? 'bg-primary/10' : 'bg-muted'
+                    )}
+                  >
+                    {opt.icon}
+                  </span>
+                  <div>
+                    <p className='text-xs font-semibold'>{opt.title}</p>
+                    <p className='text-[10px] leading-tight mt-0.5 text-muted-foreground'>
+                      {opt.description}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Brand Voice Selection */}
+            <div className='space-y-2'>
+              <Label>Brand Voice</Label>
+              <Select
+                value={selectedBrandVoiceId}
+                onValueChange={setSelectedBrandVoiceId}
+                disabled={isLoadingData}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select a brand voice...' />
+                </SelectTrigger>
+                <SelectContent>
+                  {brandVoices.map(bv => (
+                    <SelectItem key={bv._id} value={bv._id}>
+                      {bv.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bot Selection (for auto + hybrid) */}
+            {(mode === 'auto' || mode === 'hybrid') && (
+              <div className='space-y-2'>
+                <Label>Bot to scan</Label>
+                <p className='text-xs text-muted-foreground'>
+                  {mode === 'auto'
+                    ? "We'll scan this bot's Instagram posts and past replies to detect your writing style automatically."
+                    : "We'll auto-scan this bot and combine the results with the samples you provide below."}
+                </p>
+                <div className='flex gap-2'>
+                  <Select
+                    value={selectedBotId}
+                    onValueChange={val => {
+                      setSelectedBotId(val);
+                      setAutoResult(null);
+                      setAutoTriggered(false);
+                    }}
+                    disabled={isLoadingData}
+                  >
+                    <SelectTrigger className='flex-1'>
+                      <SelectValue placeholder='Select a bot...' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bots.map(b => (
+                        <SelectItem key={b._id} value={b._id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={handleTriggerAutoScan}
+                    disabled={!selectedBotId || isTriggering}
+                    className='shrink-0'
+                  >
+                    {isTriggering ? (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : (
+                      <Sparkles className='h-4 w-4' />
+                    )}
+                    <span className='ml-1.5 hidden sm:inline'>Scan</span>
+                  </Button>
+                </div>
+
+                {/* Auto-scan result */}
+                {autoResult && (
+                  <div
+                    className={cn(
+                      'rounded-lg border p-3 text-sm space-y-1',
+                      autoResult.status === 'queued' ||
+                        autoResult.status === 'already_exists'
+                        ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30'
+                        : 'border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30'
+                    )}
+                  >
+                    <div className='flex items-center gap-2 font-medium'>
+                      {autoResult.status === 'queued' ||
+                      autoResult.status === 'already_exists' ? (
+                        <Check className='h-4 w-4 text-green-600' />
+                      ) : (
+                        <Sparkles className='h-4 w-4 text-yellow-600' />
+                      )}
+                      {autoResult.status === 'queued'
+                        ? 'Analysis queued successfully'
+                        : autoResult.status === 'already_exists'
+                          ? 'Voice DNA already exists'
+                          : `Found ${autoResult.samples_collected} samples — need ${MIN_SAMPLES} minimum`}
+                    </div>
+                    {(autoResult.caption_samples > 0 ||
+                      autoResult.reply_samples > 0) && (
                       <p className='text-xs text-muted-foreground'>
-                        Switch to <strong>Hybrid</strong> mode to add manual
-                        samples and proceed.
+                        {autoResult.caption_samples} Instagram posts ·{' '}
+                        {autoResult.reply_samples} manual replies
                       </p>
                     )}
-                </div>
-              )}
+                    {autoResult.status === 'insufficient_samples' &&
+                      mode === 'auto' && (
+                        <p className='text-xs text-muted-foreground'>
+                          Switch to <strong>Hybrid</strong> mode to add manual
+                          samples and proceed.
+                        </p>
+                      )}
+                  </div>
+                )}
 
-              {bots.length === 0 && !isLoadingData && (
-                <p className='text-xs text-muted-foreground bg-muted/50 rounded-lg p-3'>
-                  No bots found. Create a bot first to use Auto-Detect or Hybrid
-                  mode.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Writing Samples (manual + hybrid) */}
-          {(mode === 'manual' || mode === 'hybrid') && (
-            <div className='space-y-2'>
-              <Label>
-                {mode === 'hybrid'
-                  ? 'Additional Writing Samples (optional)'
-                  : 'Writing Samples'}
-              </Label>
-              <p className='text-xs text-muted-foreground'>
-                {mode === 'hybrid'
-                  ? 'Add extra samples to boost accuracy. Separate each sample with a blank line.'
-                  : 'Paste your writing samples below. Separate each sample with a blank line.'}
-              </p>
-              <Textarea
-                placeholder={`Sample 1: Hey bro! Thanks for checking out our page 🙏\n\nSample 2: Great question! Pricing starts at $29/mo...\n\nSample 3: Appreciate the love! We ship worldwide 🌍`}
-                value={rawSamplesText}
-                onChange={e => setRawSamplesText(e.target.value)}
-                rows={7}
-                className='font-mono text-sm resize-none'
-              />
-
-              {/* Sample Counter */}
-              <div className='space-y-1.5'>
-                <div className='flex justify-between text-xs'>
-                  <span className='text-muted-foreground'>
-                    Samples detected
-                  </span>
-                  <span
-                    className={
-                      hasEnoughSamples
-                        ? 'text-green-600 font-medium'
-                        : 'text-orange-500 font-medium'
-                    }
-                  >
-                    {sampleCount} / {MIN_MANUAL_SAMPLES} minimum
-                    {mode === 'hybrid' && sampleCount === 0 && ' (optional)'}
-                  </span>
-                </div>
-                <Progress
-                  value={sampleProgress}
-                  className={`h-1.5 ${
-                    hasEnoughSamples
-                      ? '[&>div]:bg-green-500'
-                      : '[&>div]:bg-orange-400'
-                  }`}
-                />
-                {mode === 'manual' && !hasEnoughSamples && sampleCount > 0 && (
-                  <p className='text-xs text-orange-500'>
-                    Add {MIN_MANUAL_SAMPLES - sampleCount} more sample
-                    {MIN_MANUAL_SAMPLES - sampleCount > 1 ? 's' : ''} to
-                    continue
+                {bots.length === 0 && !isLoadingData && (
+                  <p className='text-xs text-muted-foreground bg-muted/50 rounded-lg p-3'>
+                    No bots found. Create a bot first to use Auto-Detect or
+                    Hybrid mode.
                   </p>
                 )}
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        <DialogFooter className='gap-2'>
+            {/* Writing Samples (manual + hybrid) */}
+            {(mode === 'manual' || mode === 'hybrid') && (
+              <div className='space-y-2'>
+                <Label>
+                  {mode === 'hybrid'
+                    ? 'Additional Writing Samples (optional)'
+                    : 'Writing Samples'}
+                </Label>
+                <p className='text-xs text-muted-foreground'>
+                  {mode === 'hybrid'
+                    ? 'Add extra samples to boost accuracy. Separate each sample with a blank line.'
+                    : 'Paste your writing samples below. Separate each sample with a blank line.'}
+                </p>
+                <Textarea
+                  placeholder={`Sample 1: Hey bro! Thanks for checking out our page 🙏\n\nSample 2: Great question! Pricing starts at $29/mo...\n\nSample 3: Appreciate the love! We ship worldwide 🌍`}
+                  value={rawSamplesText}
+                  onChange={e => setRawSamplesText(e.target.value)}
+                  rows={5}
+                  className='font-mono text-sm resize-y min-h-[100px] max-h-[220px]'
+                />
+
+                {/* Sample Counter */}
+                <div className='space-y-1.5'>
+                  <div className='flex justify-between text-xs'>
+                    <span className='text-muted-foreground'>
+                      Samples detected
+                    </span>
+                    <span
+                      className={
+                        hasEnoughSamples
+                          ? 'text-green-600 font-medium'
+                          : 'text-orange-500 font-medium'
+                      }
+                    >
+                      {sampleCount} / {MIN_MANUAL_SAMPLES} minimum
+                      {mode === 'hybrid' && sampleCount === 0 && ' (optional)'}
+                    </span>
+                  </div>
+                  <Progress
+                    value={sampleProgress}
+                    className={`h-1.5 ${
+                      hasEnoughSamples
+                        ? '[&>div]:bg-green-500'
+                        : '[&>div]:bg-orange-400'
+                    }`}
+                  />
+                  {mode === 'manual' &&
+                    !hasEnoughSamples &&
+                    sampleCount > 0 && (
+                      <p className='text-xs text-orange-500'>
+                        Add {MIN_MANUAL_SAMPLES - sampleCount} more sample
+                        {MIN_MANUAL_SAMPLES - sampleCount > 1 ? 's' : ''} to
+                        continue
+                      </p>
+                    )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* end scrollable body */}
+
+        {/* Sticky footer — always visible */}
+        <DialogFooter className='px-6 py-4 shrink-0 border-t gap-2'>
           <Button
             variant='outline'
             onClick={() => onOpenChange(false)}

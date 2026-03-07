@@ -143,11 +143,15 @@ export function TransactionHistory({
     const color = isPositive ? 'text-success' : 'text-foreground';
     const size = large ? 'text-2xl' : 'text-sm';
 
+    // credit_amount may already be negative from the backend — use Math.abs
+    // to avoid double-negative rendering (e.g. "--1")
+    const absAmount = Math.abs(transaction.credit_amount);
+
     if (transaction.status === 'cancelled') {
       return (
         <span className={`text-muted-foreground line-through ${size}`}>
           {sign}
-          {transaction.credit_amount}
+          {absAmount}
         </span>
       );
     }
@@ -155,7 +159,7 @@ export function TransactionHistory({
     return (
       <span className={`font-mono font-semibold ${color} ${size}`}>
         {sign}
-        {transaction.credit_amount}
+        {absAmount}
       </span>
     );
   };
