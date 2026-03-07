@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
-  ReferenceLine,
   Cell,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,47 +18,43 @@ interface ConfidenceDistributionProps {
   quality: ResponseQualityMetrics;
 }
 
-const BUCKET_COLORS = {
-  'Very Low (0-30%)': '#ef4444',
-  'Low (30-50%)': '#f97316',
-  'Medium (50-80%)': '#eab308',
-  'High (80-100%)': '#22c55e',
-};
-
 export function ConfidenceDistribution({
   quality,
 }: ConfidenceDistributionProps) {
-  const { confidence_distribution, avg_confidence, total_responses } = quality;
+  const {
+    grounded_percentage,
+    hallucination_rate,
+    retry_rate,
+    total_responses,
+  } = quality;
+
+  const groundedPct = Math.round(grounded_percentage * 100);
+  const hallucinationPct = Math.round(hallucination_rate * 100);
+  const retryPct = Math.round(retry_rate * 100);
+  const cleanPct = Math.max(0, 100 - hallucinationPct - retryPct);
 
   const data = [
-    {
-      name: 'Very Low (0-30%)',
-      count: confidence_distribution.very_low,
-      color: BUCKET_COLORS['Very Low (0-30%)'],
-    },
-    {
-      name: 'Low (30-50%)',
-      count: confidence_distribution.low,
-      color: BUCKET_COLORS['Low (30-50%)'],
-    },
-    {
-      name: 'Medium (50-80%)',
-      count: confidence_distribution.medium,
-      color: BUCKET_COLORS['Medium (50-80%)'],
-    },
-    {
-      name: 'High (80-100%)',
-      count: confidence_distribution.high,
-      color: BUCKET_COLORS['High (80-100%)'],
-    },
+    { name: 'Grounded', value: groundedPct, color: '#22c55e' },
+    { name: 'Clean Pass', value: cleanPct, color: '#3b82f6' },
+    { name: 'Retried', value: retryPct, color: '#f97316' },
+    { name: 'Hallucinated', value: hallucinationPct, color: '#ef4444' },
   ];
+
+  const overallHealth =
+    hallucinationPct <= 5
+      ? { label: 'Excellent', color: 'text-green-500' }
+      : hallucinationPct <= 15
+        ? { label: 'Good', color: 'text-blue-500' }
+        : hallucinationPct <= 30
+          ? { label: 'Fair', color: 'text-yellow-500' }
+          : { label: 'Needs Attention', color: 'text-red-500' };
 
   return (
     <Card>
       <CardHeader className='flex flex-row items-center justify-between'>
-        <CardTitle className='text-base'>Confidence Distribution</CardTitle>
-        <Badge variant='outline'>
-          Avg: {(avg_confidence * 100).toFixed(1)}%
+        <CardTitle className='text-base'>Response Quality</CardTitle>
+        <Badge variant='outline' className={overallHealth.color}>
+          {overallHealth.label}
         </Badge>
       </CardHeader>
       <CardContent>
@@ -68,31 +63,46 @@ export function ConfidenceDistribution({
             No response data available.
           </p>
         ) : (
-          <div className='h-64'>
-            <ResponsiveContainer width='100%' height='100%'>
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray='3 3' />
-                <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(value: number) => [
-                    `${value} (${((value / total_responses) * 100).toFixed(1)}%)`,
-                    'Responses',
-                  ]}
-                />
-                <ReferenceLine
-                  y={total_responses / 4}
-                  stroke='#6b7280'
-                  strokeDasharray='5 5'
-                  label={{ value: 'Avg', fontSize: 10 }}
-                />
-                <Bar dataKey='count' radius={[4, 4, 0, 0]}>
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className='space-y-4'>
+            <div className='h-52'>
+              <ResponsiveContainer width='100%' height='100%'>
+                <BarChart data={data} layout='vertical' margin={{ left: 16 }}>
+                  <CartesianGrid strokeDasharray='3 3' horizontal={false} />
+                  <XAxis
+                    type='number'
+                    domain={[0, 100]}
+                    tickFormatter={v => `${v}%`}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis
+                    type='category'
+                    dataKey='name'
+                    tick={{ fontSize: 11 }}
+                    width={80}
+                  />
+                  <Tooltip formatter={(v: number) => [`${v}%`, 'Share']} />
+                  <Bar dataKey='value' radius={[0, 4, 4, 0]}>
+                    {data.map((entry, i) => (
+                      <Cell key={`cell-${i}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className='grid grid-cols-2 gap-3 text-xs'>
+              <div className='rounded-md bg-muted/40 px-3 py-2'>
+                <p className='text-muted-foreground'>Grounded</p>
+                <p className='text-lg font-semibold text-green-500'>
+                  {groundedPct}%
+                </p>
+              </div>
+              <div className='rounded-md bg-muted/40 px-3 py-2'>
+                <p className='text-muted-foreground'>Hallucinated</p>
+                <p className='text-lg font-semibold text-red-500'>
+                  {hallucinationPct}%
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

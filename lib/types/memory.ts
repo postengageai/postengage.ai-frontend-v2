@@ -79,3 +79,36 @@ export interface MemoryUsersParams {
   sort_by?: 'last_interaction' | 'total_interactions' | 'entity_count';
   sort_order?: 'asc' | 'desc';
 }
+
+// === Semantic Memory (pgvector) ===
+export interface SemanticMemory {
+  id: number;
+  content: string;
+  category: string;
+  importance: number;
+  access_count: number;
+  last_accessed: string | null;
+  source: string;
+  created_at: string;
+}
+
+export interface SemanticMemoryUser {
+  platform_user_id: string;
+  memory_count: number;
+  last_memory_at: string;
+  core_memory_count: number;
+}
+
+export interface SemanticMemoryStats {
+  total_memories: number;
+  unique_users: number;
+  avg_importance: number;
+  by_category: Record<string, number>;
+}
+
+export interface SemanticMemoryUsersResponse {
+  data: SemanticMemoryUser[];
+  total: number;
+  page: number;
+  limit: number;
+}
