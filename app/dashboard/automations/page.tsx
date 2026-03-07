@@ -189,15 +189,15 @@ export default function AutomationsPage() {
   return (
     <div className='flex flex-col h-full'>
       {/* Header */}
-      <div className='p-6 border-b border-border'>
-        <div className='flex items-center justify-between mb-6'>
-          <div>
+      <div className='p-4 sm:p-6 border-b border-border'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
+          <div className='min-w-0'>
             <h1 className='text-2xl font-bold mb-1'>Automations</h1>
-            <p className='text-muted-foreground'>
+            <p className='text-sm text-muted-foreground'>
               Create and manage your Instagram automations
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className='shrink-0 self-start sm:self-auto'>
             <Link href='/dashboard/automations/new'>
               <Plus className='h-4 w-4 mr-2' />
               New Automation
@@ -206,7 +206,7 @@ export default function AutomationsPage() {
         </div>
 
         {/* Stats */}
-        <div className='grid grid-cols-3 gap-4 mb-6'>
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6'>
           <Card className='bg-card/50'>
             <CardContent className='p-4'>
               <div className='flex items-center justify-between'>
@@ -263,8 +263,8 @@ export default function AutomationsPage() {
         </div>
 
         {/* Filters */}
-        <div className='flex items-center gap-3'>
-          <div className='relative flex-1 max-w-sm'>
+        <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
+          <div className='relative flex-1 min-w-[140px] max-w-sm'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
               value={searchQuery}
@@ -275,7 +275,7 @@ export default function AutomationsPage() {
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className='w-32 bg-background/50'>
+            <SelectTrigger className='w-28 sm:w-32 bg-background/50'>
               <SelectValue placeholder='Status' />
             </SelectTrigger>
             <SelectContent>
@@ -289,7 +289,7 @@ export default function AutomationsPage() {
           </Select>
 
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className='w-36 bg-background/50'>
+            <SelectTrigger className='w-32 sm:w-36 bg-background/50'>
               <ArrowUpDown className='h-4 w-4 mr-2' />
               <SelectValue placeholder='Sort by' />
             </SelectTrigger>
@@ -303,7 +303,7 @@ export default function AutomationsPage() {
       </div>
 
       {/* Automations List */}
-      <div className='flex-1 overflow-y-auto p-6'>
+      <div className='flex-1 overflow-y-auto p-4 sm:p-6'>
         {isLoading ? (
           <div className='flex justify-center items-center h-40'>
             <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>

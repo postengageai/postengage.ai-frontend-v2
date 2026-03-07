@@ -69,7 +69,7 @@ export default function EditBrandVoicePage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <Skeleton className='h-8 w-32' />
         <Skeleton className='h-[600px] w-full' />
       </div>
@@ -79,16 +79,21 @@ export default function EditBrandVoicePage() {
   if (!voice) return null;
 
   return (
-    <div className='max-w-6xl mx-auto space-y-8 py-8 px-4 sm:px-6 lg:px-8'>
-      <div className='flex items-center gap-4'>
-        <Button variant='ghost' size='icon' onClick={() => router.back()}>
+    <div className='max-w-6xl mx-auto space-y-8 py-6 sm:py-8 px-4 sm:px-6 lg:px-8'>
+      <div className='flex items-center gap-3'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => router.back()}
+          className='shrink-0'
+        >
           <ArrowLeft className='h-4 w-4' />
         </Button>
-        <div>
-          <h1 className='text-2xl font-bold tracking-tight'>
+        <div className='min-w-0'>
+          <h1 className='text-xl sm:text-2xl font-bold tracking-tight'>
             Edit Brand Voice
           </h1>
-          <p className='text-muted-foreground'>
+          <p className='text-sm text-muted-foreground'>
             Update your AI's personality settings.
           </p>
         </div>

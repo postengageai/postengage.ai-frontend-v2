@@ -116,7 +116,7 @@ export default function EditBotPage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <Skeleton className='h-8 w-32' />
         <Skeleton className='h-[600px] w-full' />
       </div>
@@ -126,37 +126,49 @@ export default function EditBotPage() {
   if (!bot) return null;
 
   return (
-    <div className='p-6 space-y-6'>
-      <div className='flex items-center gap-4'>
-        <Button variant='ghost' size='icon' onClick={() => router.back()}>
+    <div className='p-4 sm:p-6 space-y-5'>
+      <div className='flex items-center gap-3'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => router.back()}
+          className='shrink-0'
+        >
           <ArrowLeft className='h-4 w-4' />
         </Button>
-        <div>
-          <h1 className='text-2xl font-bold tracking-tight'>Edit Bot</h1>
-          <p className='text-muted-foreground'>Configure your AI assistant.</p>
+        <div className='min-w-0'>
+          <h1 className='text-xl sm:text-2xl font-bold tracking-tight truncate'>
+            Edit Bot
+          </h1>
+          <p className='text-sm text-muted-foreground'>
+            Configure your AI assistant.
+          </p>
         </div>
       </div>
 
       {/* Bot Health */}
       <Card>
-        <CardHeader className='flex flex-row items-center justify-between pb-2'>
-          <CardTitle className='text-base font-semibold flex items-center gap-2'>
-            <Shield className='h-4 w-4' />
-            Bot Health
-          </CardTitle>
-          <div className='flex items-center gap-2'>
-            {flaggedCount > 0 && (
-              <Badge variant='destructive' className='text-xs'>
-                {flaggedCount} needs review
-              </Badge>
-            )}
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setReviewSheetOpen(true)}
-            >
-              Review Flagged Replies
-            </Button>
+        <CardHeader className='pb-2'>
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+            <CardTitle className='text-base font-semibold flex items-center gap-2'>
+              <Shield className='h-4 w-4' />
+              Bot Health
+            </CardTitle>
+            <div className='flex items-center gap-2 flex-wrap'>
+              {flaggedCount > 0 && (
+                <Badge variant='destructive' className='text-xs'>
+                  {flaggedCount} needs review
+                </Badge>
+              )}
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => setReviewSheetOpen(true)}
+                className='shrink-0'
+              >
+                Review Flagged
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

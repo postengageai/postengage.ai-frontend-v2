@@ -307,10 +307,10 @@ export default function VoiceDnaDetailPage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <Skeleton className='h-8 w-64' />
         <Skeleton className='h-4 w-48' />
-        <div className='grid gap-6 md:grid-cols-2'>
+        <div className='grid gap-4 sm:gap-6 md:grid-cols-2'>
           <Skeleton className='h-80' />
           <Skeleton className='h-80' />
         </div>
@@ -320,7 +320,7 @@ export default function VoiceDnaDetailPage() {
 
   if (!voiceDna) {
     return (
-      <div className='p-6'>
+      <div className='p-4 sm:p-6'>
         <div className='text-center py-12'>
           <AlertTriangle className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
           <h3 className='text-lg font-medium'>Voice DNA not found</h3>
@@ -343,59 +343,69 @@ export default function VoiceDnaDetailPage() {
     voiceDna.status === 'analyzing' || voiceDna.status === 'pending';
 
   return (
-    <div className='p-6 space-y-6'>
+    <div className='p-4 sm:p-6 space-y-5'>
       {/* Breadcrumb */}
-      <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+      <div className='flex items-center gap-2 text-sm text-muted-foreground overflow-hidden'>
         <Link
           href='/dashboard/intelligence/voice-dna'
-          className='hover:text-foreground transition-colors'
+          className='hover:text-foreground transition-colors shrink-0'
         >
           Voice DNA
         </Link>
-        <ChevronRight className='h-3.5 w-3.5' />
-        <span className='text-foreground'>{brandVoiceName || 'Details'}</span>
+        <ChevronRight className='h-3.5 w-3.5 shrink-0' />
+        <span className='text-foreground truncate'>
+          {brandVoiceName || 'Details'}
+        </span>
       </div>
 
       {/* Header */}
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-        <div className='space-y-1'>
-          <h1 className='text-3xl font-bold tracking-tight'>
+      <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
+        <div className='space-y-1.5 min-w-0'>
+          <h1 className='text-2xl sm:text-3xl font-bold tracking-tight truncate'>
             {brandVoiceName || 'Voice DNA'}
           </h1>
-          <div className='flex items-center gap-2'>
+          <div className='flex flex-wrap items-center gap-2'>
             <Badge variant={statusConfig.variant}>
               {isAnalyzing && <Loader2 className='mr-1 h-3 w-3 animate-spin' />}
               {statusConfig.label}
             </Badge>
             <Badge variant='outline'>{SOURCE_LABELS[voiceDna.source]}</Badge>
-            <span className='text-sm text-muted-foreground'>
+            <span className='text-xs text-muted-foreground'>
               Updated {new Date(voiceDna.updated_at).toLocaleDateString()}
             </span>
           </div>
         </div>
 
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-2 shrink-0'>
           {/* Advanced Toggle */}
-          <div className='flex items-center gap-2 mr-4'>
+          <div className='flex items-center gap-2'>
             <Switch
               id='advanced-mode'
               checked={showAdvanced}
               onCheckedChange={setShowAdvanced}
             />
-            <Label htmlFor='advanced-mode' className='text-sm'>
+            <Label
+              htmlFor='advanced-mode'
+              className='text-sm whitespace-nowrap'
+            >
               Advanced
             </Label>
           </div>
 
           {voiceDna.status === 'ready' && (
-            <Button variant='outline' onClick={() => setAdjustSheetOpen(true)}>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setAdjustSheetOpen(true)}
+            >
               <SlidersHorizontal className='mr-2 h-4 w-4' />
-              Adjust Voice
+              Adjust
             </Button>
           )}
 
           <Button
             variant='outline'
+            size='sm'
             onClick={handleReanalyze}
             disabled={isReanalyzing || isAnalyzing}
           >

@@ -118,22 +118,22 @@ export default function IntelligenceAnalyticsPage() {
   }, [period, toast]);
 
   return (
-    <div className='space-y-6 p-6'>
+    <div className='space-y-6 p-4 sm:p-6'>
       <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>
+        <div className='min-w-0'>
+          <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
             Intelligence Analytics
           </h1>
-          <p className='text-muted-foreground'>
+          <p className='text-sm text-muted-foreground mt-1'>
             Monitor AI performance, response quality, and automation impact.
           </p>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-2 shrink-0'>
           <Select
             value={period}
             onValueChange={(v: AnalyticsPeriod) => setPeriod(v)}
           >
-            <SelectTrigger className='w-[180px]'>
+            <SelectTrigger className='w-[160px] sm:w-[180px]'>
               <SelectValue placeholder='Select period' />
             </SelectTrigger>
             <SelectContent>

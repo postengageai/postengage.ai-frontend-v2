@@ -183,7 +183,7 @@ export default function BotMemoryPage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <div className='flex items-center gap-4'>
           <Skeleton className='h-10 w-10' />
           <div className='space-y-1'>
@@ -206,20 +206,25 @@ export default function BotMemoryPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className='p-6 space-y-6'>
+    <div className='p-4 sm:p-6 space-y-6'>
       {/* Header */}
-      <div className='flex items-center gap-4'>
-        <Button variant='ghost' size='icon' onClick={() => router.back()}>
+      <div className='flex items-center gap-3'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => router.back()}
+          className='shrink-0'
+        >
           <ArrowLeft className='h-4 w-4' />
         </Button>
-        <div>
+        <div className='min-w-0'>
           <div className='flex items-center gap-2'>
-            <h1 className='text-2xl font-bold tracking-tight'>
+            <h1 className='text-xl sm:text-2xl font-bold tracking-tight truncate'>
               {botName || 'Bot'} Memory
             </h1>
-            <Brain className='h-5 w-5 text-muted-foreground' />
+            <Brain className='h-5 w-5 text-muted-foreground shrink-0' />
           </div>
-          <p className='text-muted-foreground text-sm'>
+          <p className='text-sm text-muted-foreground'>
             Long-term semantic memories stored for each follower.
           </p>
         </div>
@@ -227,7 +232,7 @@ export default function BotMemoryPage() {
 
       {/* Stats row */}
       {stats && (
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+        <div className='grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4'>
           <StatCard
             icon={<Layers className='h-4 w-4' />}
             label='Total Memories'

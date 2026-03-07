@@ -29,6 +29,8 @@ import { VoiceReviewPanel } from './voice-review-panel';
 
 type WizardStep = 'scanning' | 'analyzing' | 'review' | 'error';
 
+const MIN_SAMPLES = 5;
+
 interface AutoInferWizardProps {
   botId: string;
   socialAccountId: string;
@@ -56,11 +58,14 @@ export function AutoInferWizard({
 }: AutoInferWizardProps) {
   const [step, setStep] = useState<WizardStep>('scanning');
   const [inferResult, setInferResult] = useState<AutoInferResult | null>(null);
+  // voice_dna_id for polling/review — set from auto-infer OR hybrid creation
+  const [voiceDnaId, setVoiceDnaId] = useState<string | null>(null);
   const [voiceReview, setVoiceReview] = useState<VoiceReview | null>(null);
   const [analysisMessageIndex, setAnalysisMessageIndex] = useState(0);
   const [manualSamples, setManualSamples] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [isTriggering, setIsTriggering] = useState(false);
+  const [isCreatingHybrid, setIsCreatingHybrid] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { toast } = useToast();
 
@@ -80,17 +85,15 @@ export function AutoInferWizard({
 
   // Poll for status when analyzing
   useEffect(() => {
-    if (step !== 'analyzing' || !inferResult?.voice_dna_id) return;
+    if (step !== 'analyzing' || !voiceDnaId) return;
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await VoiceDnaApi.getVoiceDna(
-          inferResult.voice_dna_id
-        );
+        const response = await VoiceDnaApi.getVoiceDna(voiceDnaId);
         if (response?.data) {
           if (response.data.status === 'ready') {
             clearInterval(pollInterval);
-            await loadReview(inferResult.voice_dna_id);
+            await loadReview(voiceDnaId);
           } else if (response.data.status === 'failed') {
             clearInterval(pollInterval);
             setErrorMessage(
@@ -105,7 +108,7 @@ export function AutoInferWizard({
     }, 3000);
 
     return () => clearInterval(pollInterval);
-  }, [step, inferResult?.voice_dna_id]);
+  }, [step, voiceDnaId]);
 
   // Socket.io listener for instant status updates
   useEffect(() => {
@@ -113,7 +116,7 @@ export function AutoInferWizard({
       voice_dna_id: string;
       status: string;
     }) => {
-      if (data.voice_dna_id !== inferResult?.voice_dna_id) return;
+      if (!voiceDnaId || data.voice_dna_id !== voiceDnaId) return;
 
       if (data.status === 'ready') {
         loadReview(data.voice_dna_id);
@@ -127,10 +130,13 @@ export function AutoInferWizard({
     return () => {
       socketService.unsubscribeFromVoiceDnaStatus(handleStatusChange);
     };
-  }, [inferResult?.voice_dna_id]);
+  }, [voiceDnaId]);
 
   const triggerAutoInfer = async () => {
     setIsTriggering(true);
+    setInferResult(null);
+    setVoiceDnaId(null);
+    setShowManualInput(false);
     try {
       const dto: TriggerAutoInferDto = {
         bot_id: botId,
@@ -138,36 +144,102 @@ export function AutoInferWizard({
       };
       const response = await VoiceDnaApi.triggerAutoInfer(dto);
       if (response?.data) {
-        setInferResult(response.data);
+        const result = response.data;
+        setInferResult(result);
 
-        if (response.data.samples_found.total < 5) {
-          setShowManualInput(true);
+        if (result.status === 'already_exists' && result.voice_dna_id) {
+          // Voice DNA already ready — skip straight to review
+          setVoiceDnaId(result.voice_dna_id);
+          await loadReview(result.voice_dna_id);
+          return;
         }
 
-        if (
-          response.data.status === 'analyzing' ||
-          response.data.status === 'queued'
-        ) {
+        if (result.status === 'queued' && result.voice_dna_id) {
+          // Analysis queued — show analyzing step and poll for completion
+          setVoiceDnaId(result.voice_dna_id);
           setStep('analyzing');
-        } else if (response.data.status === 'ready') {
-          await loadReview(response.data.voice_dna_id);
-        } else if (response.data.status === 'failed') {
-          setErrorMessage('Could not start analysis');
-          setStep('error');
+          return;
         }
+
+        if (result.status === 'insufficient_samples') {
+          // Not enough auto-collected samples — show manual fallback input
+          setShowManualInput(true);
+          return;
+        }
+
+        // status === 'error'
+        setErrorMessage(result.message || 'Could not start analysis');
+        setStep('error');
       }
-    } catch {
-      setErrorMessage('Failed to start voice detection. Please try again.');
+    } catch (err) {
+      const parsed = parseApiError(err);
+      setErrorMessage(
+        parsed.message || 'Failed to start voice detection. Please try again.'
+      );
       setStep('error');
     } finally {
       setIsTriggering(false);
     }
   };
 
+  /**
+   * Called when auto-infer found insufficient samples and the user has typed manual ones.
+   * Creates a Voice DNA with source='hybrid' (combining auto + manual) or 'user_configured'.
+   */
+  const handleStartHybridAnalysis = async () => {
+    if (!brandVoiceId) {
+      setErrorMessage(
+        'No brand voice configured. Please select a brand voice first.'
+      );
+      setStep('error');
+      return;
+    }
+
+    const lines = manualSamples
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length >= 10);
+
+    if (lines.length < 3) {
+      toast({
+        variant: 'destructive',
+        title: 'Not enough samples',
+        description: 'Please provide at least 3 samples (10+ characters each).',
+      });
+      return;
+    }
+
+    setIsCreatingHybrid(true);
+    try {
+      const autoSamplesCount = inferResult?.samples_collected ?? 0;
+      // hybrid = auto attempted + manual added; user_configured = only manual
+      const source = autoSamplesCount > 0 ? 'hybrid' : 'user_configured';
+
+      const response = await VoiceDnaApi.createVoiceDna({
+        brand_voice_id: brandVoiceId,
+        raw_samples: lines.map(text => ({ text, source: 'manual_input' })),
+        source,
+      });
+
+      if (response?.data) {
+        setVoiceDnaId(response.data._id);
+        setStep('analyzing');
+      }
+    } catch (err) {
+      const parsed = parseApiError(err);
+      setErrorMessage(
+        parsed.message || 'Failed to create Voice DNA. Please try again.'
+      );
+      setStep('error');
+    } finally {
+      setIsCreatingHybrid(false);
+    }
+  };
+
   const loadReview = useCallback(
-    async (voiceDnaId: string) => {
+    async (id: string) => {
       try {
-        const reviewResponse = await VoiceDnaApi.getVoiceReview(voiceDnaId);
+        const reviewResponse = await VoiceDnaApi.getVoiceReview(id);
         if (reviewResponse?.data) {
           setVoiceReview(reviewResponse.data);
           setStep('review');
@@ -186,18 +258,26 @@ export function AutoInferWizard({
   );
 
   const handleApprove = () => {
-    if (inferResult?.voice_dna_id) {
+    const id = voiceDnaId ?? inferResult?.voice_dna_id;
+    if (id) {
       toast({
         title: 'Voice DNA Activated',
         description: 'Your bot will now reply in your voice!',
       });
-      onComplete?.(inferResult.voice_dna_id);
+      onComplete?.(id);
     }
   };
 
-  const handleStartAnalysis = () => {
-    setStep('analyzing');
-  };
+  // Derived counts from correct backend field names
+  const totalSamples = inferResult?.samples_collected ?? 0;
+  const captionCount = inferResult?.caption_samples ?? 0;
+  const replyCount = inferResult?.reply_samples ?? 0;
+  const hasEnoughSamples = totalSamples >= MIN_SAMPLES;
+
+  // How many valid manual lines typed so far
+  const validManualLines = manualSamples
+    .split('\n')
+    .filter(l => l.trim().length >= 10).length;
 
   return (
     <div className='space-y-6'>
@@ -251,37 +331,32 @@ export function AutoInferWizard({
                 <SourceRow
                   icon={<FileText className='h-4 w-4' />}
                   label='Instagram Posts'
-                  count={inferResult.samples_found.instagram_posts}
+                  count={captionCount}
                 />
                 <SourceRow
                   icon={<MessageSquare className='h-4 w-4' />}
                   label='Manual Replies'
-                  count={inferResult.samples_found.manual_replies}
+                  count={replyCount}
                 />
 
                 <div className='flex items-center justify-between pt-2 border-t'>
                   <span className='text-sm font-medium'>Total Samples</span>
-                  <Badge
-                    variant={
-                      inferResult.samples_found.total >= 5
-                        ? 'default'
-                        : 'destructive'
-                    }
-                  >
-                    {inferResult.samples_found.total} samples
+                  <Badge variant={hasEnoughSamples ? 'default' : 'destructive'}>
+                    {totalSamples} samples
                   </Badge>
                 </div>
 
-                {inferResult.samples_found.total < 5 && (
+                {!hasEnoughSamples && (
                   <div className='rounded-md bg-yellow-50 dark:bg-yellow-950/20 p-3 flex items-start gap-2'>
                     <AlertTriangle className='h-4 w-4 text-yellow-600 shrink-0 mt-0.5' />
                     <div className='text-sm'>
                       <p className='font-medium text-yellow-700 dark:text-yellow-400'>
-                        Not enough samples
+                        Not enough samples found
                       </p>
                       <p className='text-muted-foreground'>
-                        We need at least 5 samples for accurate voice detection.
-                        Paste some of your typical replies below.
+                        We need at least {MIN_SAMPLES} samples. Paste some of
+                        your typical replies below and we&apos;ll build your
+                        voice fingerprint from those.
                       </p>
                     </div>
                   </div>
@@ -289,27 +364,50 @@ export function AutoInferWizard({
 
                 {showManualInput && (
                   <div className='space-y-2'>
+                    <p className='text-xs text-muted-foreground font-medium'>
+                      Add your writing samples — one per line, 10+ characters:
+                    </p>
                     <Textarea
-                      placeholder='Paste a few example replies you would typically send (one per line)...'
+                      placeholder={`Hey! Thanks for the love, really means a lot 🙏\nGreat question — pricing starts at $29/mo for the starter plan.\nAbsolutely, we ship worldwide! DM us your address.`}
                       value={manualSamples}
                       onChange={e => setManualSamples(e.target.value)}
-                      rows={4}
-                      className='text-sm'
+                      rows={5}
+                      className='text-sm font-mono'
                     />
+                    <p className='text-xs text-muted-foreground'>
+                      {validManualLines} valid sample
+                      {validManualLines !== 1 ? 's' : ''} entered (need at least
+                      3)
+                    </p>
                   </div>
                 )}
 
                 <div className='flex gap-2 pt-2'>
-                  <Button
-                    onClick={handleStartAnalysis}
-                    disabled={
-                      inferResult.samples_found.total < 5 &&
-                      !manualSamples.trim()
-                    }
-                  >
-                    <Dna className='mr-2 h-4 w-4' />
-                    Start Analysis
-                  </Button>
+                  {hasEnoughSamples ? (
+                    <Button onClick={() => setStep('analyzing')}>
+                      <Dna className='mr-2 h-4 w-4' />
+                      View Analysis
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleStartHybridAnalysis}
+                      disabled={isCreatingHybrid || validManualLines < 3}
+                    >
+                      {isCreatingHybrid ? (
+                        <>
+                          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Dna className='mr-2 h-4 w-4' />
+                          {totalSamples > 0
+                            ? 'Analyze Hybrid Samples'
+                            : 'Analyze My Samples'}
+                        </>
+                      )}
+                    </Button>
+                  )}
                   {onSkip && (
                     <Button variant='ghost' onClick={onSkip}>
                       Skip for now
@@ -344,7 +442,7 @@ export function AutoInferWizard({
               </div>
 
               <p className='text-xs text-muted-foreground'>
-                Usually takes 30-60 seconds
+                Usually takes 30–60 seconds
               </p>
             </div>
           </CardContent>
@@ -431,7 +529,7 @@ function StepIndicator({
   return (
     <div className='flex items-center gap-2'>
       <div
-        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium ${
+        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
           completed
             ? 'bg-primary text-primary-foreground'
             : active

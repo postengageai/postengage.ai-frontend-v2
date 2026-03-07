@@ -115,7 +115,7 @@ export default function BotKnowledgePage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <Skeleton className='h-8 w-32' />
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
           {[1, 2, 3].map(i => (
@@ -127,24 +127,29 @@ export default function BotKnowledgePage() {
   }
 
   return (
-    <div className='p-6 space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-4'>
-          <Button variant='ghost' size='icon' onClick={() => router.back()}>
+    <div className='p-4 sm:p-6 space-y-6'>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+        <div className='flex items-center gap-3 min-w-0'>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={() => router.back()}
+            className='shrink-0'
+          >
             <ArrowLeft className='h-4 w-4' />
           </Button>
-          <div>
-            <h1 className='text-2xl font-bold tracking-tight'>
+          <div className='min-w-0'>
+            <h1 className='text-xl sm:text-2xl font-bold tracking-tight'>
               Knowledge Base
             </h1>
-            <p className='text-muted-foreground'>
+            <p className='text-sm text-muted-foreground'>
               Teach your bot about your business.
             </p>
           </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className='shrink-0 self-start sm:self-auto'>
               <Plus className='mr-2 h-4 w-4' />
               Add Source
             </Button>
@@ -198,16 +203,21 @@ export default function BotKnowledgePage() {
       </div>
 
       {sources.length === 0 ? (
-        <div className='text-center py-12 border rounded-lg bg-muted/10'>
-          <FileText className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
-          <h3 className='text-lg font-medium'>No knowledge sources</h3>
-          <p className='text-muted-foreground mt-2 mb-6'>
-            Add documents or text to train your bot.
+        <div className='text-center py-16 border-2 border-dashed rounded-xl bg-muted/5'>
+          <div className='h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4'>
+            <FileText className='h-8 w-8 text-primary' />
+          </div>
+          <h3 className='text-lg font-semibold'>No knowledge sources</h3>
+          <p className='text-sm text-muted-foreground mt-2 mb-6 max-w-sm mx-auto'>
+            Add documents or text to train your bot with your business
+            knowledge.
           </p>
-          <Button onClick={() => setIsDialogOpen(true)}>Add Source</Button>
+          <Button onClick={() => setIsDialogOpen(true)}>
+            Add First Source
+          </Button>
         </div>
       ) : (
-        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
           {sources.map(source => (
             <Card key={source._id}>
               <CardHeader className='pb-2'>

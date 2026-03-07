@@ -203,9 +203,11 @@ export default function MediaPage() {
   };
 
   return (
-    <div className='container mx-auto py-6 space-y-6'>
+    <div className='container mx-auto py-4 sm:py-6 px-4 sm:px-6 space-y-6'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-        <h1 className='text-3xl font-bold tracking-tight'>Media Library</h1>
+        <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
+          Media Library
+        </h1>
         <MediaUploadDialog onUploadSuccess={handleUploadSuccess} />
       </div>
 

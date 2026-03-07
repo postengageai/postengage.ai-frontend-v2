@@ -131,12 +131,12 @@ export default function BotsPage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <div className='flex justify-between items-center'>
           <Skeleton className='h-8 w-32' />
           <Skeleton className='h-10 w-32' />
         </div>
-        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3'>
           {[1, 2, 3].map(i => (
             <Skeleton key={i} className='h-48 w-full' />
           ))}
@@ -146,15 +146,20 @@ export default function BotsPage() {
   }
 
   return (
-    <div className='p-6 space-y-6'>
-      <div className='flex justify-between items-center'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>AI Bots</h1>
-          <p className='text-muted-foreground mt-2'>
+    <div className='p-4 sm:p-6 space-y-6'>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+        <div className='min-w-0'>
+          <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
+            AI Bots
+          </h1>
+          <p className='text-sm text-muted-foreground mt-1'>
             Manage your AI assistants for different social accounts.
           </p>
         </div>
-        <Link href='/dashboard/intelligence/bots/new'>
+        <Link
+          href='/dashboard/intelligence/bots/new'
+          className='shrink-0 self-start sm:self-auto'
+        >
           <Button>
             <Plus className='mr-2 h-4 w-4' />
             Create Bot
@@ -163,18 +168,20 @@ export default function BotsPage() {
       </div>
 
       {bots.length === 0 ? (
-        <div className='text-center py-12 border rounded-lg bg-muted/10'>
-          <Bot className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
-          <h3 className='text-lg font-medium'>No bots created yet</h3>
-          <p className='text-muted-foreground mt-2 mb-6'>
+        <div className='text-center py-16 border-2 border-dashed rounded-xl bg-muted/5'>
+          <div className='h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4'>
+            <Bot className='h-8 w-8 text-primary' />
+          </div>
+          <h3 className='text-lg font-semibold'>No bots created yet</h3>
+          <p className='text-sm text-muted-foreground mt-2 mb-6 max-w-sm mx-auto'>
             Create your first AI bot to automate your engagement.
           </p>
           <Link href='/dashboard/intelligence/bots/new'>
-            <Button>Create Bot</Button>
+            <Button>Create Your First Bot</Button>
           </Link>
         </div>
       ) : (
-        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3'>
           {bots.map(bot => (
             <Card key={bot._id}>
               <CardHeader className='flex flex-row items-start justify-between space-y-0 pb-2'>

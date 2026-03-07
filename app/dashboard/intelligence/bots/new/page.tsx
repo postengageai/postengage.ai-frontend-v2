@@ -61,7 +61,7 @@ export default function NewBotPage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <Skeleton className='h-8 w-32' />
         <Skeleton className='h-[600px] w-full' />
       </div>
@@ -69,16 +69,21 @@ export default function NewBotPage() {
   }
 
   return (
-    <div className='p-6 space-y-6'>
-      <div className='flex items-center gap-4'>
-        <Button variant='ghost' size='icon' onClick={() => router.back()}>
+    <div className='p-4 sm:p-6 space-y-6'>
+      <div className='flex items-center gap-3'>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => router.back()}
+          className='shrink-0'
+        >
           <ArrowLeft className='h-4 w-4' />
         </Button>
-        <div>
-          <h1 className='text-2xl font-bold tracking-tight'>
+        <div className='min-w-0'>
+          <h1 className='text-xl sm:text-2xl font-bold tracking-tight'>
             {pageStep === 'config' ? 'Create New Bot' : 'Voice Setup'}
           </h1>
-          <p className='text-muted-foreground'>
+          <p className='text-sm text-muted-foreground'>
             {pageStep === 'config'
               ? 'Configure a new AI assistant for your social account.'
               : 'Set up your voice profile so the bot sounds like you.'}

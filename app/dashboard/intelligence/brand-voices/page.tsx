@@ -136,15 +136,17 @@ export default function BrandVoicesPage() {
   return (
     <div className='h-full flex flex-col'>
       {/* Header Section */}
-      <div className='flex items-center justify-between p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10'>
-        <div>
-          <h2 className='text-2xl font-bold tracking-tight'>Brand Voices</h2>
-          <p className='text-muted-foreground'>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10'>
+        <div className='min-w-0'>
+          <h2 className='text-xl sm:text-2xl font-bold tracking-tight'>
+            Brand Voices
+          </h2>
+          <p className='text-sm text-muted-foreground mt-0.5'>
             Manage the personalities and tones your AI bots will use.
           </p>
         </div>
-        <div className='flex items-center gap-3'>
-          <div className='relative w-64'>
+        <div className='flex items-center gap-2 shrink-0'>
+          <div className='relative w-full sm:w-52'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
             <Input
               value={searchQuery}
@@ -154,9 +156,10 @@ export default function BrandVoicesPage() {
             />
           </div>
           <Link href='/dashboard/intelligence/brand-voices/new'>
-            <Button>
+            <Button className='shrink-0'>
               <Plus className='mr-2 h-4 w-4' />
-              Create Voice
+              <span className='hidden sm:inline'>Create Voice</span>
+              <span className='sm:hidden'>New</span>
             </Button>
           </Link>
         </div>
@@ -211,8 +214,8 @@ export default function BrandVoicesPage() {
             </Link>
           </div>
         ) : (
-          <div className='border rounded-lg bg-card shadow-sm'>
-            <Table>
+          <div className='border rounded-lg bg-card shadow-sm overflow-x-auto'>
+            <Table className='min-w-[640px]'>
               <TableHeader>
                 <TableRow className='bg-muted/40 hover:bg-muted/40'>
                   <TableHead className='w-[250px]'>Name</TableHead>

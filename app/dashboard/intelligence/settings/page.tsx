@@ -39,10 +39,10 @@ export default function IntelligenceSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className='p-6 space-y-6'>
+      <div className='p-4 sm:p-6 space-y-6'>
         <div className='space-y-2'>
           <Skeleton className='h-8 w-48' />
-          <Skeleton className='h-4 w-96' />
+          <Skeleton className='h-4 w-64 sm:w-96' />
         </div>
         <Skeleton className='h-[400px] w-full' />
       </div>
@@ -52,9 +52,9 @@ export default function IntelligenceSettingsPage() {
   if (!config) return null;
 
   return (
-    <div className='p-6 space-y-8'>
+    <div className='p-4 sm:p-6 space-y-8'>
       <div className='space-y-3'>
-        <h1 className='text-3xl font-bold tracking-tight'>
+        <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
           Intelligence Settings
         </h1>
         <p className='text-sm text-muted-foreground max-w-3xl'>

@@ -90,6 +90,7 @@ export interface VoiceDna {
 export interface CreateVoiceDnaDto {
   brand_voice_id: string;
   raw_samples: { text: string; source: string }[];
+  source?: string; // 'user_configured' | 'hybrid' — backend accepts this
 }
 
 // Used for adding few-shot examples
@@ -114,15 +115,19 @@ export interface TriggerAutoInferDto {
   brand_voice_id?: string;
 }
 
+// Matches backend AutoInferResult from auto-voice-inference.service.ts exactly.
+// status 'queued'               → analysis job queued, voice_dna_id is set
+// status 'insufficient_samples' → not enough samples found, voice_dna_id is undefined
+// status 'already_exists'       → ready Voice DNA already exists, voice_dna_id is set
+// status 'error'                → unexpected error
 export interface AutoInferResult {
-  voice_dna_id: string;
-  status: 'queued' | 'analyzing' | 'ready' | 'failed';
-  estimated_time_seconds?: number;
-  samples_found: {
-    instagram_posts: number;
-    manual_replies: number;
-    total: number;
-  };
+  success: boolean;
+  voice_dna_id?: string; // only set when status='queued' or 'already_exists'
+  samples_collected: number; // total samples found (captions + replies)
+  caption_samples: number; // samples from Instagram post captions
+  reply_samples: number; // samples from manual replies in intelligence logs
+  status: 'queued' | 'insufficient_samples' | 'already_exists' | 'error';
+  message: string;
 }
 
 // === Voice Review ===
