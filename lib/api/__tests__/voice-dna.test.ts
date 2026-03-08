@@ -31,38 +31,31 @@ const mockVoiceDna: VoiceDna = {
   source: 'user_configured',
   status: 'ready',
   fingerprint: {
-    style_metrics: {
-      avg_sentence_length: 12,
-      vocabulary_complexity: 'moderate',
-      emoji_patterns: ['👍'],
-      emoji_frequency: 0.3,
-      punctuation_style: {
-        exclamation_frequency: 0.3,
-        ellipsis_usage: false,
-        caps_emphasis: false,
-      },
+    avg_sentence_length: 12,
+    vocabulary_complexity: 'moderate',
+    emoji_patterns: ['👍'],
+    emoji_frequency: 0.3,
+    punctuation_style: {
+      uses_exclamation: true,
+      uses_ellipsis: false,
+      uses_caps_for_emphasis: false,
     },
-    language_patterns: {
-      primary_language: 'en',
-      code_switching_frequency: 0,
-      slang_patterns: [],
-      filler_words: [],
-    },
-    tone_markers: {
-      humor_level: 0.5,
-      directness: 0.7,
-      warmth: 0.8,
-      assertiveness: 0.6,
-    },
-    structural_patterns: {
-      starts_with_patterns: ['Hey!'],
-      ends_with_patterns: ['Cheers'],
-      question_response_style: 'direct_answer',
-    },
+    primary_language: 'en',
+    code_switching_frequency: 0,
+    slang_patterns: [],
+    filler_words: [],
+    humor_level: 0.5,
+    directness: 0.7,
+    warmth: 0.8,
+    assertiveness: 0.6,
+    starts_with_patterns: ['Hey!'],
+    ends_with_patterns: ['Cheers'],
+    question_response_style: 'direct_answer',
   },
   few_shot_examples: [],
   negative_examples: [],
   raw_samples: [],
+  samples_analyzed: 0,
   feedback_signals_processed: 0,
   auto_refinement_count: 0,
   created_at: '2026-01-01T00:00:00Z',
@@ -205,7 +198,7 @@ describe('VoiceDnaApi', () => {
         makeApiResponse(mockVoiceDna)
       );
 
-      const dto = { reply: 'bad reply', reason: 'too formal' };
+      const dto = { context: 'too formal', reply: 'bad reply' };
       await VoiceDnaApi.addNegativeExample('vdna-1', dto);
 
       expect(httpClient.post).toHaveBeenCalledWith(
@@ -248,14 +241,13 @@ describe('VoiceDnaApi', () => {
   describe('triggerAutoInfer', () => {
     it('calls POST with auto-infer data', async () => {
       const mockResult: AutoInferResult = {
+        success: true,
         voice_dna_id: 'vdna-1',
         status: 'queued',
-        estimated_time_seconds: 30,
-        samples_found: {
-          instagram_posts: 10,
-          manual_replies: 5,
-          total: 15,
-        },
+        samples_collected: 15,
+        caption_samples: 10,
+        reply_samples: 5,
+        message: 'Analysis queued',
       };
       vi.mocked(httpClient.post).mockResolvedValue(makeApiResponse(mockResult));
 

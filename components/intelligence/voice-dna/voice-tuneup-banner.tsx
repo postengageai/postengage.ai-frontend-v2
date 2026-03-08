@@ -10,6 +10,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -17,19 +18,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
-import type { FlaggedReply } from '@/lib/types/quality';
+import type { HotLead } from '@/lib/types/intelligence';
 
 const TUNEUP_STORAGE_KEY = 'voice_tuneup_last_done';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface VoiceTuneUpBannerProps {
   voiceDnaId: string;
-  botId: string;
   voiceDnaCreatedAt: string;
 }
 
@@ -37,21 +36,17 @@ type Rating = 'good' | 'bad' | null;
 
 export function VoiceTuneUpBanner({
   voiceDnaId,
-  botId,
   voiceDnaCreatedAt,
 }: VoiceTuneUpBannerProps) {
   const [showBanner, setShowBanner] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [replies, setReplies] = useState<FlaggedReply[]>([]);
+  const [leads, setLeads] = useState<HotLead[]>([]);
   const [ratings, setRatings] = useState<Record<string, Rating>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
-    // Show banner if:
-    // 1. Voice DNA is at least 7 days old
-    // 2. User hasn't done a tune-up in the last week
     const createdAt = new Date(voiceDnaCreatedAt).getTime();
     const now = Date.now();
     if (now - createdAt < ONE_WEEK_MS) return;
@@ -62,7 +57,7 @@ export function VoiceTuneUpBanner({
       );
       if (lastDone && now - Number(lastDone) < ONE_WEEK_MS) return;
     } catch {
-      // ignore localStorage errors
+      // ignore
     }
 
     setShowBanner(true);
@@ -71,16 +66,15 @@ export function VoiceTuneUpBanner({
   const handleOpenTuneUp = async () => {
     setIsOpen(true);
     setIsLoading(true);
+    setIsDone(false);
     try {
-      const res = await IntelligenceApi.getFlaggedReplies(botId, {
-        limit: 10,
-        reviewed: false,
-      });
-      setReplies(res.data);
-      // Initialize all ratings as null
+      const res = await IntelligenceApi.getHotLeads({ limit: 8 });
+      const withBotReply = (res.data.data ?? []).filter(l => l.bot_reply);
+      const sample = withBotReply.slice(0, 6);
+      setLeads(sample);
       const initial: Record<string, Rating> = {};
-      res.data.forEach(r => {
-        initial[r.id] = null;
+      sample.forEach(l => {
+        initial[l.id] = null;
       });
       setRatings(initial);
     } catch {
@@ -90,26 +84,28 @@ export function VoiceTuneUpBanner({
     }
   };
 
-  const handleRate = (id: string, rating: Rating) => {
-    setRatings(prev => ({ ...prev, [id]: rating }));
+  const handleRate = (id: string, rating: 'good' | 'bad') => {
+    setRatings(prev => ({
+      ...prev,
+      [id]: prev[id] === rating ? null : rating,
+    }));
   };
 
   const handleSubmit = async () => {
-    const ratedReplies = replies.filter(r => ratings[r.id] !== null);
-    if (ratedReplies.length === 0) return;
+    const ratedLeads = leads.filter(l => ratings[l.id] !== null);
+    if (ratedLeads.length === 0) return;
 
     setIsSubmitting(true);
     try {
-      const samples = ratedReplies.map(r => ({
-        log_id: r.id,
-        rating: ratings[r.id] as 'good' | 'bad',
-        original_text: r.bot_reply,
-        context_text: r.user_message,
+      const samples = ratedLeads.map(l => ({
+        log_id: l.id,
+        rating: ratings[l.id] as 'good' | 'bad',
+        original_text: l.bot_reply!,
+        context_text: l.message_text,
       }));
 
       await VoiceDnaApi.rateSamples(voiceDnaId, samples);
 
-      // Mark tune-up done
       try {
         localStorage.setItem(
           `${TUNEUP_STORAGE_KEY}_${voiceDnaId}`,
@@ -123,9 +119,8 @@ export function VoiceTuneUpBanner({
       setTimeout(() => {
         setIsOpen(false);
         setShowBanner(false);
-      }, 1500);
+      }, 2000);
     } catch {
-      // silent — still close
       setIsOpen(false);
       setShowBanner(false);
     } finally {
@@ -149,8 +144,8 @@ export function VoiceTuneUpBanner({
             <p className='text-sm font-medium text-amber-900 dark:text-amber-200'>
               Time for your weekly Voice Tune-up!
             </p>
-            <p className='text-xs text-amber-700 dark:text-amber-400 truncate'>
-              Rate recent bot replies to help your voice get sharper over time.
+            <p className='text-xs text-amber-700 dark:text-amber-400'>
+              Rate a few recent bot replies to sharpen your voice over time.
             </p>
           </div>
         </div>
@@ -167,7 +162,7 @@ export function VoiceTuneUpBanner({
           <Button
             variant='ghost'
             size='icon'
-            className='h-7 w-7 text-amber-500 hover:text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+            className='h-7 w-7 text-amber-500 hover:text-amber-700 hover:bg-amber-100'
             onClick={() => setShowBanner(false)}
           >
             <X className='h-3.5 w-3.5' />
@@ -175,7 +170,7 @@ export function VoiceTuneUpBanner({
         </div>
       </div>
 
-      {/* Tune-up Dialog */}
+      {/* Dialog */}
       <Dialog open={isOpen} onOpenChange={v => !isSubmitting && setIsOpen(v)}>
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
@@ -184,60 +179,68 @@ export function VoiceTuneUpBanner({
               Weekly Voice Tune-up
             </DialogTitle>
             <DialogDescription>
-              Rate these recent bot replies. Thumbs up = on-brand, thumbs down =
-              off. Your feedback trains your Voice DNA.
+              Rate these recent bot replies — thumbs up if it sounds like you,
+              thumbs down if it does not. Your feedback trains your Voice DNA.
             </DialogDescription>
           </DialogHeader>
 
           {isDone ? (
             <div className='flex flex-col items-center justify-center py-10 gap-3'>
               <CheckCircle2 className='h-12 w-12 text-green-500' />
-              <p className='text-sm font-medium'>
-                Voice Tune-up complete — thanks!
+              <p className='text-sm font-medium text-foreground'>
+                Voice Tune-up complete!
+              </p>
+              <p className='text-xs text-muted-foreground'>
+                Thanks — your feedback is already training your voice.
               </p>
             </div>
           ) : isLoading ? (
-            <div className='flex items-center justify-center py-10 gap-2 text-muted-foreground text-sm'>
+            <div className='flex items-center justify-center py-10 gap-2 text-sm text-muted-foreground'>
               <Loader2 className='h-5 w-5 animate-spin' />
-              Loading recent replies…
+              Loading recent replies...
             </div>
-          ) : replies.length === 0 ? (
-            <div className='py-8 text-center text-sm text-muted-foreground'>
-              No recent unreviewed replies found. Come back after your bot gets
-              some action!
+          ) : leads.length === 0 ? (
+            <div className='py-8 text-center space-y-2'>
+              <p className='text-sm text-muted-foreground'>
+                No bot replies with hot leads found yet.
+              </p>
+              <p className='text-xs text-muted-foreground'>
+                Come back once your bot has handled some conversations!
+              </p>
             </div>
           ) : (
             <>
-              <ScrollArea className='max-h-[360px] pr-4'>
+              <ScrollArea className='max-h-[360px] pr-2'>
                 <div className='space-y-3'>
-                  {replies.map(reply => {
-                    const rating = ratings[reply.id];
+                  {leads.map(lead => {
+                    const rating = ratings[lead.id];
                     return (
                       <div
-                        key={reply.id}
+                        key={lead.id}
                         className={cn(
                           'rounded-lg border p-3 space-y-2 transition-colors',
                           rating === 'good'
-                            ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'
+                            ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/30'
                             : rating === 'bad'
-                              ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30'
+                              ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30'
                               : 'border-border'
                         )}
                       >
-                        {/* Context (user message) */}
                         <p className='text-xs text-muted-foreground'>
-                          <span className='font-medium'>User:</span>{' '}
-                          {reply.user_message}
+                          <span className='font-medium text-foreground'>
+                            User:
+                          </span>{' '}
+                          {lead.message_text}
                         </p>
-                        {/* Bot reply */}
-                        <p className='text-sm text-foreground'>
-                          <span className='font-medium text-xs'>Bot:</span>{' '}
-                          {reply.bot_reply}
+                        <p className='text-sm'>
+                          <span className='text-xs font-medium text-foreground'>
+                            Bot:
+                          </span>{' '}
+                          {lead.bot_reply}
                         </p>
-                        {/* Rating buttons */}
-                        <div className='flex items-center gap-2 pt-1'>
+                        <div className='flex items-center gap-2 pt-0.5'>
                           <button
-                            onClick={() => handleRate(reply.id, 'good')}
+                            onClick={() => handleRate(lead.id, 'good')}
                             className={cn(
                               'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium border transition-colors',
                               rating === 'good'
@@ -246,10 +249,10 @@ export function VoiceTuneUpBanner({
                             )}
                           >
                             <ThumbsUp className='h-3 w-3' />
-                            On-brand
+                            Sounds like me
                           </button>
                           <button
-                            onClick={() => handleRate(reply.id, 'bad')}
+                            onClick={() => handleRate(lead.id, 'bad')}
                             className={cn(
                               'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium border transition-colors',
                               rating === 'bad'
@@ -269,7 +272,7 @@ export function VoiceTuneUpBanner({
 
               <div className='flex items-center justify-between pt-2 border-t'>
                 <p className='text-xs text-muted-foreground'>
-                  {ratedCount} of {replies.length} rated
+                  {ratedCount} of {leads.length} rated
                 </p>
                 <div className='flex gap-2'>
                   <Button
@@ -284,13 +287,14 @@ export function VoiceTuneUpBanner({
                     size='sm'
                     onClick={handleSubmit}
                     disabled={ratedCount === 0 || isSubmitting}
+                    className='gap-1.5'
                   >
-                    {isSubmitting ? (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    ) : null}
-                    Submit{' '}
+                    {isSubmitting && (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    )}
+                    Submit Ratings
                     {ratedCount > 0 && (
-                      <Badge variant='secondary' className='ml-1.5 text-xs'>
+                      <Badge variant='secondary' className='ml-0.5 text-xs'>
                         {ratedCount}
                       </Badge>
                     )}

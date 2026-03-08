@@ -179,15 +179,16 @@ export const useVoiceDnaStore = create<VoiceDnaState>(set => ({
 
     triggerReanalyze: async (id: string) => {
       try {
-        const response = await VoiceDnaApi.reanalyzeVoiceDna(id);
-        const updated = response.data;
+        await VoiceDnaApi.reanalyzeVoiceDna(id);
+        // reanalyzeVoiceDna returns { voice_dna_id, status, message }, not a full VoiceDna.
+        // Optimistically mark the entry as 'analyzing' so the UI reflects the queued state.
         set(state => ({
           selectedVoiceDna:
             state.selectedVoiceDna?._id === id
-              ? updated
+              ? { ...state.selectedVoiceDna, status: 'analyzing' as const }
               : state.selectedVoiceDna,
           voiceDnaList: state.voiceDnaList.map(v =>
-            v._id === id ? updated : v
+            v._id === id ? { ...v, status: 'analyzing' as const } : v
           ),
         }));
       } catch (error: unknown) {

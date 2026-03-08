@@ -214,6 +214,7 @@ export interface Automation {
   trigger: AutomationTriggerResponse;
   actions: AutomationActionResponse[];
   conditions: AutomationConditionResponse[];
+  experiment_config?: ExperimentConfig | null;
   created_at: string;
   updated_at: string;
 }
@@ -243,6 +244,27 @@ export interface AutomationExecution {
     [key: string]: unknown;
   };
   credits_used?: number;
+}
+
+export interface ExperimentConfig {
+  enabled: boolean;
+  bot_a_id?: string | null;
+  bot_b_id?: string | null;
+}
+
+export interface ExperimentVariantResult {
+  total: number;
+  successful: number;
+  failed: number;
+  total_credits: number;
+  success_rate: number;
+}
+
+export interface ExperimentResults {
+  automation_id: string;
+  experiment_config: ExperimentConfig | null;
+  variant_a: ExperimentVariantResult;
+  variant_b: ExperimentVariantResult;
 }
 
 export class AutomationsApi {
@@ -300,6 +322,26 @@ export class AutomationsApi {
     );
     return response.data!;
   }
+
+  static async setExperiment(
+    id: string,
+    config: ExperimentConfig
+  ): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/experiment`,
+      config
+    );
+    return response.data!;
+  }
+
+  static async getExperimentResults(
+    id: string
+  ): Promise<SuccessResponse<ExperimentResults>> {
+    const response = await httpClient.get<ExperimentResults>(
+      `${AUTOMATIONS_BASE_URL}/${id}/experiment-results`
+    );
+    return response.data!;
+  }
 }
 
 export const automationsApi = {
@@ -309,4 +351,6 @@ export const automationsApi = {
   get: AutomationsApi.get,
   list: AutomationsApi.list,
   getHistory: AutomationsApi.getHistory,
+  setExperiment: AutomationsApi.setExperiment,
+  getExperimentResults: AutomationsApi.getExperimentResults,
 };

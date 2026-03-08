@@ -123,7 +123,9 @@ describe('VoiceDna types', () => {
         tags: [],
       };
       expect(example.context).toBeTruthy();
-      expect((example as Record<string, unknown>).reason).toBeUndefined();
+      expect(
+        (example as unknown as Record<string, unknown>).reason
+      ).toBeUndefined();
     });
   });
 
@@ -177,9 +179,11 @@ describe('Phase 5 DTO contracts', () => {
     it('does not include social_account_id or source fields', () => {
       const dto: TriggerAutoInferDto = { bot_id: 'bot-1' };
       expect(
-        (dto as Record<string, unknown>).social_account_id
+        (dto as unknown as Record<string, unknown>).social_account_id
       ).toBeUndefined();
-      expect((dto as Record<string, unknown>).source).toBeUndefined();
+      expect(
+        (dto as unknown as Record<string, unknown>).source
+      ).toBeUndefined();
     });
   });
 

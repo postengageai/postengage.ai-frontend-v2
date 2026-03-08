@@ -44,6 +44,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { ExperimentPanel } from './experiment-panel';
+import type { ExperimentConfig } from '@/lib/api/automations';
 
 export interface AutomationData {
   id: string;
@@ -97,6 +99,7 @@ export interface AutomationData {
     executed_at: string;
     credits_used: number;
   }>;
+  experiment_config?: ExperimentConfig | null;
   created_at: string;
   updated_at: string;
   last_executed_at?: string;
@@ -650,6 +653,12 @@ export function AutomationDetail({
               )}
             </CardContent>
           </Card>
+
+          {/* A/B Experiment Panel */}
+          <ExperimentPanel
+            automationId={automation.id}
+            currentExperimentConfig={automation.experiment_config}
+          />
         </div>
       </div>
 

@@ -36,13 +36,6 @@ interface FewShotManagerProps {
   isLoading?: boolean;
 }
 
-const SOURCE_LABELS: Record<FewShotExample['source'], string> = {
-  creator_manual: 'Manual',
-  creator_edited: 'Edited',
-  ai_approved: 'AI Approved',
-  curated: 'Curated',
-};
-
 export function FewShotManager({
   examples,
   onAdd,
@@ -199,9 +192,6 @@ export function FewShotManager({
                     onClick={() => setExpandedIndex(isExpanded ? null : index)}
                   >
                     <div className='flex items-center gap-2 mb-1'>
-                      <Badge variant='outline' className='text-xs'>
-                        {SOURCE_LABELS[example.source]}
-                      </Badge>
                       {example.tags.map(tag => (
                         <Badge
                           key={tag}
@@ -287,9 +277,6 @@ export function FewShotManager({
                         {example.reply}
                       </p>
                     </div>
-                    <p className='text-xs text-muted-foreground'>
-                      Added {new Date(example.added_at).toLocaleDateString()}
-                    </p>
                   </div>
                 )}
               </div>

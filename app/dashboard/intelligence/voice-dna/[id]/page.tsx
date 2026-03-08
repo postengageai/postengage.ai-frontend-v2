@@ -46,6 +46,7 @@ import { VoiceReviewPanel } from '@/components/intelligence/voice-dna/voice-revi
 import { SampleReplyGenerator } from '@/components/intelligence/voice-dna/sample-reply-generator';
 import { ContinuousLearningDashboard } from '@/components/intelligence/voice-dna/continuous-learning-dashboard';
 import { VoiceAdjustmentPanel } from '@/components/intelligence/voice-dna/voice-adjustment-panel';
+import { VoiceTuneUpBanner } from '@/components/intelligence/voice-dna/voice-tuneup-banner';
 import type {
   VoiceDna,
   VoiceDnaStatus,
@@ -357,6 +358,14 @@ export default function VoiceDnaDetailPage() {
           {brandVoiceName || 'Details'}
         </span>
       </div>
+
+      {/* Weekly Tune-up Banner (shows after 7 days if not done recently) */}
+      {voiceDna.status === 'ready' && (
+        <VoiceTuneUpBanner
+          voiceDnaId={voiceDna._id}
+          voiceDnaCreatedAt={voiceDna.created_at}
+        />
+      )}
 
       {/* Header */}
       <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>

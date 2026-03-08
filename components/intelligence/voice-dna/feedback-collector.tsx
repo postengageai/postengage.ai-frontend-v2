@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 interface FeedbackCollectorProps {
   voiceDnaId: string;
   botId: string;
+  logId?: string;
   originalMessage: string;
   generatedReply: string;
   onFeedbackSubmitted?: () => void;
@@ -21,7 +22,8 @@ type FeedbackState = 'idle' | 'editing' | 'rejecting' | 'submitted';
 
 export function FeedbackCollector({
   voiceDnaId,
-  botId,
+  botId: _botId,
+  logId,
   originalMessage,
   generatedReply,
   onFeedbackSubmitted,
@@ -36,14 +38,19 @@ export function FeedbackCollector({
   const submitFeedback = async (type: 'approve' | 'edit' | 'reject') => {
     setIsSubmitting(true);
     try {
+      const feedbackStatusMap = {
+        approve: 'approved',
+        edit: 'edited',
+        reject: 'rejected',
+      } as const;
+
       await VoiceDnaApi.submitVoiceFeedback({
         voice_dna_id: voiceDnaId,
-        bot_id: botId,
-        feedback_type: type,
-        original_reply: generatedReply,
-        edited_reply: type === 'edit' ? editedReply : undefined,
-        context: originalMessage,
-        reason: type === 'reject' ? rejectReason : undefined,
+        log_id: logId ?? '',
+        feedback_status: feedbackStatusMap[type],
+        original_text: generatedReply,
+        context_text: originalMessage,
+        edited_text: type === 'edit' ? editedReply : undefined,
       });
 
       setSubmittedType(type);

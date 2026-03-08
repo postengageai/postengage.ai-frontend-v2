@@ -83,7 +83,9 @@ export default function IntelligenceAnalyticsPage() {
     periodLabel: '',
     items: [],
   });
-  const qualityData = null;
+  // qualityData will be populated in a future iteration; placeholder until API is wired
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const qualityData = null as any;
 
   useEffect(() => {
     const load = async () => {

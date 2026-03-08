@@ -106,14 +106,13 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
 
   it('step 2: triggers auto-infer with bot + social account info', async () => {
     const autoInferResult: AutoInferResult = {
+      success: true,
       voice_dna_id: 'vdna-new',
       status: 'queued',
-      estimated_time_seconds: 30,
-      samples_found: {
-        instagram_posts: 15,
-        manual_replies: 3,
-        total: 18,
-      },
+      samples_collected: 18,
+      caption_samples: 15,
+      reply_samples: 3,
+      message: 'Analysis queued',
     };
 
     vi.mocked(VoiceDnaApi.triggerAutoInfer).mockResolvedValue({
@@ -124,16 +123,14 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
 
     const inferDto: TriggerAutoInferDto = {
       bot_id: 'bot-1',
-      social_account_id: 'sa-1',
       brand_voice_id: 'bv-1',
-      source: 'onboarding',
     };
 
     const response = await VoiceDnaApi.triggerAutoInfer(inferDto);
 
     expect(response.data.voice_dna_id).toBe('vdna-new');
     expect(response.data.status).toBe('queued');
-    expect(response.data.samples_found.total).toBeGreaterThanOrEqual(5);
+    expect(response.data.samples_collected).toBeGreaterThanOrEqual(5);
   });
 
   it('step 3: polls voice DNA status until ready', async () => {
@@ -195,8 +192,8 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
     const review = await VoiceDnaApi.getVoiceReview('vdna-new');
 
     expect(review.data.confidence_level).toBe('high');
-    expect(review.data.summary.overall).toBeTruthy();
-    expect(review.data.sample_generated_reply.reply).toBeTruthy();
+    expect(review.data.summary!.overall).toBeTruthy();
+    expect(review.data.sample_generated_reply!.reply).toBeTruthy();
   });
 
   it('full flow: create bot → auto-infer → poll → review', async () => {
@@ -213,25 +210,26 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
       behavior: mockBehavior,
     });
     const botId = botResponse.data._id;
-    const socialAccountId = botResponse.data.social_account_id;
 
     // 2. Trigger auto-infer
     vi.mocked(VoiceDnaApi.triggerAutoInfer).mockResolvedValue({
       success: true,
       data: {
+        success: true,
         voice_dna_id: 'vdna-flow',
         status: 'queued',
-        samples_found: { instagram_posts: 20, manual_replies: 0, total: 20 },
+        samples_collected: 20,
+        caption_samples: 20,
+        reply_samples: 0,
+        message: 'Analysis queued',
       },
       meta: mockMeta,
     });
 
     const inferResponse = await VoiceDnaApi.triggerAutoInfer({
       bot_id: botId,
-      social_account_id: socialAccountId,
-      source: 'onboarding',
     });
-    const voiceDnaId = inferResponse.data.voice_dna_id;
+    const voiceDnaId = inferResponse.data.voice_dna_id!;
 
     // 3. Poll until ready
     vi.mocked(VoiceDnaApi.getVoiceDna).mockResolvedValue({
@@ -267,7 +265,7 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
     const review = await VoiceDnaApi.getVoiceReview(voiceDnaId);
 
     expect(review.data.confidence_level).toBeDefined();
-    expect(review.data.summary.overall.length).toBeGreaterThan(0);
+    expect(review.data.summary!.overall.length).toBeGreaterThan(0);
 
     // Verify the full chain was called
     expect(IntelligenceApi.createBot).toHaveBeenCalledTimes(1);
@@ -280,21 +278,23 @@ describe('Bot creation → Voice DNA auto-infer flow', () => {
     vi.mocked(VoiceDnaApi.triggerAutoInfer).mockResolvedValue({
       success: true,
       data: {
+        success: true,
         voice_dna_id: 'vdna-fail',
         status: 'queued',
-        samples_found: { instagram_posts: 2, manual_replies: 0, total: 2 },
+        samples_collected: 2,
+        caption_samples: 2,
+        reply_samples: 0,
+        message: 'Insufficient samples',
       },
       meta: mockMeta,
     });
 
     const inferResponse = await VoiceDnaApi.triggerAutoInfer({
       bot_id: 'bot-1',
-      social_account_id: 'sa-1',
-      source: 'onboarding',
     });
 
     // Not enough samples but still queued
-    expect(inferResponse.data.samples_found.total).toBeLessThan(5);
+    expect(inferResponse.data.samples_collected).toBeLessThan(5);
 
     // Polling returns failed
     vi.mocked(VoiceDnaApi.getVoiceDna).mockResolvedValue({

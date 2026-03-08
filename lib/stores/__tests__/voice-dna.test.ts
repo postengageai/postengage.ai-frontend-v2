@@ -27,34 +27,26 @@ const mockVoiceDna: VoiceDna = {
   source: 'user_configured',
   status: 'ready',
   fingerprint: {
-    style_metrics: {
-      avg_sentence_length: 12,
-      vocabulary_complexity: 'moderate',
-      emoji_patterns: ['👍', '🔥'],
-      emoji_frequency: 0.3,
-      punctuation_style: {
-        exclamation_frequency: 0.4,
-        ellipsis_usage: false,
-        caps_emphasis: false,
-      },
+    avg_sentence_length: 12,
+    vocabulary_complexity: 'moderate',
+    emoji_patterns: ['👍', '🔥'],
+    emoji_frequency: 0.3,
+    punctuation_style: {
+      uses_exclamation: true,
+      uses_ellipsis: false,
+      uses_caps_for_emphasis: false,
     },
-    language_patterns: {
-      primary_language: 'en',
-      code_switching_frequency: 0,
-      slang_patterns: [],
-      filler_words: [],
-    },
-    tone_markers: {
-      humor_level: 0.5,
-      directness: 0.7,
-      warmth: 0.8,
-      assertiveness: 0.6,
-    },
-    structural_patterns: {
-      starts_with_patterns: ['Hey!'],
-      ends_with_patterns: ['Cheers'],
-      question_response_style: 'direct_answer',
-    },
+    primary_language: 'en',
+    code_switching_frequency: 0,
+    slang_patterns: [],
+    filler_words: [],
+    humor_level: 0.5,
+    directness: 0.7,
+    warmth: 0.8,
+    assertiveness: 0.6,
+    starts_with_patterns: ['Hey!'],
+    ends_with_patterns: ['Cheers'],
+    question_response_style: 'direct_answer',
   },
   few_shot_examples: [
     {
@@ -62,12 +54,11 @@ const mockVoiceDna: VoiceDna = {
       reply:
         'Hey! Our plans start at $29/mo. Want me to walk you through them?',
       tags: ['pricing'],
-      source: 'creator_manual',
-      added_at: '2026-01-01T00:00:00Z',
     },
   ],
   negative_examples: [],
   raw_samples: [],
+  samples_analyzed: 0,
   feedback_signals_processed: 0,
   auto_refinement_count: 0,
   created_at: '2026-01-01T00:00:00Z',
@@ -256,8 +247,6 @@ describe('useVoiceDnaStore', () => {
             context: 'new context',
             reply: 'new reply',
             tags: [],
-            source: 'creator_manual' as const,
-            added_at: '2026-01-01T00:00:00Z',
           },
         ],
       };
@@ -330,10 +319,9 @@ describe('useVoiceDnaStore', () => {
         ...mockVoiceDna,
         negative_examples: [
           {
+            context: 'too formal',
             reply: 'bad reply',
-            reason: 'too formal',
             tags: [],
-            added_at: '2026-01-01T00:00:00Z',
           },
         ],
       };
@@ -347,8 +335,8 @@ describe('useVoiceDnaStore', () => {
       });
 
       await useVoiceDnaStore.getState().actions.addNegative('vdna-1', {
+        context: 'too formal',
         reply: 'bad reply',
-        reason: 'too formal',
         tags: [],
       });
 
@@ -364,10 +352,9 @@ describe('useVoiceDnaStore', () => {
         ...mockVoiceDna,
         negative_examples: [
           {
+            context: 'too formal',
             reply: 'bad reply',
-            reason: 'too formal',
             tags: [],
-            added_at: '2026-01-01T00:00:00Z',
           },
         ],
       };
@@ -392,9 +379,12 @@ describe('useVoiceDnaStore', () => {
 
   describe('triggerReanalyze', () => {
     it('updates status after reanalysis', async () => {
-      const updated = { ...mockVoiceDna, status: 'analyzing' as const };
       vi.mocked(VoiceDnaApi.reanalyzeVoiceDna).mockResolvedValue(
-        mockSuccessResponse(updated)
+        mockSuccessResponse({
+          voice_dna_id: 'vdna-1',
+          status: 'analyzing',
+          message: 'Queued',
+        })
       );
 
       useVoiceDnaStore.setState({

@@ -17,59 +17,35 @@ import type {
 // === FingerprintRadar Tests ===
 
 const sampleFingerprint: VoiceDnaFingerprint = {
-  style_metrics: {
-    avg_sentence_length: 12,
-    vocabulary_complexity: 'moderate',
-    emoji_patterns: ['🔥', '👍'],
-    emoji_frequency: 0.4,
-    punctuation_style: {
-      exclamation_frequency: 0.3,
-      ellipsis_usage: true,
-      caps_emphasis: false,
-    },
+  avg_sentence_length: 12,
+  vocabulary_complexity: 'moderate',
+  emoji_patterns: ['🔥', '👍'],
+  emoji_frequency: 0.4,
+  punctuation_style: {
+    uses_exclamation: true,
+    uses_ellipsis: true,
+    uses_caps_for_emphasis: false,
   },
-  language_patterns: {
-    primary_language: 'en',
-    code_switching_frequency: 0.1,
-    slang_patterns: ['bro', 'yo'],
-    filler_words: ['like'],
-  },
-  tone_markers: {
-    humor_level: 0.7,
-    directness: 0.8,
-    warmth: 0.6,
-    assertiveness: 0.5,
-  },
-  structural_patterns: {
-    starts_with_patterns: ['Hey!'],
-    ends_with_patterns: ['Cheers'],
-    question_response_style: 'direct_answer',
-  },
+  primary_language: 'en',
+  code_switching_frequency: 0.1,
+  slang_patterns: ['bro', 'yo'],
+  filler_words: ['like'],
+  humor_level: 0.7,
+  directness: 0.8,
+  warmth: 0.6,
+  assertiveness: 0.5,
+  starts_with_patterns: ['Hey!'],
+  ends_with_patterns: ['Cheers'],
+  question_response_style: 'direct_answer',
 };
 
 /** Mirrors the data transformation in FingerprintRadar component */
 function buildRadarData(fingerprint: VoiceDnaFingerprint) {
   return [
-    {
-      marker: 'Humor',
-      value: fingerprint.tone_markers.humor_level,
-      fullMark: 10,
-    },
-    {
-      marker: 'Directness',
-      value: fingerprint.tone_markers.directness,
-      fullMark: 10,
-    },
-    {
-      marker: 'Warmth',
-      value: fingerprint.tone_markers.warmth,
-      fullMark: 10,
-    },
-    {
-      marker: 'Assertiveness',
-      value: fingerprint.tone_markers.assertiveness,
-      fullMark: 10,
-    },
+    { marker: 'Humor', value: fingerprint.humor_level, fullMark: 10 },
+    { marker: 'Directness', value: fingerprint.directness, fullMark: 10 },
+    { marker: 'Warmth', value: fingerprint.warmth, fullMark: 10 },
+    { marker: 'Assertiveness', value: fingerprint.assertiveness, fullMark: 10 },
   ];
 }
 
@@ -154,6 +130,7 @@ const mockVoiceDna: VoiceDna = {
   few_shot_examples: [],
   negative_examples: [],
   raw_samples: [],
+  samples_analyzed: 0,
   feedback_signals_processed: 0,
   auto_refinement_count: 0,
   created_at: '2026-01-01',
@@ -209,7 +186,7 @@ describe('VoiceReviewPanel logic', () => {
 
     it('summary keys match VoiceReview summary fields', () => {
       SUMMARY_CARDS.forEach(card => {
-        expect(mockReview.summary[card.key]).toBeTruthy();
+        expect(mockReview.summary![card.key]).toBeTruthy();
       });
     });
 
@@ -227,7 +204,7 @@ describe('VoiceReviewPanel logic', () => {
         hybrid: 'Hybrid',
         user_configured: 'Manual',
       };
-      expect(sourceLabels[mockReview.voice_dna.source]).toBe('Auto-Inferred');
+      expect(sourceLabels[mockReview.voice_dna!.source]).toBe('Auto-Inferred');
     });
   });
 
@@ -253,28 +230,30 @@ function buildFeedbackDto(
   type: 'approve' | 'edit' | 'reject',
   params: {
     voiceDnaId: string;
-    botId: string;
+    logId?: string;
     generatedReply: string;
     originalMessage: string;
     editedReply?: string;
-    rejectReason?: string;
   }
 ): VoiceFeedbackDto {
+  const statusMap = {
+    approve: 'approved',
+    edit: 'edited',
+    reject: 'rejected',
+  } as const;
   return {
     voice_dna_id: params.voiceDnaId,
-    bot_id: params.botId,
-    feedback_type: type,
-    original_reply: params.generatedReply,
-    edited_reply: type === 'edit' ? params.editedReply : undefined,
-    context: params.originalMessage,
-    reason: type === 'reject' ? params.rejectReason : undefined,
+    log_id: params.logId ?? '',
+    feedback_status: statusMap[type],
+    original_text: params.generatedReply,
+    context_text: params.originalMessage,
+    edited_text: type === 'edit' ? params.editedReply : undefined,
   };
 }
 
 describe('FeedbackCollector logic', () => {
   const baseParams = {
     voiceDnaId: 'vdna-1',
-    botId: 'bot-1',
     generatedReply: 'Hey! Glad you like it 🔥',
     originalMessage: 'Love your product!',
   };
@@ -282,59 +261,46 @@ describe('FeedbackCollector logic', () => {
   describe('approve feedback', () => {
     it('builds correct DTO for approve', () => {
       const dto = buildFeedbackDto('approve', baseParams);
-      expect(dto.feedback_type).toBe('approve');
+      expect(dto.feedback_status).toBe('approved');
       expect(dto.voice_dna_id).toBe('vdna-1');
-      expect(dto.bot_id).toBe('bot-1');
-      expect(dto.original_reply).toBe('Hey! Glad you like it 🔥');
-      expect(dto.context).toBe('Love your product!');
+      expect(dto.original_text).toBe('Hey! Glad you like it 🔥');
+      expect(dto.context_text).toBe('Love your product!');
     });
 
-    it('does not include edited_reply for approve', () => {
+    it('does not include edited_text for approve', () => {
       const dto = buildFeedbackDto('approve', baseParams);
-      expect(dto.edited_reply).toBeUndefined();
-    });
-
-    it('does not include reason for approve', () => {
-      const dto = buildFeedbackDto('approve', baseParams);
-      expect(dto.reason).toBeUndefined();
+      expect(dto.edited_text).toBeUndefined();
     });
   });
 
   describe('edit feedback', () => {
-    it('builds correct DTO with edited reply', () => {
+    it('builds correct DTO with edited text', () => {
       const dto = buildFeedbackDto('edit', {
         ...baseParams,
         editedReply: 'Thanks so much! Glad you enjoy it 💪',
       });
-      expect(dto.feedback_type).toBe('edit');
-      expect(dto.edited_reply).toBe('Thanks so much! Glad you enjoy it 💪');
+      expect(dto.feedback_status).toBe('edited');
+      expect(dto.edited_text).toBe('Thanks so much! Glad you enjoy it 💪');
     });
 
-    it('does not include reason for edit', () => {
-      const dto = buildFeedbackDto('edit', {
+    it('does not include edited_text for approve', () => {
+      const dto = buildFeedbackDto('approve', {
         ...baseParams,
         editedReply: 'edited text',
       });
-      expect(dto.reason).toBeUndefined();
+      expect(dto.edited_text).toBeUndefined();
     });
   });
 
   describe('reject feedback', () => {
-    it('builds correct DTO with reason', () => {
-      const dto = buildFeedbackDto('reject', {
-        ...baseParams,
-        rejectReason: 'Too casual for this context',
-      });
-      expect(dto.feedback_type).toBe('reject');
-      expect(dto.reason).toBe('Too casual for this context');
+    it('builds correct DTO for reject', () => {
+      const dto = buildFeedbackDto('reject', baseParams);
+      expect(dto.feedback_status).toBe('rejected');
     });
 
-    it('does not include edited_reply for reject', () => {
-      const dto = buildFeedbackDto('reject', {
-        ...baseParams,
-        rejectReason: 'Too casual',
-      });
-      expect(dto.edited_reply).toBeUndefined();
+    it('does not include edited_text for reject', () => {
+      const dto = buildFeedbackDto('reject', baseParams);
+      expect(dto.edited_text).toBeUndefined();
     });
   });
 
