@@ -103,6 +103,34 @@ export class IntelligenceApi {
     return response.data;
   }
 
+  static async addKnowledgeSourceFromFile(
+    botId: string,
+    file: File,
+    title?: string
+  ): Promise<SuccessResponse<KnowledgeSource>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+    const response = await httpClient.post<KnowledgeSource>(
+      `${INTELLIGENCE_BASE_URL}/bots/${botId}/knowledge/upload`,
+      formData
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  static async addKnowledgeSourceFromUrl(
+    botId: string,
+    data: { title: string; url: string }
+  ): Promise<SuccessResponse<KnowledgeSource>> {
+    const response = await httpClient.post<KnowledgeSource>(
+      `${INTELLIGENCE_BASE_URL}/bots/${botId}/knowledge/url`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
   static async updateKnowledgeSource(
     botId: string,
     sourceId: string,
