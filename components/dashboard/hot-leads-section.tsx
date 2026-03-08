@@ -14,8 +14,10 @@ import {
   HelpCircle,
   ChevronRight,
   Inbox,
+  MessagesSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { analytics } from '@/lib/analytics';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import type { HotLead } from '@/lib/types/intelligence';
 import { IntentLabel } from '@/lib/types/intelligence';
@@ -49,6 +51,16 @@ const INTENT_CONFIG: Record<
   },
 };
 
+// Build an Instagram DM link. Prefer username-based deep link; fall back to
+// user-id-based link (Instagram supports ig.me/m/<id> for numeric IDs too).
+function buildInstagramLink(lead: HotLead): string {
+  if (lead.platform_username) {
+    return `https://ig.me/m/${lead.platform_username}`;
+  }
+  // platform_user_id is the numeric Instagram user ID — ig.me/m/<id> works
+  return `https://ig.me/m/${lead.platform_user_id}`;
+}
+
 // ─── Single Lead Card ─────────────────────────────────────────────────────────
 
 function LeadCard({ lead }: { lead: HotLead }) {
@@ -62,27 +74,34 @@ function LeadCard({ lead }: { lead: HotLead }) {
     ? `@${lead.platform_username}`
     : `User ${lead.platform_user_id.slice(-6)}`;
 
-  // Instagram DM deep link: opens DM with that user
-  const instagramLink = lead.platform_username
-    ? `https://ig.me/m/${lead.platform_username}`
-    : `https://www.instagram.com/direct/inbox/`;
+  const instagramLink = buildInstagramLink(lead);
 
   const timeAgo = formatDistanceToNow(new Date(lead.created_at), {
     addSuffix: true,
   });
+
+  const messageCount = lead.message_count ?? 1;
 
   return (
     <div className='flex flex-col gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors'>
       {/* Header row */}
       <div className='flex items-start justify-between gap-2'>
         <div className='flex items-center gap-2 min-w-0'>
-          <div className='h-7 w-7 rounded-full bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center text-white text-xs font-bold shrink-0'>
+          <div className='h-8 w-8 rounded-full bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center text-white text-xs font-bold shrink-0'>
             {displayName[0].toUpperCase()}
           </div>
           <div className='min-w-0'>
-            <p className='text-sm font-medium text-foreground truncate'>
-              {displayName}
-            </p>
+            <div className='flex items-center gap-1.5'>
+              <p className='text-sm font-medium text-foreground truncate'>
+                {displayName}
+              </p>
+              {messageCount > 1 && (
+                <span className='inline-flex items-center gap-0.5 text-xs text-muted-foreground'>
+                  <MessagesSquare className='h-3 w-3' />
+                  {messageCount}
+                </span>
+              )}
+            </div>
             <p className='text-xs text-muted-foreground'>{timeAgo}</p>
           </div>
         </div>
@@ -119,7 +138,18 @@ function LeadCard({ lead }: { lead: HotLead }) {
           className='h-7 text-xs gap-1 text-pink-600 hover:text-pink-700 hover:bg-pink-50 px-2'
           asChild
         >
-          <a href={instagramLink} target='_blank' rel='noopener noreferrer'>
+          <a
+            href={instagramLink}
+            target='_blank'
+            rel='noopener noreferrer'
+            onClick={() =>
+              analytics.track('lead_card_clicked', {
+                lead_id: lead.id,
+                intent: lead.intent.label,
+                username: lead.platform_username ?? undefined,
+              })
+            }
+          >
             Follow up on Instagram
             <ExternalLink className='h-3 w-3' />
           </a>
@@ -135,7 +165,7 @@ function LeadSkeleton() {
   return (
     <div className='flex flex-col gap-2 p-3 rounded-lg border border-border'>
       <div className='flex items-center gap-2'>
-        <Skeleton className='h-7 w-7 rounded-full' />
+        <Skeleton className='h-8 w-8 rounded-full' />
         <div className='flex-1 space-y-1'>
           <Skeleton className='h-3 w-24' />
           <Skeleton className='h-2.5 w-16' />
@@ -143,7 +173,6 @@ function LeadSkeleton() {
         <Skeleton className='h-5 w-20 rounded-full' />
       </div>
       <Skeleton className='h-8 w-full rounded' />
-      <Skeleton className='h-6 w-full rounded' />
     </div>
   );
 }
@@ -191,7 +220,7 @@ export function HotLeadsSection() {
           </CardTitle>
           {total > 0 && (
             <p className='text-xs text-muted-foreground'>
-              High-intent DMs detected by your bot
+              {total} unique {total === 1 ? 'person' : 'people'} detected
             </p>
           )}
         </div>
@@ -227,7 +256,7 @@ export function HotLeadsSection() {
                 className='w-full text-xs text-muted-foreground hover:text-foreground gap-1'
                 onClick={() => setShowAll(v => !v)}
               >
-                {showAll ? 'Show less' : `Show ${leads.length - 5} more leads`}
+                {showAll ? 'Show less' : `Show ${leads.length - 5} more`}
                 <ChevronRight
                   className={cn(
                     'h-3 w-3 transition-transform',

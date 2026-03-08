@@ -281,4 +281,22 @@ export class IntelligenceApi {
     if (response.error) throw response.error;
     return response.data;
   }
+
+  // Conversation thread (for future inbox use)
+  static async getThread(
+    platformUserId: string,
+    limit?: number
+  ): Promise<SuccessResponse<import('../types/intelligence').ThreadResponse>> {
+    const searchParams = new URLSearchParams();
+    if (limit) searchParams.set('limit', String(limit));
+    const query = searchParams.toString();
+    const url = query
+      ? `${INTELLIGENCE_BASE_URL}/leads/${encodeURIComponent(platformUserId)}/thread?${query}`
+      : `${INTELLIGENCE_BASE_URL}/leads/${encodeURIComponent(platformUserId)}/thread`;
+
+    const response =
+      await httpClient.get<import('../types/intelligence').ThreadResponse>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
 }

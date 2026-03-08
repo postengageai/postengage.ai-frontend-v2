@@ -29,6 +29,7 @@ import {
   Search,
   RefreshCw,
   Inbox,
+  MessagesSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { analytics } from '@/lib/analytics';
@@ -90,9 +91,9 @@ function LeadRow({ lead }: { lead: HotLead }) {
     ? `@${lead.platform_username}`
     : `User ${lead.platform_user_id.slice(-6)}`;
 
-  const instagramLink = lead.platform_username
-    ? `https://ig.me/m/${lead.platform_username}`
-    : `https://www.instagram.com/direct/inbox/`;
+  // ig.me/m/ works with both usernames and numeric Instagram user IDs
+  const instagramLink = `https://ig.me/m/${lead.platform_username ?? lead.platform_user_id}`;
+  const messageCount = lead.message_count ?? 1;
 
   const timeAgo = formatDistanceToNow(new Date(lead.created_at), {
     addSuffix: true,
@@ -107,9 +108,17 @@ function LeadRow({ lead }: { lead: HotLead }) {
           {displayName[0].toUpperCase()}
         </div>
         <div className='min-w-0'>
-          <p className='text-sm font-semibold text-foreground truncate'>
-            {displayName}
-          </p>
+          <div className='flex items-center gap-1.5'>
+            <p className='text-sm font-semibold text-foreground truncate'>
+              {displayName}
+            </p>
+            {messageCount > 1 && (
+              <span className='inline-flex items-center gap-0.5 text-xs text-muted-foreground shrink-0'>
+                <MessagesSquare className='h-3 w-3' />
+                {messageCount}
+              </span>
+            )}
+          </div>
           <p
             className='text-xs text-muted-foreground truncate'
             title={fullDate}

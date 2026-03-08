@@ -227,6 +227,9 @@ export interface HotLead {
   social_account_id: string;
   automation_id: string;
   created_at: string;
+  // Deduplication extras
+  message_count?: number;
+  all_intents?: string[];
 }
 
 export interface HotLeadsResponse {
@@ -240,4 +243,29 @@ export interface GetHotLeadsParams {
   intent?: string;
   limit?: number;
   page?: number;
+}
+
+// ─── Inbox / Thread ──────────────────────────────────────────────────────────
+
+export interface ThreadMessage {
+  id: string;
+  platform_user_id: string;
+  platform_username: string | null;
+  message_text: string;
+  message_type: string;
+  bot_reply: string | null;
+  decision_action: string;
+  intent: {
+    label: string;
+    confidence: number;
+  };
+  social_account_id: string;
+  automation_id: string;
+  created_at: string;
+}
+
+export interface ThreadResponse {
+  platform_user_id: string;
+  messages: ThreadMessage[];
+  total: number;
 }
