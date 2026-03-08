@@ -41,6 +41,7 @@ import {
   HelpCircle,
   ChevronUp,
   Dna,
+  Flame,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -64,6 +65,11 @@ const navItems = [
     title: 'Automations',
     href: '/dashboard/automations',
     icon: Zap,
+  },
+  {
+    title: 'Hot Leads',
+    href: '/dashboard/leads',
+    icon: Flame,
   },
   {
     title: 'Media',
@@ -192,6 +198,7 @@ export function AppSidebar() {
                 const finalActive =
                   item.href === '/dashboard' ? isExactDashboard : isActive;
 
+                const isHotLeads = item.href === '/dashboard/leads';
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -200,14 +207,20 @@ export function AppSidebar() {
                       className={cn(
                         'h-10 rounded-lg transition-all duration-200',
                         finalActive &&
-                          'bg-primary/10 text-primary font-medium shadow-sm'
+                          !isHotLeads &&
+                          'bg-primary/10 text-primary font-medium shadow-sm',
+                        finalActive &&
+                          isHotLeads &&
+                          'bg-orange-500/10 text-orange-600 font-medium shadow-sm'
                       )}
                     >
                       <Link href={item.href}>
                         <item.icon
                           className={cn(
                             'h-4 w-4',
-                            finalActive && 'text-primary'
+                            isHotLeads && !finalActive && 'text-orange-400',
+                            finalActive && !isHotLeads && 'text-primary',
+                            finalActive && isHotLeads && 'text-orange-500'
                           )}
                         />
                         <span>{item.title}</span>

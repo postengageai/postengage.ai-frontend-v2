@@ -191,7 +191,7 @@ export function HotLeadsSection() {
           </CardTitle>
           {total > 0 && (
             <p className='text-xs text-muted-foreground'>
-              High-intent comments detected by your bot
+              High-intent DMs detected by your bot
             </p>
           )}
         </div>

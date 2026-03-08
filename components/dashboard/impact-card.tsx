@@ -77,8 +77,8 @@ export function ImpactCard({ impact, isFirstDay = false }: ImpactCardProps) {
         <p className='text-sm font-medium text-foreground mb-3'>
           Today, your bot handled{' '}
           <span className='text-primary font-semibold'>
-            {replies_handled_today} comment
-            {replies_handled_today !== 1 ? 's' : ''}
+            {replies_handled_today}{' '}
+            {replies_handled_today !== 1 ? 'replies' : 'reply'}
           </span>
           {hours_saved_today > 0 && (
             <>
@@ -102,7 +102,7 @@ export function ImpactCard({ impact, isFirstDay = false }: ImpactCardProps) {
           <StatPill
             icon={<MessageSquare className='h-3 w-3' />}
             value={`${replies_handled_today}`}
-            label='today'
+            label='replies today'
             className='bg-blue-50 text-blue-700 border-blue-200'
           />
           {hours_saved_today > 0 && (
