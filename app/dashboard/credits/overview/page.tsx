@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -257,9 +257,9 @@ function InvoicesTab() {
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ─── Page content (uses useSearchParams — must be inside Suspense) ─────────────
 
-export default function CreditsPage() {
+function CreditsPageContent() {
   const searchParams = useSearchParams();
   const defaultTab =
     searchParams.get('tab') === 'invoices' ? 'billing' : 'activity';
@@ -400,5 +400,23 @@ export default function CreditsPage() {
 
       <CreditsInfoCard />
     </div>
+  );
+}
+
+// ─── Default export — wraps content in Suspense for useSearchParams ────────────
+
+export default function CreditsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='mx-auto max-w-5xl space-y-6 p-4 sm:p-6'>
+          <Skeleton className='h-8 w-48' />
+          <Skeleton className='h-32 w-full' />
+          <Skeleton className='h-32 w-full' />
+        </div>
+      }
+    >
+      <CreditsPageContent />
+    </Suspense>
   );
 }

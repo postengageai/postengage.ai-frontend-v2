@@ -47,7 +47,6 @@ export function ContinuousLearningDashboard({
     (signalsSinceLast / REFINEMENT_THRESHOLD) * 100
   );
 
-  // Split few-shot examples by learning source (using tags)
   const creatorEditedExamples = voiceDna.few_shot_examples.filter(e =>
     e.tags.includes('creator_edited')
   );
@@ -175,7 +174,6 @@ export function ContinuousLearningDashboard({
         </CardHeader>
         <CardContent>
           <div className='grid gap-3 grid-cols-1 sm:grid-cols-3'>
-            {/* Creator Edited */}
             <div className='flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/50'>
               <PenLine className='h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0' />
               <div className='min-w-0'>
@@ -188,7 +186,6 @@ export function ContinuousLearningDashboard({
               </div>
             </div>
 
-            {/* AI Approved */}
             <div className='flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200/50 dark:border-green-800/50'>
               <CheckCircle className='h-4 w-4 text-green-600 dark:text-green-400 shrink-0' />
               <div className='min-w-0'>
@@ -201,7 +198,6 @@ export function ContinuousLearningDashboard({
               </div>
             </div>
 
-            {/* Creator Rejected */}
             <div className='flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/50 dark:border-red-800/50'>
               <ThumbsDown className='h-4 w-4 text-red-600 dark:text-red-400 shrink-0' />
               <div className='min-w-0'>
