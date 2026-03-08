@@ -103,6 +103,19 @@ export class IntelligenceApi {
     return response.data;
   }
 
+  static async updateKnowledgeSource(
+    botId: string,
+    sourceId: string,
+    data: { title?: string; content?: string }
+  ): Promise<SuccessResponse<KnowledgeSource>> {
+    const response = await httpClient.patch<KnowledgeSource>(
+      `${INTELLIGENCE_BASE_URL}/bots/${botId}/knowledge/${sourceId}`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
   static async removeKnowledgeSource(
     botId: string,
     sourceId: string

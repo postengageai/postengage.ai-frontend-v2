@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, Trash, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash, FileText, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -39,9 +39,19 @@ export default function BotKnowledgePage() {
   const { toast } = useToast();
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Add dialog state
   const [isAdding, setIsAdding] = useState(false);
   const [newSource, setNewSource] = useState({ title: '', content: '' });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  // Edit dialog state
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editingSource, setEditingSource] = useState<KnowledgeSource | null>(
+    null
+  );
+  const [editForm, setEditForm] = useState({ title: '', content: '' });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const botId = params.id as string;
 
@@ -79,7 +89,7 @@ export default function BotKnowledgePage() {
       if (response && response.data) {
         setSources([...sources, response.data]);
         setNewSource({ title: '', content: '' });
-        setIsDialogOpen(false);
+        setIsAddDialogOpen(false);
         toast({
           title: 'Success',
           description: 'Knowledge source added successfully',
@@ -94,6 +104,48 @@ export default function BotKnowledgePage() {
       });
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const openEditDialog = (source: KnowledgeSource) => {
+    setEditingSource(source);
+    setEditForm({
+      title: source.title,
+      content: source.raw_content || source.content_preview || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateSource = async () => {
+    if (!editingSource || (!editForm.title && !editForm.content)) return;
+
+    setIsUpdating(true);
+    try {
+      const response = await IntelligenceApi.updateKnowledgeSource(
+        botId,
+        editingSource._id,
+        editForm
+      );
+      if (response && response.data) {
+        setSources(
+          sources.map(s => (s._id === editingSource._id ? response.data : s))
+        );
+        setIsEditDialogOpen(false);
+        setEditingSource(null);
+        toast({
+          title: 'Success',
+          description: 'Knowledge source updated successfully',
+        });
+      }
+    } catch (_error) {
+      const err = parseApiError(_error);
+      toast({
+        variant: 'destructive',
+        title: err.title,
+        description: err.message,
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -151,7 +203,9 @@ export default function BotKnowledgePage() {
             </p>
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+        {/* Add Source Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className='shrink-0 self-start sm:self-auto'>
               <Plus className='mr-2 h-4 w-4' />
@@ -182,7 +236,7 @@ export default function BotKnowledgePage() {
                 <Textarea
                   id='content'
                   placeholder='Enter the full text content...'
-                  className='h-32'
+                  className='h-40'
                   value={newSource.content}
                   onChange={e =>
                     setNewSource({ ...newSource, content: e.target.value })
@@ -200,7 +254,7 @@ export default function BotKnowledgePage() {
               </div>
               <Button
                 variant='outline'
-                onClick={() => setIsDialogOpen(false)}
+                onClick={() => setIsAddDialogOpen(false)}
                 disabled={isAdding}
               >
                 Cancel
@@ -213,6 +267,53 @@ export default function BotKnowledgePage() {
         </Dialog>
       </div>
 
+      {/* Edit Source Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Knowledge Source</DialogTitle>
+            <DialogDescription>
+              Update the title or content of this knowledge source.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4 py-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-title'>Title</Label>
+              <Input
+                id='edit-title'
+                value={editForm.title}
+                onChange={e =>
+                  setEditForm({ ...editForm, title: e.target.value })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-content'>Content</Label>
+              <Textarea
+                id='edit-content'
+                className='h-48'
+                value={editForm.content}
+                onChange={e =>
+                  setEditForm({ ...editForm, content: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateSource} disabled={isUpdating}>
+              {isUpdating ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {sources.length === 0 ? (
         <div className='text-center py-16 border-2 border-dashed rounded-xl bg-muted/5'>
           <div className='h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4'>
@@ -223,34 +324,44 @@ export default function BotKnowledgePage() {
             Add documents or text to train your bot with your business
             knowledge.
           </p>
-          <Button onClick={() => setIsDialogOpen(true)}>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
             Add First Source
           </Button>
         </div>
       ) : (
         <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
           {sources.map(source => (
-            <Card key={source._id}>
+            <Card key={source._id} className='flex flex-col'>
               <CardHeader className='pb-2'>
-                <div className='flex justify-between items-start'>
-                  <CardTitle className='text-lg font-medium truncate pr-4'>
+                <div className='flex justify-between items-start gap-2'>
+                  <CardTitle className='text-base font-medium line-clamp-2 flex-1'>
                     {source.title}
                   </CardTitle>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8 text-destructive hover:text-destructive'
-                    onClick={() => handleDeleteSource(source._id)}
-                  >
-                    <Trash className='h-4 w-4' />
-                  </Button>
+                  <div className='flex items-center gap-1 shrink-0'>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-8 w-8 text-muted-foreground hover:text-foreground'
+                      onClick={() => openEditDialog(source)}
+                    >
+                      <Pencil className='h-3.5 w-3.5' />
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-8 w-8 text-destructive hover:text-destructive'
+                      onClick={() => handleDeleteSource(source._id)}
+                    >
+                      <Trash className='h-3.5 w-3.5' />
+                    </Button>
+                  </div>
                 </div>
                 <CardDescription>
                   {source.source_type.toUpperCase()} •{' '}
                   {source.processed_chunks?.length || 0} chunks
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className='flex-1'>
                 <p className='text-sm text-muted-foreground line-clamp-3'>
                   {source.content_preview ||
                     source.raw_content ||
