@@ -31,6 +31,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { analytics } from '@/lib/analytics';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import type { HotLead } from '@/lib/types/intelligence';
 import { IntentLabel } from '@/lib/types/intelligence';
@@ -149,7 +150,18 @@ function LeadRow({ lead }: { lead: HotLead }) {
           className='h-7 text-xs gap-1 border-pink-200 text-pink-600 hover:text-pink-700 hover:bg-pink-50 px-2.5 whitespace-nowrap'
           asChild
         >
-          <a href={instagramLink} target='_blank' rel='noopener noreferrer'>
+          <a
+            href={instagramLink}
+            target='_blank'
+            rel='noopener noreferrer'
+            onClick={() =>
+              analytics.track('lead_card_clicked', {
+                lead_id: lead.id,
+                intent: lead.intent.label,
+                username: lead.platform_username ?? undefined,
+              })
+            }
+          >
             Follow up
             <ExternalLink className='h-3 w-3' />
           </a>

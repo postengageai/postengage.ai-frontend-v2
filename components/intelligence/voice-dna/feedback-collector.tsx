@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/hooks/use-toast';
+import { analytics } from '@/lib/analytics';
 
 interface FeedbackCollectorProps {
   voiceDnaId: string;
@@ -22,7 +23,7 @@ type FeedbackState = 'idle' | 'editing' | 'rejecting' | 'submitted';
 
 export function FeedbackCollector({
   voiceDnaId,
-  botId: _botId,
+  botId,
   logId,
   originalMessage,
   generatedReply,
@@ -55,6 +56,10 @@ export function FeedbackCollector({
 
       setSubmittedType(type);
       setState('submitted');
+      analytics.track('tune_up_rating_submitted', {
+        rating: type === 'approve' ? 'good' : 'bad',
+        bot_id: botId,
+      });
       toast({
         title:
           type === 'approve'

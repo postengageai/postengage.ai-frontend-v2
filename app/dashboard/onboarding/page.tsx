@@ -9,6 +9,7 @@ import { BotForm } from '@/components/intelligence/bot-form';
 import { VoiceSetupStep } from '@/components/intelligence/voice-dna/voice-setup-step';
 import { OnboardingConnectStep } from '@/components/onboarding/onboarding-connect-step';
 import { Skeleton } from '@/components/ui/skeleton';
+import { analytics } from '@/lib/analytics';
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
 
@@ -144,15 +145,28 @@ export default function OnboardingPage() {
     } catch {
       // silent
     }
+    analytics.track('onboarding_step_completed', {
+      step: 'connect',
+      step_index: 0,
+    });
     setCurrentStep('bot');
   };
 
   const handleBotCreated = (botInfo: CreatedBotInfo) => {
     setCreatedBot(botInfo);
+    analytics.track('onboarding_step_completed', {
+      step: 'bot',
+      step_index: 1,
+    });
     setCurrentStep('voice');
   };
 
   const handleVoiceComplete = () => {
+    analytics.track('onboarding_step_completed', {
+      step: 'voice',
+      step_index: 2,
+    });
+    analytics.track('onboarding_wizard_completed', {});
     // Mark onboarding done so dashboard doesn't redirect again
     try {
       localStorage.setItem('onboarding_complete', 'true');

@@ -23,6 +23,7 @@ import { HotLeadsSection } from '@/components/dashboard/hot-leads-section';
 import { ImpactCard } from '@/components/dashboard/impact-card';
 import type { Notification } from '@/lib/types/notifications';
 import type { DashboardImpact } from '@/lib/api/dashboard';
+import { analytics } from '@/lib/analytics';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function DashboardPage() {
     null
   );
   const [impact, setImpact] = useState<DashboardImpact | null>(null);
+  const [hasTrackedFirstReply, setHasTrackedFirstReply] = useState(false);
 
   // ─── Onboarding redirect for brand-new users ────────────────────────────────
   useEffect(() => {
@@ -97,6 +99,11 @@ export default function DashboardPage() {
 
         if (data.impact) {
           setImpact(data.impact);
+          // Track first bot reply milestone
+          if (!hasTrackedFirstReply && data.impact.replies_handled_today > 0) {
+            analytics.track('bot_first_reply', { bot_id: 'unknown' });
+            setHasTrackedFirstReply(true);
+          }
         }
 
         setAutomations(
