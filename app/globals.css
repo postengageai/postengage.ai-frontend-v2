@@ -116,3 +116,28 @@ html {
 ::selection {
   background: oklch(0.65 0.18 265 / 0.3);
 }
+
+/* Grid background texture for landing + auth pages */
+.bg-grid-faint {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Radial gradient mask to fade grid toward edges */
+.bg-hero-radial {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -10%,
+    oklch(0.65 0.18 265 / 0.07) 0%,
+    transparent 70%
+  );
+}
+
+/* Gradient text utility */
+.text-gradient-indigo {
+  background: linear-gradient(135deg, #818cf8 0%, #c7d2fe 50%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

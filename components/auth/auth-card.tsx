@@ -6,11 +6,21 @@ interface AuthCardProps {
   className?: string;
 }
 
+/**
+ * Auth card — used inside the right panel of the split auth layout.
+ * On desktop the right panel provides the visual container, so the card
+ * itself is just a clean max-width wrapper with no heavy border/shadow.
+ * On mobile it keeps a subtle card treatment for clarity.
+ */
 export function AuthCard({ children, className }: AuthCardProps) {
   return (
     <div
       className={cn(
-        'w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-lg',
+        // Full width on small screens with a subtle card feel
+        // On large screens: no card chrome — right panel is the container
+        'w-full max-w-sm',
+        'rounded-2xl border border-border/50 bg-card/30 p-8 shadow-sm',
+        'lg:border-transparent lg:bg-transparent lg:shadow-none lg:p-0',
         className
       )}
     >
@@ -26,8 +36,10 @@ interface AuthCardHeaderProps {
 
 export function AuthCardHeader({ title, description }: AuthCardHeaderProps) {
   return (
-    <div className='mb-8 text-center'>
-      <h1 className='text-2xl font-semibold text-foreground'>{title}</h1>
+    <div className='mb-8'>
+      <h1 className='text-2xl font-bold text-foreground tracking-tight'>
+        {title}
+      </h1>
       {description && (
         <p className='mt-2 text-sm text-muted-foreground'>{description}</p>
       )}
@@ -40,9 +52,5 @@ interface AuthCardFooterProps {
 }
 
 export function AuthCardFooter({ children }: AuthCardFooterProps) {
-  return (
-    <div className='mt-6 text-center text-sm text-muted-foreground'>
-      {children}
-    </div>
-  );
+  return <div className='mt-6 text-sm text-muted-foreground'>{children}</div>;
 }
