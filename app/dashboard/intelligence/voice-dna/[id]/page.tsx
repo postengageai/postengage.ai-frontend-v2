@@ -544,9 +544,7 @@ export default function VoiceDnaDetailPage() {
               Examples ({voiceDna.few_shot_examples.length})
             </TabsTrigger>
             <TabsTrigger value='test'>Test Voice</TabsTrigger>
-            {showAdvanced && (
-              <TabsTrigger value='learning'>Learning</TabsTrigger>
-            )}
+            <TabsTrigger value='learning'>Learning</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -701,12 +699,10 @@ export default function VoiceDnaDetailPage() {
             <SampleReplyGenerator voiceDnaId={voiceDna._id} />
           </TabsContent>
 
-          {/* Learning Tab — ADVANCED (Phase 5) */}
-          {showAdvanced && (
-            <TabsContent value='learning' className='space-y-6'>
-              <ContinuousLearningDashboard voiceDnaId={voiceDna._id} />
-            </TabsContent>
-          )}
+          {/* Learning Tab */}
+          <TabsContent value='learning' className='space-y-6'>
+            <ContinuousLearningDashboard voiceDna={voiceDna} />
+          </TabsContent>
         </Tabs>
       )}
 
