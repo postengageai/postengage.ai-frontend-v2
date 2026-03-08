@@ -306,7 +306,7 @@ export function BuilderSidebar({
                 Est. per execution
               </span>
               <Badge variant='secondary' className='font-mono'>
-                {automation.estimatedCreditCost} credits
+                ~{automation.estimatedCreditCost} credits
               </Badge>
             </div>
           </CardContent>

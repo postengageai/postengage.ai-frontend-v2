@@ -195,3 +195,49 @@ export interface LlmDefaults {
   model: string;
   max_tokens: number;
 }
+
+// ─── Hot Leads ──────────────────────────────────────────────────────────────
+
+export enum IntentLabel {
+  PURCHASE_INTENT = 'purchase_intent',
+  PRICING_INQUIRY = 'pricing_inquiry',
+  HIGH_VALUE_LEAD = 'high_value_lead',
+  TRUST_CONCERN = 'trust_concern',
+  FEATURE_CURIOSITY = 'feature_curiosity',
+  SUPPORT_QUESTION = 'support_question',
+  CASUAL_ENGAGEMENT = 'casual_engagement',
+  SPAM_OR_LOW_QUALITY = 'spam_or_low_quality',
+  COMPLAINT = 'complaint',
+  GRATITUDE = 'gratitude',
+  ABUSIVE_OR_HARMFUL = 'abusive_or_harmful',
+  OFF_TOPIC = 'off_topic',
+}
+
+export interface HotLead {
+  id: string;
+  platform_user_id: string;
+  platform_username: string | null;
+  message_text: string;
+  message_type: string;
+  bot_reply: string | null;
+  intent: {
+    label: IntentLabel;
+    confidence: number;
+  };
+  social_account_id: string;
+  automation_id: string;
+  created_at: string;
+}
+
+export interface HotLeadsResponse {
+  data: HotLead[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface GetHotLeadsParams {
+  intent?: string;
+  limit?: number;
+  page?: number;
+}

@@ -11,6 +11,8 @@ import {
   CreateBrandVoiceDto,
   UpdateBrandVoiceDto,
   LlmDefaults,
+  HotLeadsResponse,
+  GetHotLeadsParams,
 } from '../types/intelligence';
 import { AnalyticsPeriod, IntelligenceAnalyticsItem } from '../types/analytics';
 import type {
@@ -257,6 +259,25 @@ export class IntelligenceApi {
       : `${INTELLIGENCE_BASE_URL}/bots/${botId}/flagged-replies`;
 
     const response = await httpClient.get<FlaggedReply[]>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Hot Leads
+  static async getHotLeads(
+    params?: GetHotLeadsParams
+  ): Promise<SuccessResponse<HotLeadsResponse>> {
+    const searchParams = new URLSearchParams();
+    if (params?.intent) searchParams.set('intent', params.intent);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.page) searchParams.set('page', String(params.page));
+
+    const query = searchParams.toString();
+    const url = query
+      ? `${INTELLIGENCE_BASE_URL}/leads?${query}`
+      : `${INTELLIGENCE_BASE_URL}/leads`;
+
+    const response = await httpClient.get<HotLeadsResponse>(url);
     if (response.error) throw response.error;
     return response.data;
   }

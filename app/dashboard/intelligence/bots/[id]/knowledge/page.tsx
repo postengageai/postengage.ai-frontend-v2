@@ -28,6 +28,10 @@ import { KnowledgeSource } from '@/lib/types/intelligence';
 import { useToast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  CreditCostBadge,
+  CREDIT_COSTS,
+} from '@/components/ui/credit-cost-badge';
 
 export default function BotKnowledgePage() {
   const router = useRouter();
@@ -187,6 +191,13 @@ export default function BotKnowledgePage() {
               </div>
             </div>
             <DialogFooter>
+              <div className='flex-1 flex items-center'>
+                <CreditCostBadge
+                  amount={CREDIT_COSTS.KNOWLEDGE_SOURCE}
+                  label='to process'
+                  size='xs'
+                />
+              </div>
               <Button
                 variant='outline'
                 onClick={() => setIsDialogOpen(false)}

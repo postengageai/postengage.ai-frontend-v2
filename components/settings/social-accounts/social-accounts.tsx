@@ -39,6 +39,7 @@ import type {
   SocialAccountConnectionStatus,
 } from '@/lib/types/settings';
 import { SocialAccountsSkeleton } from './social-accounts-skeleton';
+import { WhatsAppWaitlistCard } from './whatsapp-waitlist-card';
 
 const statusConfig: Record<
   SocialAccountConnectionStatus,
@@ -261,28 +262,31 @@ export function SocialAccounts() {
 
   if (accounts.length === 0) {
     return (
-      <Card>
-        <CardContent className='flex flex-col items-center justify-center py-16 text-center'>
-          <div className='mb-4 rounded-full bg-muted p-4'>
-            <Instagram className='h-8 w-8 text-muted-foreground' />
-          </div>
-          <h3 className='mb-2 text-lg font-medium text-foreground'>
-            No social accounts connected
-          </h3>
-          <p className='mb-6 max-w-sm text-sm text-muted-foreground'>
-            Connect your first account to start automating your engagement and
-            growing your audience.
-          </p>
-          <Button onClick={handleConnect} disabled={isConnecting}>
-            {isConnecting ? (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            ) : (
-              <Instagram className='mr-2 h-4 w-4' />
-            )}
-            Connect Instagram
-          </Button>
-        </CardContent>
-      </Card>
+      <div className='space-y-6'>
+        <Card>
+          <CardContent className='flex flex-col items-center justify-center py-16 text-center'>
+            <div className='mb-4 rounded-full bg-muted p-4'>
+              <Instagram className='h-8 w-8 text-muted-foreground' />
+            </div>
+            <h3 className='mb-2 text-lg font-medium text-foreground'>
+              No social accounts connected
+            </h3>
+            <p className='mb-6 max-w-sm text-sm text-muted-foreground'>
+              Connect your first account to start automating your engagement and
+              growing your audience.
+            </p>
+            <Button onClick={handleConnect} disabled={isConnecting}>
+              {isConnecting ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <Instagram className='mr-2 h-4 w-4' />
+              )}
+              Connect Instagram
+            </Button>
+          </CardContent>
+        </Card>
+        <WhatsAppWaitlistCard />
+      </div>
     );
   }
 
@@ -458,6 +462,9 @@ export function SocialAccounts() {
           </p>
         </CardContent>
       </Card>
+
+      {/* WhatsApp Coming Soon */}
+      <WhatsAppWaitlistCard />
 
       {/* Disconnect Confirmation */}
       <AlertDialog

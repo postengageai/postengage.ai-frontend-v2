@@ -205,4 +205,24 @@ export class VoiceDnaApi {
     if (response.error) throw response.error;
     return response.data;
   }
+
+  // ─── Tune-up: batch rate recent bot replies ──────────────────────────────
+
+  static async rateSamples(
+    voiceDnaId: string,
+    samples: Array<{
+      log_id: string;
+      rating: 'good' | 'bad';
+      original_text: string;
+      context_text: string;
+      edited_text?: string;
+    }>
+  ): Promise<SuccessResponse<{ processed: number; success: boolean }>> {
+    const response = await httpClient.post<{
+      processed: number;
+      success: boolean;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/rate-samples`, { samples });
+    if (response.error) throw response.error;
+    return response.data;
+  }
 }

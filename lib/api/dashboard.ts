@@ -69,6 +69,14 @@ export interface DashboardPerformance {
   average_response_time: number;
 }
 
+export interface DashboardImpact {
+  replies_handled_today: number;
+  hours_saved_today: number;
+  hot_leads_today: number;
+  weekly_replies: number;
+  weekly_replies_growth_pct: number;
+}
+
 export interface DashboardStatsResponse {
   connected_account?: DashboardConnectedAccount;
   overview: DashboardOverview;
@@ -76,6 +84,7 @@ export interface DashboardStatsResponse {
   suggestions: DashboardSuggestion[];
   recent_activity: DashboardActivity[];
   performance: DashboardPerformance;
+  impact: DashboardImpact;
 }
 
 export class DashboardApi {

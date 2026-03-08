@@ -161,7 +161,7 @@ export function AppSidebar() {
     fetchCredits();
   }, []);
 
-  const isLowCredits = credits.remaining < 50;
+  const isLowCredits = credits.remaining < 100;
 
   return (
     <Sidebar className='border-r border-border/50'>
@@ -404,10 +404,20 @@ export function AppSidebar() {
             />
           </div>
           <div className='flex items-baseline gap-1'>
-            <span className='text-2xl font-bold font-mono'>
+            <span
+              className={cn(
+                'text-2xl font-bold font-mono',
+                isLowCredits && 'text-orange-500'
+              )}
+            >
               {credits.remaining}
             </span>
           </div>
+          {isLowCredits && (
+            <p className='text-xs text-orange-600 font-medium mt-1'>
+              Low balance — top up to keep bots running
+            </p>
+          )}
         </Link>
 
         {/* User Dropdown */}

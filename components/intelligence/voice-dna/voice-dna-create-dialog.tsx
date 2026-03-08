@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, Sparkles, PenTool, GitMerge, Check } from 'lucide-react';
+import {
+  CreditCostBadge,
+  CREDIT_COSTS,
+} from '@/components/ui/credit-cost-badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -456,6 +460,13 @@ export function VoiceDnaCreateDialog({
 
         {/* Sticky footer — always visible */}
         <DialogFooter className='px-6 py-4 shrink-0 border-t gap-2'>
+          <div className='flex-1'>
+            <CreditCostBadge
+              amount={CREDIT_COSTS.VOICE_DNA_ANALYZE}
+              label='to analyze'
+              size='xs'
+            />
+          </div>
           <Button
             variant='outline'
             onClick={() => onOpenChange(false)}
