@@ -51,14 +51,13 @@ const INTENT_CONFIG: Record<
   },
 };
 
-// Build an Instagram DM link. Prefer username-based deep link; fall back to
-// user-id-based link (Instagram supports ig.me/m/<id> for numeric IDs too).
+// Opens the user's Instagram profile. If username is unknown fall back to
+// the generic Instagram home so the link is never broken.
 function buildInstagramLink(lead: HotLead): string {
   if (lead.platform_username) {
-    return `https://ig.me/m/${lead.platform_username}`;
+    return `https://www.instagram.com/${lead.platform_username}/`;
   }
-  // platform_user_id is the numeric Instagram user ID — ig.me/m/<id> works
-  return `https://ig.me/m/${lead.platform_user_id}`;
+  return `https://www.instagram.com/`;
 }
 
 // ─── Single Lead Card ─────────────────────────────────────────────────────────

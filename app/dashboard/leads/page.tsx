@@ -91,8 +91,10 @@ function LeadRow({ lead }: { lead: HotLead }) {
     ? `@${lead.platform_username}`
     : `User ${lead.platform_user_id.slice(-6)}`;
 
-  // ig.me/m/ works with both usernames and numeric Instagram user IDs
-  const instagramLink = `https://ig.me/m/${lead.platform_username ?? lead.platform_user_id}`;
+  // Opens the user's Instagram profile page
+  const instagramLink = lead.platform_username
+    ? `https://www.instagram.com/${lead.platform_username}/`
+    : `https://www.instagram.com/`;
   const messageCount = lead.message_count ?? 1;
 
   const timeAgo = formatDistanceToNow(new Date(lead.created_at), {
