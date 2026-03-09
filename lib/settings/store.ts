@@ -30,9 +30,7 @@ interface SettingsState {
 
     // Social accounts actions
     loadSocialAccounts: (params?: ListSocialAccountsParams) => Promise<void>;
-    disconnectSocialAccount: (id: string) => Promise<void>;
     setPrimarySocialAccount: (id: string) => Promise<void>;
-    refreshSocialAccount: (id: string) => Promise<void>;
 
     // Utility actions
     clearErrors: () => void;
@@ -115,21 +113,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       }
     },
 
-    // Disconnect social account
-    disconnectSocialAccount: async (id: string) => {
-      try {
-        await SocialAccountsApi.disconnect(id);
-        // Reload the list after disconnecting
-        await get().actions.loadSocialAccounts();
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'Failed to disconnect account';
-        set({ socialAccountsError: errorMessage });
-      }
-    },
-
     // Set primary social account
     setPrimarySocialAccount: async (id: string) => {
       try {
@@ -141,19 +124,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           error instanceof Error
             ? error.message
             : 'Failed to set primary account';
-        set({ socialAccountsError: errorMessage });
-      }
-    },
-
-    // Refresh social account
-    refreshSocialAccount: async (id: string) => {
-      try {
-        await SocialAccountsApi.refresh(id);
-        // Reload the list after refreshing
-        await get().actions.loadSocialAccounts();
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to refresh account';
         set({ socialAccountsError: errorMessage });
       }
     },

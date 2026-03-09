@@ -1,6 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaApi } from '@/lib/api/media';
+import { parseApiError } from '@/lib/http/errors';
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -163,18 +166,18 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
       setTags('');
       setUploadProgress(0);
       onUploadSuccess();
-    } catch (error: any) {
-      if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+    } catch (error) {
+      if (axios.isCancel(error)) {
         toast({
           title: 'Cancelled',
           description: 'Upload cancelled',
         });
       } else {
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description:
-            error.response?.data?.message || 'Failed to upload media',
+          title: err.title,
+          description: err.message,
         });
       }
     } finally {
@@ -192,11 +195,13 @@ export function MediaUploadDialog({ onUploadSuccess }: MediaUploadDialogProps) {
   const renderFilePreview = (file: File) => {
     if (file.type.startsWith('image/')) {
       return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={URL.createObjectURL(file)}
           alt='Preview'
+          width={40}
+          height={40}
           className='h-full w-full object-cover rounded'
+          unoptimized
         />
       );
     }

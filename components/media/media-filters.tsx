@@ -19,6 +19,7 @@ import { CalendarIcon, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { DateRange } from 'react-day-picker';
 
 interface MediaFiltersProps {
   onSearchChange: (value: string) => void;
@@ -31,16 +32,16 @@ export function MediaFilters({
   onSortChange,
   onDateRangeChange,
 }: MediaFiltersProps) {
-  const [date, setDate] = useState<{ from?: Date; to?: Date }>({});
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
 
-  const handleDateSelect = (range: { from?: Date; to?: Date } | undefined) => {
-    setDate(range || {});
+  const handleDateSelect = (range: DateRange | undefined) => {
+    setDate(range);
     onDateRangeChange(range?.from, range?.to);
   };
 
   const clearDateFilter = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setDate({});
+    setDate(undefined);
     onDateRangeChange(undefined, undefined);
   };
 
@@ -61,11 +62,11 @@ export function MediaFilters({
               variant='outline'
               className={cn(
                 'w-[240px] justify-start text-left font-normal',
-                !date.from && 'text-muted-foreground'
+                !date?.from && 'text-muted-foreground'
               )}
             >
               <CalendarIcon className='mr-2 h-4 w-4' />
-              {date.from ? (
+              {date?.from ? (
                 date.to ? (
                   <>
                     {format(date.from, 'LLL dd, y')} -{' '}
@@ -77,7 +78,7 @@ export function MediaFilters({
               ) : (
                 <span>Pick a date range</span>
               )}
-              {(date.from || date.to) && (
+              {(date?.from || date?.to) && (
                 <div
                   role='button'
                   tabIndex={0}
@@ -98,7 +99,7 @@ export function MediaFilters({
             <Calendar
               initialFocus
               mode='range'
-              defaultMonth={date.from}
+              defaultMonth={date?.from}
               selected={date}
               onSelect={handleDateSelect}
               numberOfMonths={2}

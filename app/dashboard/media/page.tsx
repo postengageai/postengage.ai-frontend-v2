@@ -18,6 +18,7 @@ import { MediaApi, Media } from '@/lib/api/media';
 import { InstagramMediaApi, GetMediaResponse } from '@/lib/api/instagram/media';
 import { socialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
 import { useToast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { useDebounce } from '@/hooks/use-debounce';
 
 export default function MediaPage() {
@@ -122,11 +123,12 @@ export default function MediaPage() {
             setInstaCursor(response.pagination.next_cursor);
           }
         }
-      } catch {
+      } catch (_error) {
+        const err = parseApiError(_error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load media',
+          title: err.title,
+          description: err.message,
         });
       } finally {
         setIsLoading(false);
@@ -174,11 +176,12 @@ export default function MediaPage() {
         title: 'Success',
         description: 'Media deleted',
       });
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete media',
+        title: err.title,
+        description: err.message,
       });
     }
   };
@@ -200,9 +203,11 @@ export default function MediaPage() {
   };
 
   return (
-    <div className='container mx-auto py-6 space-y-6'>
+    <div className='container mx-auto py-4 sm:py-6 px-4 sm:px-6 space-y-6'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-        <h1 className='text-3xl font-bold tracking-tight'>Media Library</h1>
+        <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
+          Media Library
+        </h1>
         <MediaUploadDialog onUploadSuccess={handleUploadSuccess} />
       </div>
 

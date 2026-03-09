@@ -28,10 +28,37 @@ export class InstagramOAuthApi {
     return response.data!;
   }
 
+  static async sync(accountId: string): Promise<
+    SuccessResponse<{
+      message: string;
+      username: string;
+      last_synced_at: string;
+    }>
+  > {
+    const response = await httpClient.post<{
+      message: string;
+      username: string;
+      last_synced_at: string;
+    }>(`${this.BASE_URL}/${accountId}/sync`);
+    return response.data!;
+  }
+
+  /**
+   * BroadcastChannel name used for cross-tab OAuth communication.
+   * After a cross-origin redirect (Instagram → our app), window.opener
+   * is null in most browsers. BroadcastChannel works reliably across
+   * same-origin tabs regardless of cross-origin navigation history.
+   */
+  static readonly OAUTH_CHANNEL = 'postengage_oauth';
+
   static async openAuthorization(): Promise<void> {
-    // Open the popup immediately to avoid browser blocking
-    // Note: We cannot use 'noopener' here because we need the window reference to redirect it later
-    const newWindow = window.open('', '_blank', 'width=600,height=700');
+    // Open a named popup immediately to avoid browser popup-blocker
+    const popupName = `instagram_oauth_${Date.now()}`;
+    const newWindow = window.open(
+      '',
+      popupName,
+      'width=600,height=700,scrollbars=yes'
+    );
 
     if (!newWindow) {
       throw new Error('Popup blocked. Please allow popups for this site.');

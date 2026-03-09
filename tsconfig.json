@@ -27,7 +27,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "/tmp/next-build-postengage/types/**/*.ts",
+    "/tmp/next-build-postengage/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

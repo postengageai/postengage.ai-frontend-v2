@@ -78,6 +78,10 @@ export interface AutomationFormData extends Partial<
     action_payload: AutomationActionPayload;
   }>;
 
+  // Step 5 (Bot Selection if needed)
+  bot_id?: string;
+  bot_name?: string;
+
   // Step 6
   name?: string;
   description?: string;
@@ -98,8 +102,8 @@ export function AutomationWizard({
   onCancel,
   isEditMode = false,
 }: AutomationWizardProps) {
-  // Start at step 3 (Trigger) when editing an existing automation
-  const [currentStep, setCurrentStep] = useState(isEditMode ? 3 : 1);
+  // Start at step 5 (Trigger) when editing an existing automation
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 5 : 1);
   const [formData, setFormData] = useState<AutomationFormData>(
     initialData || {
       platform: AutomationPlatform.INSTAGRAM,
@@ -120,14 +124,14 @@ export function AutomationWizard({
 
       // If trigger_type changes, reset trigger-specific fields
       if (data.trigger_type && data.trigger_type !== prev.trigger_type) {
-        // Reset trigger scope and content_ids for DM triggers
-        if (data.trigger_type === AutomationTriggerType.DM_RECEIVED) {
+        const isCommentTrigger =
+          data.trigger_type === AutomationTriggerType.NEW_COMMENT;
+        if (isCommentTrigger) {
+          newData.trigger_scope = AutomationTriggerScope.ALL;
+        } else {
           delete newData.trigger_scope;
           delete newData.content_ids;
           delete newData.selected_media;
-        } else {
-          // Set default scope for comment triggers
-          newData.trigger_scope = AutomationTriggerScope.ALL;
         }
 
         // Reset condition source based on trigger
@@ -188,6 +192,7 @@ export function AutomationWizard({
       name: formData.name || 'New Automation',
       description: formData.description,
       social_account_id: formData.social_account_id,
+      bot_id: formData.bot_id,
       platform: formData.platform,
       status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
       execution_mode: AutomationExecutionMode.REAL_TIME,
@@ -197,10 +202,15 @@ export function AutomationWizard({
           formData.trigger_source ||
           (formData.trigger_type === AutomationTriggerType.DM_RECEIVED
             ? AutomationTriggerSource.DIRECT_MESSAGE
-            : AutomationTriggerSource.POST),
-        trigger_scope: formData.trigger_scope || AutomationTriggerScope.ALL,
+            : formData.trigger_type === AutomationTriggerType.STORY_REPLY
+              ? AutomationTriggerSource.STORY
+              : formData.trigger_type === AutomationTriggerType.NEW_FOLLOWER
+                ? AutomationTriggerSource.PROFILE
+                : AutomationTriggerSource.POST),
         ...(formData.trigger_type === AutomationTriggerType.NEW_COMMENT
           ? {
+              trigger_scope:
+                formData.trigger_scope || AutomationTriggerScope.ALL,
               content_ids: formData.content_ids,
               trigger_config: {
                 include_reply_to_comments: true,

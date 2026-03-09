@@ -11,6 +11,7 @@ import { MediaGallery } from '@/components/media/media-gallery';
 import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
 import { MediaFilters } from '@/components/media/media-filters';
 import { MediaApi, Media } from '@/lib/api/media';
+import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -68,11 +69,12 @@ export function MediaPickerDialog({
         setItems(prev => (isLoadMore ? [...prev, ...newItems] : newItems));
         setHasMore(newItems.length === 20);
         if (isLoadMore) setPage(nextPage);
-      } catch {
+      } catch (error) {
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load media',
+          title: err.title,
+          description: err.message,
         });
       } finally {
         setIsLoading(false);

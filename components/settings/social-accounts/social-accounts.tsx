@@ -39,6 +39,7 @@ import type {
   SocialAccountConnectionStatus,
 } from '@/lib/types/settings';
 import { SocialAccountsSkeleton } from './social-accounts-skeleton';
+import { WhatsAppWaitlistCard } from './whatsapp-waitlist-card';
 
 const statusConfig: Record<
   SocialAccountConnectionStatus,
@@ -66,32 +67,52 @@ export function SocialAccounts() {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
     loadAccounts();
 
-    // Listen for OAuth success/error message from popup
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data) {
-        if (
-          event.data.type === 'OAUTH_SUCCESS' &&
-          event.data.platform === 'instagram'
-        ) {
-          // Refresh accounts list
-          loadAccounts();
-        } else if (event.data.type === 'OAUTH_ERROR') {
-          // Show error toast or alert
-          setError(
-            event.data.description ||
-              'Failed to connect account. Please try again.'
-          );
-        }
+    // Handle incoming OAuth messages from popup (via BroadcastChannel or postMessage)
+    const handleOAuthMessage = (data: Record<string, unknown>) => {
+      if (!data || !data.type) return;
+      if (data.type === 'OAUTH_SUCCESS' && data.platform === 'instagram') {
+        loadAccounts();
+      } else if (data.type === 'OAUTH_ERROR') {
+        setError(
+          (data.description as string) ||
+            'Failed to connect account. Please try again.'
+        );
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    // Primary: BroadcastChannel (works after cross-origin redirect when window.opener is null)
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(InstagramOAuthApi.OAUTH_CHANNEL);
+      channel.onmessage = (event: MessageEvent) => {
+        handleOAuthMessage(event.data);
+      };
+    } catch {
+      // BroadcastChannel not supported in this browser
+    }
+
+    // Fallback: window.postMessage (works when window.opener is available)
+    const handlePostMessage = (event: MessageEvent) => {
+      if (event.origin === window.location.origin) {
+        handleOAuthMessage(event.data);
+      }
+    };
+
+    window.addEventListener('message', handlePostMessage);
+    return () => {
+      window.removeEventListener('message', handlePostMessage);
+      try {
+        channel?.close();
+      } catch {
+        // ignore
+      }
+    };
   }, []);
 
   const loadAccounts = async () => {
@@ -164,6 +185,21 @@ export function SocialAccounts() {
     }
   };
 
+  const handleSync = async (accountId: string) => {
+    try {
+      setSyncingId(accountId);
+      await InstagramOAuthApi.sync(accountId);
+      // Reload to show updated username / last_synced_at
+      await loadAccounts();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to sync account';
+      setError(errorMessage);
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
@@ -226,28 +262,31 @@ export function SocialAccounts() {
 
   if (accounts.length === 0) {
     return (
-      <Card>
-        <CardContent className='flex flex-col items-center justify-center py-16 text-center'>
-          <div className='mb-4 rounded-full bg-muted p-4'>
-            <Instagram className='h-8 w-8 text-muted-foreground' />
-          </div>
-          <h3 className='mb-2 text-lg font-medium text-foreground'>
-            No social accounts connected
-          </h3>
-          <p className='mb-6 max-w-sm text-sm text-muted-foreground'>
-            Connect your first account to start automating your engagement and
-            growing your audience.
-          </p>
-          <Button onClick={handleConnect} disabled={isConnecting}>
-            {isConnecting ? (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            ) : (
-              <Instagram className='mr-2 h-4 w-4' />
-            )}
-            Connect Instagram
-          </Button>
-        </CardContent>
-      </Card>
+      <div className='space-y-6'>
+        <Card>
+          <CardContent className='flex flex-col items-center justify-center py-16 text-center'>
+            <div className='mb-4 rounded-full bg-muted p-4'>
+              <Instagram className='h-8 w-8 text-muted-foreground' />
+            </div>
+            <h3 className='mb-2 text-lg font-medium text-foreground'>
+              No social accounts connected
+            </h3>
+            <p className='mb-6 max-w-sm text-sm text-muted-foreground'>
+              Connect your first account to start automating your engagement and
+              growing your audience.
+            </p>
+            <Button onClick={handleConnect} disabled={isConnecting}>
+              {isConnecting ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <Instagram className='mr-2 h-4 w-4' />
+              )}
+              Connect Instagram
+            </Button>
+          </CardContent>
+        </Card>
+        <WhatsAppWaitlistCard />
+      </div>
     );
   }
 
@@ -367,21 +406,37 @@ export function SocialAccounts() {
                       Reconnect
                     </Button>
                   ) : (
-                    !account.is_primary && (
+                    <>
+                      {!account.is_primary && (
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => handleSetPrimary(account.id)}
+                          disabled={settingPrimaryId === account.id}
+                        >
+                          {settingPrimaryId === account.id ? (
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          ) : (
+                            <Star className='mr-2 h-4 w-4' />
+                          )}
+                          Set primary
+                        </Button>
+                      )}
                       <Button
                         variant='ghost'
                         size='sm'
-                        onClick={() => handleSetPrimary(account.id)}
-                        disabled={settingPrimaryId === account.id}
+                        onClick={() => handleSync(account.id)}
+                        disabled={syncingId === account.id}
+                        title='Re-sync profile data from Instagram'
                       >
-                        {settingPrimaryId === account.id ? (
+                        {syncingId === account.id ? (
                           <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                         ) : (
-                          <Star className='mr-2 h-4 w-4' />
+                          <RefreshCw className='mr-2 h-4 w-4' />
                         )}
-                        Set primary
+                        Sync
                       </Button>
-                    )
+                    </>
                   )}
                   <Button
                     variant='ghost'
@@ -407,6 +462,9 @@ export function SocialAccounts() {
           </p>
         </CardContent>
       </Card>
+
+      {/* WhatsApp Coming Soon */}
+      <WhatsAppWaitlistCard />
 
       {/* Disconnect Confirmation */}
       <AlertDialog

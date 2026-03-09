@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
@@ -9,16 +10,23 @@ import { DashboardSkeleton } from '@/components/dashboard/skeleton';
 import { dashboardApi } from '@/lib/api/dashboard';
 import { notificationsApi } from '@/lib/api/notifications';
 import { automationsApi } from '@/lib/api/automations';
+import { IntelligenceApi } from '@/lib/api/intelligence';
 import { useToast } from '@/components/ui/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import type {
   Automation,
   ConnectedAccount,
   PerformanceMetrics as IPerformanceMetrics,
 } from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
+import { HotLeadsSection } from '@/components/dashboard/hot-leads-section';
+import { ImpactCard } from '@/components/dashboard/impact-card';
 import type { Notification } from '@/lib/types/notifications';
+import type { DashboardImpact } from '@/lib/api/dashboard';
+import { analytics } from '@/lib/analytics';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,6 +44,25 @@ export default function DashboardPage() {
   const [performance, setPerformance] = useState<IPerformanceMetrics | null>(
     null
   );
+  const [impact, setImpact] = useState<DashboardImpact | null>(null);
+  const [hasTrackedFirstReply, setHasTrackedFirstReply] = useState(false);
+
+  // ─── Onboarding redirect for brand-new users ────────────────────────────────
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const alreadyDone = localStorage.getItem('onboarding_complete');
+        if (alreadyDone) return;
+        const botsRes = await IntelligenceApi.getBots();
+        if (botsRes.data.length === 0) {
+          router.replace('/dashboard/onboarding');
+        }
+      } catch {
+        // silent — if API fails, don't block dashboard
+      }
+    };
+    checkOnboarding();
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -70,6 +97,15 @@ export default function DashboardPage() {
           setPerformance(data.performance);
         }
 
+        if (data.impact) {
+          setImpact(data.impact);
+          // Track first bot reply milestone
+          if (!hasTrackedFirstReply && data.impact.replies_handled_today > 0) {
+            analytics.track('bot_first_reply', { bot_id: 'unknown' });
+            setHasTrackedFirstReply(true);
+          }
+        }
+
         setAutomations(
           data.automations.map(a => ({
             id: a.id,
@@ -85,8 +121,8 @@ export default function DashboardPage() {
             createdAt: new Date(a.created_at),
           }))
         );
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error);
+      } catch (_error) {
+        // Silent error
       } finally {
         setIsLoading(false);
       }
@@ -109,8 +145,8 @@ export default function DashboardPage() {
             : n
         )
       );
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+    } catch (_error) {
+      // Silent error
     }
   };
 
@@ -128,8 +164,8 @@ export default function DashboardPage() {
             : n
         )
       );
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+    } catch (_error) {
+      // Silent error
     }
   };
 
@@ -162,11 +198,11 @@ export default function DashboardPage() {
         title: 'Success',
         description: 'Automation deleted successfully',
       });
-    } catch (error) {
-      console.error('Failed to delete automation:', error);
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete automation',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     }
@@ -185,6 +221,9 @@ export default function DashboardPage() {
         creditsRemaining={credits.remaining}
         lastActivityTime={lastActivity}
       />
+
+      {/* Impact Card - Today's value at a glance */}
+      {impact && <ImpactCard impact={impact} />}
 
       {/* Quick Insights - Key metrics at a glance */}
       <QuickInsights
@@ -208,13 +247,14 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Automation Summary & Suggestions - Secondary */}
+        {/* Right column — Automation Summary + Hot Leads */}
         <div className='lg:col-span-2 space-y-6'>
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}
             onDelete={handleDeleteAutomation}
           />
+          <HotLeadsSection />
         </div>
       </div>
     </main>

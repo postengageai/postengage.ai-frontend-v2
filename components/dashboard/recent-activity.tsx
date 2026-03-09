@@ -79,7 +79,7 @@ export function RecentActivity({
       onNewNotification?.(newNotification);
 
       // Flash UI indicator or show toast (optional)
-      console.log('New notification received:', newNotification);
+      // console.log('New notification received:', newNotification);
     };
 
     // Connect to socket and subscribe to notification updates

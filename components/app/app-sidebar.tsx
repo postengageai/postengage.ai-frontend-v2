@@ -30,6 +30,7 @@ import {
   Coins,
   Settings,
   Sparkles,
+  Bot,
   LogOut,
   User,
   Shield,
@@ -39,6 +40,8 @@ import {
   CreditCard,
   HelpCircle,
   ChevronUp,
+  Dna,
+  Flame,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -64,9 +67,37 @@ const navItems = [
     icon: Zap,
   },
   {
+    title: 'Hot Leads',
+    href: '/dashboard/leads',
+    icon: Flame,
+  },
+  {
     title: 'Media',
     href: '/dashboard/media',
     icon: Sparkles,
+  },
+];
+
+const intelligenceSubItems = [
+  {
+    title: 'Bots',
+    href: '/dashboard/intelligence/bots',
+    icon: Bot,
+  },
+  {
+    title: 'Brand Voices',
+    href: '/dashboard/intelligence/brand-voices',
+    icon: SlidersHorizontal,
+  },
+  {
+    title: 'Voice DNA',
+    href: '/dashboard/intelligence/voice-dna',
+    icon: Dna,
+  },
+  {
+    title: 'AI Settings',
+    href: '/dashboard/intelligence/settings',
+    icon: Settings,
   },
 ];
 
@@ -106,12 +137,13 @@ export function AppSidebar() {
   const [credits, setCredits] = useState({ remaining: 0 });
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
   const isCreditsActive = pathname.startsWith('/dashboard/credits');
+  const isIntelligenceActive = pathname.startsWith('/dashboard/intelligence');
 
   const handleLogout = async () => {
     try {
       await AuthApi.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch (_error) {
+      // console.error('Logout failed:', error);
     } finally {
       setUser(null);
       router.push('/login');
@@ -128,14 +160,14 @@ export function AppSidebar() {
             remaining: response.data.available_credits,
           }));
         }
-      } catch (error) {
-        console.error('Failed to fetch credits:', error);
+      } catch (_error) {
+        // console.error('Failed to fetch credits:', error);
       }
     }
     fetchCredits();
   }, []);
 
-  const isLowCredits = credits.remaining < 50;
+  const isLowCredits = credits.remaining < 100;
 
   return (
     <Sidebar className='border-r border-border/50'>
@@ -166,6 +198,7 @@ export function AppSidebar() {
                 const finalActive =
                   item.href === '/dashboard' ? isExactDashboard : isActive;
 
+                const isHotLeads = item.href === '/dashboard/leads';
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -174,14 +207,20 @@ export function AppSidebar() {
                       className={cn(
                         'h-10 rounded-lg transition-all duration-200',
                         finalActive &&
-                          'bg-primary/10 text-primary font-medium shadow-sm'
+                          !isHotLeads &&
+                          'bg-primary/10 text-primary font-medium shadow-sm',
+                        finalActive &&
+                          isHotLeads &&
+                          'bg-orange-500/10 text-orange-600 font-medium shadow-sm'
                       )}
                     >
                       <Link href={item.href}>
                         <item.icon
                           className={cn(
                             'h-4 w-4',
-                            finalActive && 'text-primary'
+                            isHotLeads && !finalActive && 'text-orange-400',
+                            finalActive && !isHotLeads && 'text-primary',
+                            finalActive && isHotLeads && 'text-orange-500'
                           )}
                         />
                         <span>{item.title}</span>
@@ -190,6 +229,61 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* Intelligence Section */}
+              <Collapsible asChild defaultOpen={isIntelligenceActive}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isIntelligenceActive}
+                      className={cn(
+                        'h-10 w-full rounded-lg transition-all duration-200',
+                        isIntelligenceActive &&
+                          'bg-primary/10 text-primary font-medium shadow-sm'
+                      )}
+                    >
+                      <Bot
+                        className={cn(
+                          'h-4 w-4',
+                          isIntelligenceActive && 'text-primary'
+                        )}
+                      />
+                      <span>Intelligence</span>
+                      <ChevronDown
+                        className={cn(
+                          'ml-auto h-4 w-4 transition-transform duration-200',
+                          isIntelligenceActive && 'rotate-180'
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className='mt-1 ml-4 border-l border-border/50 pl-2'>
+                      {intelligenceSubItems.map(subItem => {
+                        const isSubActive = pathname === subItem.href;
+                        return (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isSubActive}
+                              className={cn(
+                                'h-9 rounded-md transition-all duration-200',
+                                isSubActive &&
+                                  'bg-primary/10 text-primary font-medium'
+                              )}
+                            >
+                              <Link href={subItem.href}>
+                                <subItem.icon className='h-4 w-4 mr-2' />
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
               {/* Credits Section */}
               <Collapsible asChild defaultOpen={isCreditsActive}>
@@ -323,10 +417,20 @@ export function AppSidebar() {
             />
           </div>
           <div className='flex items-baseline gap-1'>
-            <span className='text-2xl font-bold font-mono'>
+            <span
+              className={cn(
+                'text-2xl font-bold font-mono',
+                isLowCredits && 'text-orange-500'
+              )}
+            >
               {credits.remaining}
             </span>
           </div>
+          {isLowCredits && (
+            <p className='text-xs text-orange-600 font-medium mt-1'>
+              Low balance — top up to keep bots running
+            </p>
+          )}
         </Link>
 
         {/* User Dropdown */}

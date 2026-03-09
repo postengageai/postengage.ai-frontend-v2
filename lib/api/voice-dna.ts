@@ -1,0 +1,228 @@
+import { httpClient, SuccessResponse } from '../http/client';
+import {
+  VoiceDna,
+  CreateVoiceDnaDto,
+  AddFewShotDto,
+  AddNegativeExampleDto,
+  TriggerAutoInferDto,
+  AutoInferResult,
+  VoiceReview,
+  VoiceFeedbackDto,
+  AdjustVoiceDto,
+} from '../types/voice-dna';
+
+const VOICE_DNA_BASE_URL = '/api/v1/intelligence/voice-dna';
+
+export class VoiceDnaApi {
+  // List all Voice DNA records
+  static async listVoiceDna(): Promise<SuccessResponse<VoiceDna[]>> {
+    const response = await httpClient.get<VoiceDna[]>(VOICE_DNA_BASE_URL);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Get a single Voice DNA by ID
+  static async getVoiceDna(id: string): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.get<VoiceDna>(
+      `${VOICE_DNA_BASE_URL}/${id}`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Get Voice DNA by brand voice ID
+  static async getVoiceDnaByBrandVoice(
+    brandVoiceId: string
+  ): Promise<SuccessResponse<VoiceDna | null>> {
+    const response = await httpClient.get<VoiceDna | null>(
+      `${VOICE_DNA_BASE_URL}/brand-voice/${brandVoiceId}`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Create a new Voice DNA
+  static async createVoiceDna(
+    data: CreateVoiceDnaDto
+  ): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.post<VoiceDna>(VOICE_DNA_BASE_URL, data);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Add a few-shot example
+  static async addFewShotExample(
+    id: string,
+    data: AddFewShotDto
+  ): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.post<VoiceDna>(
+      `${VOICE_DNA_BASE_URL}/${id}/few-shot`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Delete a few-shot example by index
+  static async deleteFewShotExample(
+    id: string,
+    index: number
+  ): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.delete<VoiceDna>(
+      `${VOICE_DNA_BASE_URL}/${id}/few-shot/${index}`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Add a negative example (uses same backend DTO as few-shot: context, reply, tags)
+  static async addNegativeExample(
+    id: string,
+    data: AddNegativeExampleDto
+  ): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.post<VoiceDna>(
+      `${VOICE_DNA_BASE_URL}/${id}/negative-example`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Delete a negative example by index
+  static async deleteNegativeExample(
+    id: string,
+    index: number
+  ): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.delete<VoiceDna>(
+      `${VOICE_DNA_BASE_URL}/${id}/negative-example/${index}`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Trigger re-analysis — returns a queued-status partial object, NOT full VoiceDna
+  static async reanalyzeVoiceDna(
+    id: string
+  ): Promise<
+    SuccessResponse<{ voice_dna_id: string; status: string; message: string }>
+  > {
+    const response = await httpClient.post<{
+      voice_dna_id: string;
+      status: string;
+      message: string;
+    }>(`${VOICE_DNA_BASE_URL}/${id}/reanalyze`);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // === Auto-Inference & Voice Review ===
+
+  // Trigger auto-inference (backend only accepts bot_id and optional brand_voice_id)
+  static async triggerAutoInfer(
+    data: TriggerAutoInferDto
+  ): Promise<SuccessResponse<AutoInferResult>> {
+    const response = await httpClient.post<AutoInferResult>(
+      `${VOICE_DNA_BASE_URL}/auto-infer`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Get voice review (human-readable summary)
+  static async getVoiceReview(
+    voiceDnaId: string
+  ): Promise<SuccessResponse<VoiceReview>> {
+    const response = await httpClient.get<VoiceReview>(
+      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/review`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Submit voice feedback
+  static async submitVoiceFeedback(
+    data: VoiceFeedbackDto
+  ): Promise<SuccessResponse<void>> {
+    const response = await httpClient.post<void>(
+      `${VOICE_DNA_BASE_URL}/feedback`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Adjust voice (add/remove examples, trigger reanalysis)
+  // Note: tone adjustment (adjust_tone) is not supported by the backend.
+  static async adjustVoice(
+    voiceDnaId: string,
+    data: AdjustVoiceDto
+  ): Promise<SuccessResponse<VoiceDna>> {
+    const response = await httpClient.post<VoiceDna>(
+      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/adjust`,
+      data
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Test voice — generate a sample reply using this Voice DNA.
+  // Conversation context is cached in Redis on the backend (30-min TTL)
+  // so consecutive messages feel like a real DM thread.
+  static async testVoice(
+    voiceDnaId: string,
+    data: { message: string; intent?: string; platform?: string }
+  ): Promise<
+    SuccessResponse<{
+      reply: string;
+      confidence: number;
+      latency_ms: number;
+      model: string;
+      prompt_tokens: number;
+      completion_tokens: number;
+    }>
+  > {
+    const response = await httpClient.post<{
+      reply: string;
+      confidence: number;
+      latency_ms: number;
+      model: string;
+      prompt_tokens: number;
+      completion_tokens: number;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/test`, data);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Clear cached test conversation context so the next test starts fresh.
+  static async clearTestContext(
+    voiceDnaId: string
+  ): Promise<SuccessResponse<{ success: boolean; message: string }>> {
+    const response = await httpClient.delete<{
+      success: boolean;
+      message: string;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/test`);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // ─── Tune-up: batch rate recent bot replies ──────────────────────────────
+
+  static async rateSamples(
+    voiceDnaId: string,
+    samples: Array<{
+      log_id: string;
+      rating: 'good' | 'bad';
+      original_text: string;
+      context_text: string;
+      edited_text?: string;
+    }>
+  ): Promise<SuccessResponse<{ processed: number; success: boolean }>> {
+    const response = await httpClient.post<{
+      processed: number;
+      success: boolean;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/rate-samples`, { samples });
+    if (response.error) throw response.error;
+    return response.data;
+  }
+}

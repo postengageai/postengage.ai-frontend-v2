@@ -2,6 +2,7 @@ import type React from 'react';
 import type { Metadata } from 'next';
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { LowCreditBanner } from '@/components/app/low-credit-banner';
 
 export const metadata: Metadata = {
   title: 'Dashboard | PostEngageAI',
@@ -16,8 +17,9 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <main className='flex-1'>{children}</main>
+      <SidebarInset className='min-w-0 overflow-hidden'>
+        <LowCreditBanner />
+        <main className='flex-1 min-w-0 overflow-x-hidden'>{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
