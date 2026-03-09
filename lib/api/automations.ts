@@ -251,7 +251,20 @@ export interface AutomationStatsResponse {
     rate: number;
     avg_time_ms: number;
   }>;
+  peak_activity_hours?: Record<string, Record<string, number>>;
   period: '7d' | '30d' | '90d';
+}
+
+export interface AutomationHistoryResponse {
+  data: AutomationExecution[];
+  pagination: {
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
 }
 
 export interface AutomationExecution {
@@ -259,6 +272,7 @@ export interface AutomationExecution {
   automation_id: string;
   trigger_event_id: string;
   status: 'success' | 'failed' | 'skipped' | 'partial_success';
+  error_code?: string;
   error_message?: string;
   duration_ms: number;
   executed_at: string;
@@ -271,6 +285,8 @@ export interface AutomationExecution {
     [key: string]: unknown;
   };
   credits_used?: number;
+  actions_run?: string[];
+  trigger_type?: string;
 }
 
 export interface ExperimentConfig {
@@ -339,13 +355,24 @@ export class AutomationsApi {
   static async getHistory(
     id: string,
     page = 1,
-    limit = 10
-  ): Promise<SuccessResponse<AutomationExecution[]>> {
-    const response = await httpClient.get<AutomationExecution[]>(
+    limit = 10,
+    status?: string
+  ): Promise<SuccessResponse<AutomationHistoryResponse>> {
+    const response = await httpClient.get<AutomationHistoryResponse>(
       `${AUTOMATIONS_BASE_URL}/${id}/history`,
       {
-        params: { page, limit },
+        params: { page, limit, ...(status && status !== 'all' ? { status } : {}) },
       }
+    );
+    return response.data!;
+  }
+
+  static async retryExecution(
+    automationId: string,
+    executionId: string
+  ): Promise<SuccessResponse<{ message: string; execution_id: string }>> {
+    const response = await httpClient.post<{ message: string; execution_id: string }>(
+      `${AUTOMATIONS_BASE_URL}/${automationId}/executions/${executionId}/retry`
     );
     return response.data!;
   }
@@ -408,4 +435,5 @@ export const automationsApi = {
   deactivate: AutomationsApi.deactivate,
   setExperiment: AutomationsApi.setExperiment,
   getExperimentResults: AutomationsApi.getExperimentResults,
+  retryExecution: AutomationsApi.retryExecution,
 };

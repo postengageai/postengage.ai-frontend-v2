@@ -78,7 +78,12 @@ export default function AutomationDetailPage() {
 
       if (response && response.data) {
         const apiData = response.data;
-        const historyData = historyResponse.data || [];
+        // getHistory now returns a paginated response; extract the data array
+        const historyPayload = historyResponse?.data;
+        const historyData =
+          historyPayload && 'data' in historyPayload
+            ? historyPayload.data
+            : [];
         const triggerType: AutomationData['trigger']['type'] =
           apiData.trigger.trigger_type;
 
