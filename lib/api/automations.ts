@@ -227,6 +227,33 @@ export interface AutomationListParams {
   limit?: number;
 }
 
+export interface AutomationDailyStats {
+  date: string; // 'Mon' | 'Tue' etc
+  successful: number;
+  failed: number;
+  skipped: number;
+}
+
+export interface AutomationStatsResponse {
+  total_executions: number;
+  successful: number;
+  failed: number;
+  skipped: number;
+  avg_duration_ms: number;
+  credits_used: number;
+  daily: AutomationDailyStats[];
+  action_performance: Array<{
+    action_type: string;
+    step: number;
+    timing: string;
+    sent: number;
+    success: number;
+    rate: number;
+    avg_time_ms: number;
+  }>;
+  period: '7d' | '30d' | '90d';
+}
+
 export interface AutomationExecution {
   _id: string;
   automation_id: string;
@@ -323,6 +350,31 @@ export class AutomationsApi {
     return response.data!;
   }
 
+  static async getStats(
+    id: string,
+    period: '7d' | '30d' | '90d' = '7d'
+  ): Promise<SuccessResponse<AutomationStatsResponse>> {
+    const response = await httpClient.get<AutomationStatsResponse>(
+      `${AUTOMATIONS_BASE_URL}/${id}/stats`,
+      { params: { period } }
+    );
+    return response.data!;
+  }
+
+  static async activate(id: string): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/activate`
+    );
+    return response.data!;
+  }
+
+  static async deactivate(id: string): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/deactivate`
+    );
+    return response.data!;
+  }
+
   static async setExperiment(
     id: string,
     config: ExperimentConfig
@@ -351,6 +403,9 @@ export const automationsApi = {
   get: AutomationsApi.get,
   list: AutomationsApi.list,
   getHistory: AutomationsApi.getHistory,
+  getStats: AutomationsApi.getStats,
+  activate: AutomationsApi.activate,
+  deactivate: AutomationsApi.deactivate,
   setExperiment: AutomationsApi.setExperiment,
   getExperimentResults: AutomationsApi.getExperimentResults,
 };

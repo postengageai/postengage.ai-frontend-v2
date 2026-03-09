@@ -1,29 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow, format } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { formatDistanceToNow } from 'date-fns';
 import {
   Plus,
   Search,
-  Play,
   MoreHorizontal,
   Instagram,
-  MessageCircle,
-  ArrowUpDown,
   Zap,
-  Calendar,
+  Filter,
+  Pencil,
+  Copy,
+  Pause,
+  Play,
+  Trash2,
+  MessageCircle,
+  Mail,
+  TrendingUp,
   Clock,
+  AlertTriangle,
+  BarChart2,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -33,11 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import {
-  automationsApi,
-  Automation,
-  AutomationListParams,
+  AutomationsApi,
+  type Automation,
+  type AutomationListParams,
 } from '@/lib/api/automations';
 import {
   AutomationStatus,
@@ -48,497 +61,627 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function getTriggerLabel(type: string) {
+  const map: Record<string, string> = {
+    [AutomationTriggerType.NEW_COMMENT]: 'New Comment',
+    [AutomationTriggerType.DM_RECEIVED]: 'DM Received',
+    [AutomationTriggerType.STORY_REPLY]: 'Story Reply',
+    [AutomationTriggerType.MENTION]: 'Mention',
+    [AutomationTriggerType.NEW_FOLLOWER]: 'New Follower',
+  };
+  return (
+    map[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  );
+}
+
+function getActionLabel(type: string) {
+  const map: Record<string, string> = {
+    [AutomationActionType.REPLY_COMMENT]: 'Reply to Comment',
+    [AutomationActionType.SEND_DM]: 'Send DM',
+    [AutomationActionType.PRIVATE_REPLY]: 'Private Reply',
+  };
+  return (
+    map[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  );
+}
+
+function TriggerIcon({ type }: { type: string }) {
+  if (type === AutomationTriggerType.DM_RECEIVED)
+    return <Mail className='h-4 w-4' />;
+  return <MessageCircle className='h-4 w-4' />;
+}
+
+// ─── Delete Dialog ─────────────────────────────────────────────────────────────
+
+function DeleteAutomationDialog({
+  automation,
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  automation: Automation | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onConfirm: () => void;
+}) {
+  if (!automation) return null;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='max-w-md bg-card border-border p-0 gap-0'>
+        <DialogHeader className='p-5 pb-4 border-b border-border/60 flex-row items-center gap-3'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-[color:var(--error,#ef4444)]/10'>
+            <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)]' />
+          </div>
+          <DialogTitle className='text-base font-semibold'>
+            Delete Automation?
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className='p-5 space-y-4'>
+          {/* Automation preview mini-card */}
+          <div className='flex items-center gap-3 rounded-xl bg-muted/40 border border-border/50 px-4 py-3'>
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 shrink-0'>
+              <Instagram className='h-5 w-5 text-white' />
+            </div>
+            <span className='font-semibold text-sm truncate'>
+              {automation.name}
+            </span>
+          </div>
+
+          <p className='text-sm text-muted-foreground leading-relaxed'>
+            This will permanently delete the automation and all its execution
+            history ({(automation.execution_count || 0).toLocaleString()} runs).
+            This cannot be undone.
+          </p>
+
+          {/* Warning box */}
+          <div className='flex items-start gap-2.5 rounded-xl border border-[color:var(--error,#ef4444)]/20 bg-[color:var(--error,#ef4444)]/8 px-4 py-3'>
+            <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)] mt-0.5 shrink-0' />
+            <p className='text-xs text-[color:var(--error,#ef4444)] leading-relaxed'>
+              This action cannot be reversed. All data including stats and
+              history will be lost.
+            </p>
+          </div>
+        </div>
+
+        <div className='flex items-center justify-end gap-2 px-5 py-4 border-t border-border/60'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => onOpenChange(false)}
+            className='bg-transparent'
+          >
+            Cancel
+          </Button>
+          <Button
+            size='sm'
+            onClick={onConfirm}
+            className='bg-[color:var(--error,#ef4444)] hover:bg-[color:var(--error,#ef4444)]/90 text-white gap-1.5'
+          >
+            <Trash2 className='h-3.5 w-3.5' />
+            Delete Automation
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Automation Card ───────────────────────────────────────────────────────────
+
+function AutomationCard({
+  automation,
+  onToggleStatus,
+  onDelete,
+}: {
+  automation: Automation;
+  onToggleStatus: (id: string, current: string) => void;
+  onDelete: (automation: Automation) => void;
+}) {
+  const isActive = automation.status === AutomationStatus.ACTIVE;
+  const isPaused =
+    automation.status === AutomationStatus.INACTIVE ||
+    automation.status === AutomationStatus.PAUSED;
+  const isDraft = automation.status === AutomationStatus.DRAFT;
+
+  const successRate =
+    (automation.execution_count || 0) > 0
+      ? Math.round(
+          ((automation.success_count || 0) /
+            (automation.execution_count || 0)) *
+            100
+        )
+      : null;
+
+  return (
+    <div
+      className={cn(
+        'group rounded-2xl border bg-card transition-all duration-200 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20',
+        isActive ? 'border-border' : 'border-border/60 opacity-80'
+      )}
+    >
+      <div className='p-5'>
+        {/* Row 1: icon + name + status + menu */}
+        <div className='flex items-start gap-3.5'>
+          {/* Platform icon */}
+          <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400'>
+            <Instagram className='h-5 w-5 text-white' />
+          </div>
+
+          {/* Name + subtitle */}
+          <div className='flex-1 min-w-0'>
+            <div className='flex items-start justify-between gap-2'>
+              <div className='min-w-0'>
+                <Link
+                  href={`/dashboard/automations/${automation.id}`}
+                  className='font-semibold text-[15px] leading-snug truncate block hover:text-primary transition-colors'
+                >
+                  {automation.name}
+                </Link>
+                <div className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground'>
+                  <span className='flex items-center gap-1'>
+                    <TriggerIcon type={automation.trigger.trigger_type} />
+                    {getTriggerLabel(automation.trigger.trigger_type)}
+                  </span>
+                  {automation.social_account && (
+                    <>
+                      <span className='text-border'>·</span>
+                      <span>@{automation.social_account.username}</span>
+                    </>
+                  )}
+                  {automation.last_executed_at && (
+                    <>
+                      <span className='text-border'>·</span>
+                      <span>
+                        Last run{' '}
+                        {formatDistanceToNow(
+                          new Date(automation.last_executed_at),
+                          { addSuffix: true }
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Status badge + menu */}
+              <div className='flex items-center gap-2 shrink-0'>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium',
+                    isActive
+                      ? 'bg-[color:var(--success,#22c55e)]/12 text-[color:var(--success,#22c55e)]'
+                      : isDraft
+                        ? 'bg-muted text-muted-foreground'
+                        : 'bg-amber-500/12 text-amber-500'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      isActive
+                        ? 'bg-[color:var(--success,#22c55e)]'
+                        : isDraft
+                          ? 'bg-muted-foreground'
+                          : 'bg-amber-500'
+                    )}
+                  />
+                  {isActive ? 'Active' : isDraft ? 'Draft' : 'Paused'}
+                </span>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity'
+                    >
+                      <MoreHorizontal className='h-4 w-4' />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end' className='w-44'>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={`/dashboard/automations/${automation.id}/edit`}
+                        className='flex items-center gap-2'
+                      >
+                        <Pencil className='h-3.5 w-3.5' />
+                        Edit
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className='flex items-center gap-2'>
+                      <Copy className='h-3.5 w-3.5' />
+                      Duplicate
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() =>
+                        onToggleStatus(
+                          automation.id,
+                          automation.status || AutomationStatus.DRAFT
+                        )
+                      }
+                      className='flex items-center gap-2'
+                    >
+                      {isActive ? (
+                        <>
+                          <Pause className='h-3.5 w-3.5' />
+                          Pause
+                        </>
+                      ) : (
+                        <>
+                          <Play className='h-3.5 w-3.5' />
+                          Activate
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onDelete(automation)}
+                      className='flex items-center gap-2 text-destructive focus:text-destructive'
+                    >
+                      <Trash2 className='h-3.5 w-3.5' />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Actions pills */}
+        {automation.actions?.length > 0 && (
+          <div className='mt-3 flex flex-wrap items-center gap-1.5 pl-[54px]'>
+            {automation.actions.slice(0, 3).map(action => (
+              <span
+                key={action.id}
+                className='inline-flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground'
+              >
+                {action.action_type === AutomationActionType.REPLY_COMMENT && (
+                  <MessageCircle className='h-3 w-3' />
+                )}
+                {(action.action_type === AutomationActionType.SEND_DM ||
+                  action.action_type ===
+                    AutomationActionType.PRIVATE_REPLY) && (
+                  <Mail className='h-3 w-3' />
+                )}
+                {getActionLabel(action.action_type)}
+              </span>
+            ))}
+            {automation.actions.length > 3 && (
+              <span className='text-[11px] text-muted-foreground'>
+                +{automation.actions.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Row 3: Stats + buttons */}
+        <div className='mt-4 flex items-center justify-between pl-[54px]'>
+          {/* Stats */}
+          <div className='flex items-center gap-5 text-xs'>
+            <div>
+              <p className='text-muted-foreground'>Total Runs</p>
+              <p className='font-semibold text-foreground mt-0.5'>
+                {(automation.execution_count || 0).toLocaleString()}
+              </p>
+            </div>
+            <div className='w-px h-7 bg-border' />
+            <div>
+              <p className='text-muted-foreground'>Last Run</p>
+              <p className='font-semibold text-foreground mt-0.5'>
+                {automation.last_executed_at
+                  ? formatDistanceToNow(new Date(automation.last_executed_at))
+                  : '—'}
+              </p>
+            </div>
+            {successRate !== null && (
+              <>
+                <div className='w-px h-7 bg-border' />
+                <div>
+                  <p className='text-muted-foreground'>Success Rate</p>
+                  <p
+                    className={cn(
+                      'font-semibold mt-0.5',
+                      successRate >= 90
+                        ? 'text-[color:var(--success,#22c55e)]'
+                        : successRate >= 70
+                          ? 'text-amber-500'
+                          : 'text-[color:var(--error,#ef4444)]'
+                    )}
+                  >
+                    {successRate}%
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* CTA buttons */}
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='ghost'
+              size='sm'
+              asChild
+              className='h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5'
+            >
+              <Link href={`/dashboard/automations/${automation.id}`}>
+                <BarChart2 className='h-3.5 w-3.5' />
+                View Stats
+              </Link>
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className='h-8 text-xs gap-1.5 bg-transparent'
+            >
+              <Link href={`/dashboard/automations/${automation.id}/edit`}>
+                <Pencil className='h-3.5 w-3.5' />
+                Edit
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Loading skeleton ──────────────────────────────────────────────────────────
+
+function AutomationSkeleton() {
+  return (
+    <div className='rounded-2xl border border-border bg-card p-5 animate-pulse'>
+      <div className='flex items-start gap-3.5'>
+        <div className='h-10 w-10 rounded-xl bg-muted shrink-0' />
+        <div className='flex-1 space-y-2'>
+          <div className='h-4 w-48 rounded bg-muted' />
+          <div className='h-3 w-32 rounded bg-muted/60' />
+        </div>
+      </div>
+      <div className='mt-4 flex gap-5 pl-[54px]'>
+        {[0, 1, 2].map(i => (
+          <div key={i} className='space-y-1'>
+            <div className='h-3 w-14 rounded bg-muted/60' />
+            <div className='h-4 w-10 rounded bg-muted' />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ───────────────────────────────────────────────────────────────
+
+function EmptyState({ hasFilters }: { hasFilters: boolean }) {
+  return (
+    <div className='flex flex-col items-center justify-center py-20 text-center'>
+      <div className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-5'>
+        <Zap className='h-8 w-8 text-primary' />
+      </div>
+      <h3 className='text-lg font-semibold mb-2'>
+        {hasFilters ? 'No results found' : 'No automations yet'}
+      </h3>
+      <p className='text-sm text-muted-foreground mb-6 max-w-xs'>
+        {hasFilters
+          ? 'Try adjusting your filters to see more results.'
+          : 'Create your first automation to start automatically engaging with your audience.'}
+      </p>
+      {!hasFilters && (
+        <Button asChild>
+          <Link href='/dashboard/automations/new'>
+            <Plus className='h-4 w-4 mr-2' />
+            Create Automation
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
+
 export default function AutomationsPage() {
+  const router = useRouter();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('recent');
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteTarget, setDeleteTarget] = useState<Automation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchAutomations();
-  }, [debouncedSearchQuery, statusFilter]);
-
-  const fetchAutomations = async () => {
+  const fetchAutomations = useCallback(async () => {
     setIsLoading(true);
     try {
       const params: AutomationListParams = {};
-      if (debouncedSearchQuery) params.search = debouncedSearchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter !== 'all') params.status = statusFilter;
-
-      const response = await automationsApi.list(params);
-
-      if (response && response.data) {
-        setAutomations(response.data);
-      }
-    } catch (_error) {
-      const err = parseApiError(_error);
-      toast({
-        variant: 'destructive',
-        title: err.title,
-        description: err.message,
-      });
+      const res = await AutomationsApi.list(params);
+      setAutomations(res?.data ?? []);
+    } catch (err) {
+      const e = parseApiError(err);
+      toast({ variant: 'destructive', title: e.title, description: e.message });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [debouncedSearch, statusFilter]);
 
-  // Client-side sorting only since backend might not support all sort options yet
-  // or we want to sort the current page results
-  const filteredAutomations = (automations ?? []).sort((a, b) => {
-    if (sortBy === 'recent')
-      return (
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
-    if (sortBy === 'executions')
-      return (b.execution_count || 0) - (a.execution_count || 0);
-    if (sortBy === 'name') return a.name.localeCompare(b.name);
-    return 0;
-  });
+  useEffect(() => {
+    fetchAutomations();
+  }, [fetchAutomations]);
 
-  const toggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus =
-      currentStatus === AutomationStatus.ACTIVE
+  const handleToggleStatus = async (id: string, current: string) => {
+    const next =
+      current === AutomationStatus.ACTIVE
         ? AutomationStatus.INACTIVE
         : AutomationStatus.ACTIVE;
 
-    // Optimistic update
     setAutomations(prev =>
       prev.map(a =>
-        a.id === id ? { ...a, status: newStatus as Automation['status'] } : a
+        a.id === id ? { ...a, status: next as Automation['status'] } : a
       )
     );
 
     try {
-      await automationsApi.update(id, { status: newStatus });
+      await AutomationsApi.update(id, { status: next });
       toast({
-        title: 'Status updated',
-        description: `Automation ${newStatus === AutomationStatus.ACTIVE ? 'activated' : 'deactivated'}`,
+        title: next === AutomationStatus.ACTIVE ? 'Activated' : 'Paused',
+        description: `Automation ${next === AutomationStatus.ACTIVE ? 'is now active' : 'paused successfully'}.`,
       });
-    } catch (_error) {
-      // Revert on failure
+    } catch (err) {
       setAutomations(prev =>
         prev.map(a =>
-          a.id === id
-            ? { ...a, status: currentStatus as Automation['status'] }
-            : a
+          a.id === id ? { ...a, status: current as Automation['status'] } : a
         )
       );
-      const err = parseApiError(_error);
+      const e = parseApiError(err);
+      toast({ variant: 'destructive', title: e.title, description: e.message });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await AutomationsApi.delete(deleteTarget.id);
+      setAutomations(prev => prev.filter(a => a.id !== deleteTarget.id));
       toast({
-        variant: 'destructive',
-        title: err.title,
-        description: err.message,
+        title: 'Deleted',
+        description: `"${deleteTarget.name}" has been deleted.`,
       });
+      setDeleteTarget(null);
+    } catch (err) {
+      const e = parseApiError(err);
+      toast({ variant: 'destructive', title: e.title, description: e.message });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const activeCount = automations.filter(
     a => a.status === AutomationStatus.ACTIVE
   ).length;
-  const totalExecutions = automations.reduce(
-    (sum, a) => sum + (a.execution_count || 0),
-    0
-  );
-
-  const handleDelete = async (id: string) => {
-    try {
-      await automationsApi.delete(id);
-      setAutomations(prev => prev.filter(a => a.id !== id));
-      toast({
-        title: 'Automation deleted',
-        description: 'The automation has been successfully deleted.',
-      });
-    } catch (_error) {
-      const err = parseApiError(_error);
-      toast({
-        variant: 'destructive',
-        title: err.title,
-        description: err.message,
-      });
-    }
-  };
-
-  function getTriggerTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      [AutomationTriggerType.NEW_COMMENT]: 'New Comment',
-      [AutomationTriggerType.MENTION]: 'Mention',
-      [AutomationTriggerType.NEW_FOLLOWER]: 'New Follower',
-      [AutomationTriggerType.DM_RECEIVED]: 'Direct Message',
-      [AutomationTriggerType.STORY_REPLY]: 'Story Reply',
-    };
-    return (
-      labels[type] ||
-      type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-    );
-  }
-
-  function getActionTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      [AutomationActionType.REPLY_COMMENT]: 'Reply',
-      [AutomationActionType.SEND_DM]: 'Send DM',
-      [AutomationActionType.PRIVATE_REPLY]: 'Private Reply',
-    };
-    return (
-      labels[type] ||
-      type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-    );
-  }
+  const hasFilters = !!debouncedSearch || statusFilter !== 'all';
 
   return (
     <div className='flex flex-col h-full'>
-      {/* Header */}
-      <div className='p-4 sm:p-6 border-b border-border'>
-        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
-          <div className='min-w-0'>
-            <h1 className='text-2xl font-bold mb-1'>Automations</h1>
-            <p className='text-sm text-muted-foreground'>
-              Create and manage your Instagram automations
+      {/* ── Header ── */}
+      <div className='flex-none px-6 py-5 border-b border-border'>
+        <div className='flex items-center justify-between gap-4 mb-5'>
+          <div>
+            <h1 className='text-2xl font-bold leading-tight'>Automations</h1>
+            <p className='text-sm text-muted-foreground mt-0.5'>
+              Build and manage workflows that run on Instagram automatically
             </p>
           </div>
-          <Button asChild className='shrink-0 self-start sm:self-auto'>
-            <Link href='/dashboard/automations/new'>
-              <Plus className='h-4 w-4 mr-2' />
-              New Automation
-            </Link>
-          </Button>
+          <div className='flex items-center gap-2.5 shrink-0'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='gap-1.5 bg-transparent h-9 text-muted-foreground'
+            >
+              <Filter className='h-3.5 w-3.5' />
+              Filter
+            </Button>
+            <Button asChild size='sm' className='gap-1.5 h-9'>
+              <Link href='/dashboard/automations/new'>
+                <Plus className='h-4 w-4' />
+                New Automation
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6'>
-          <Card className='bg-card/50'>
-            <CardContent className='p-4'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <p className='text-xs text-muted-foreground uppercase tracking-wide'>
-                    Total Automations
-                  </p>
-                  <p className='text-2xl font-bold mt-1'>
-                    {automations.length}
-                  </p>
-                </div>
-                <div className='w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center'>
-                  <Zap className='h-5 w-5 text-primary' />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className='bg-card/50'>
-            <CardContent className='p-4'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <p className='text-xs text-muted-foreground uppercase tracking-wide'>
-                    Active
-                  </p>
-                  <p className='text-2xl font-bold mt-1 text-emerald-500'>
-                    {activeCount}
-                  </p>
-                </div>
-                <div className='w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center'>
-                  <Play className='h-5 w-5 text-emerald-500' />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className='bg-card/50'>
-            <CardContent className='p-4'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <p className='text-xs text-muted-foreground uppercase tracking-wide'>
-                    Total Executions
-                  </p>
-                  <p className='text-2xl font-bold mt-1'>
-                    {totalExecutions.toLocaleString()}
-                  </p>
-                </div>
-                <div className='w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center'>
-                  <MessageCircle className='h-5 w-5 text-blue-500' />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
-        <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
-          <div className='relative flex-1 min-w-[140px] max-w-sm'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+        {/* Filter bar */}
+        <div className='flex flex-wrap items-center gap-2.5'>
+          <div className='relative flex-1 min-w-[200px] max-w-sm'>
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground' />
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder='Search automations...'
-              className='pl-9 bg-background/50'
+              className='pl-9 h-9 bg-background/60 text-sm'
             />
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className='w-28 sm:w-32 bg-background/50'>
+            <SelectTrigger className='w-32 h-9 bg-background/60 text-sm'>
               <SelectValue placeholder='Status' />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>All Status</SelectItem>
               <SelectItem value={AutomationStatus.ACTIVE}>Active</SelectItem>
-              <SelectItem value={AutomationStatus.INACTIVE}>
-                Inactive
-              </SelectItem>
+              <SelectItem value={AutomationStatus.INACTIVE}>Paused</SelectItem>
               <SelectItem value={AutomationStatus.DRAFT}>Draft</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className='w-32 sm:w-36 bg-background/50'>
-              <ArrowUpDown className='h-4 w-4 mr-2' />
-              <SelectValue placeholder='Sort by' />
+          <Select defaultValue='all'>
+            <SelectTrigger className='w-36 h-9 bg-background/60 text-sm'>
+              <SelectValue placeholder='Platform' />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='recent'>Most Recent</SelectItem>
-              <SelectItem value='executions'>Most Executions</SelectItem>
-              <SelectItem value='name'>Name A-Z</SelectItem>
+              <SelectItem value='all'>All Platforms</SelectItem>
+              <SelectItem value='instagram'>Instagram</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Summary counts */}
+          {!isLoading && (
+            <div className='ml-auto flex items-center gap-1 text-xs text-muted-foreground'>
+              <span>
+                Showing {automations.length} automation
+                {automations.length !== 1 ? 's' : ''}
+              </span>
+              {activeCount > 0 && (
+                <>
+                  <span>·</span>
+                  <span className='text-[color:var(--success,#22c55e)]'>
+                    {activeCount} active
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Automations List */}
-      <div className='flex-1 overflow-y-auto p-4 sm:p-6'>
+      {/* ── List ── */}
+      <div className='flex-1 overflow-y-auto px-6 py-5'>
         {isLoading ? (
-          <div className='flex justify-center items-center h-40'>
-            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
-          </div>
-        ) : filteredAutomations.length > 0 ? (
           <div className='space-y-3'>
-            {filteredAutomations.map(automation => {
-              const isActive = automation.status === AutomationStatus.ACTIVE;
-              const successRate =
-                (automation.execution_count || 0) > 0
-                  ? Math.round(
-                      ((automation.success_count || 0) /
-                        (automation.execution_count || 0)) *
-                        100
-                    )
-                  : 0;
-
-              return (
-                <Card
-                  key={automation.id}
-                  className={cn(
-                    'hover:border-primary/50 transition-all hover:translate-y-[-2px]',
-                    !isActive && 'opacity-70'
-                  )}
-                >
-                  <CardContent className='p-5'>
-                    <div className='flex items-start gap-4'>
-                      {/* Status toggle */}
-                      <div className='pt-1'>
-                        <Switch
-                          checked={isActive}
-                          onCheckedChange={() =>
-                            toggleStatus(
-                              automation.id,
-                              automation.status || AutomationStatus.DRAFT
-                            )
-                          }
-                          className='data-[state=checked]:bg-emerald-500'
-                        />
-                      </div>
-
-                      {/* Main content */}
-                      <div className='flex-1 min-w-0 grid gap-3'>
-                        {/* Header: Name + Badges */}
-                        <div className='flex items-center gap-2'>
-                          <Link
-                            href={`/dashboard/automations/${automation.id}`}
-                            className='font-semibold text-lg truncate hover:underline underline-offset-4 decoration-primary/50'
-                          >
-                            {automation.name}
-                          </Link>
-                          <Badge
-                            variant='secondary'
-                            className={cn(
-                              'shrink-0 text-[10px] h-5 px-1.5',
-                              isActive
-                                ? 'bg-emerald-500/10 text-emerald-500'
-                                : automation.status === AutomationStatus.DRAFT
-                                  ? 'bg-muted text-muted-foreground'
-                                  : 'bg-amber-500/10 text-amber-500'
-                            )}
-                          >
-                            {automation.status === AutomationStatus.ACTIVE
-                              ? 'Active'
-                              : automation.status === AutomationStatus.DRAFT
-                                ? 'Draft'
-                                : 'Paused'}
-                          </Badge>
-                        </div>
-
-                        {/* Metadata Row: Social Account | Created | Last Run */}
-                        <div className='flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground'>
-                          {/* Social Account */}
-                          {automation.social_account && (
-                            <div className='flex items-center gap-1.5 text-foreground/80'>
-                              <div className='w-5 h-5 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center'>
-                                <Instagram className='h-3 w-3 text-white' />
-                              </div>
-                              <span className='font-medium'>
-                                @{automation.social_account.username}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Created Date */}
-                          <div className='flex items-center gap-1.5'>
-                            <Calendar className='h-3.5 w-3.5' />
-                            <span>
-                              Created{' '}
-                              {format(
-                                new Date(automation.created_at),
-                                'MMM d, yyyy'
-                              )}
-                            </span>
-                          </div>
-
-                          {/* Last Run */}
-                          {automation.last_executed_at && (
-                            <div className='flex items-center gap-1.5'>
-                              <Clock className='h-3.5 w-3.5' />
-                              <span>
-                                Run{' '}
-                                {formatDistanceToNow(
-                                  new Date(automation.last_executed_at),
-                                  { addSuffix: true }
-                                )}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Flow Visualization */}
-                        <Link
-                          href={`/dashboard/automations/${automation.id}`}
-                          className='flex flex-wrap items-center gap-2 mt-1 p-2 bg-muted/30 hover:bg-muted/50 transition-colors rounded-lg border border-border/40 w-fit'
-                        >
-                          <div className='flex items-center gap-1.5 text-sm font-medium'>
-                            {getTriggerTypeLabel(
-                              automation.trigger.trigger_type
-                            )}
-                          </div>
-
-                          <span className='text-muted-foreground text-xs'>
-                            →
-                          </span>
-
-                          <div className='flex items-center gap-1.5'>
-                            {automation.actions.slice(0, 3).map(action => (
-                              <Badge
-                                key={action.id}
-                                variant='outline'
-                                className='bg-background/50 border-border text-xs font-normal shadow-sm'
-                              >
-                                {getActionTypeLabel(action.action_type)}
-                              </Badge>
-                            ))}
-                            {automation.actions.length > 3 && (
-                              <Badge
-                                variant='outline'
-                                className='bg-background/50 border-border text-xs font-normal shadow-sm'
-                              >
-                                +{automation.actions.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </Link>
-                      </div>
-
-                      {/* Stats */}
-                      <div className='hidden sm:flex flex-col items-end justify-center gap-1 min-w-[100px] border-l border-border pl-6 py-2 self-stretch'>
-                        <div className='text-right mb-1'>
-                          <p className='text-xl font-bold'>
-                            {(automation.execution_count || 0).toLocaleString()}
-                          </p>
-                          <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
-                            executions
-                          </p>
-                        </div>
-                        <div className='text-right'>
-                          <p
-                            className={cn(
-                              'font-semibold text-sm',
-                              successRate >= 90
-                                ? 'text-emerald-500'
-                                : successRate >= 70
-                                  ? 'text-amber-500'
-                                  : 'text-red-500'
-                            )}
-                          >
-                            {successRate}%
-                          </p>
-                          <p className='text-[10px] uppercase tracking-wider text-muted-foreground'>
-                            success rate
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className='pl-2'>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              className='h-8 w-8 p-0'
-                            >
-                              <MoreHorizontal className='h-4 w-4' />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align='end'>
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/dashboard/automations/${automation.id}`}
-                              >
-                                Edit
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem
-                              className='text-destructive'
-                              onClick={() => handleDelete(automation.id)}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {[0, 1, 2].map(i => (
+              <AutomationSkeleton key={i} />
+            ))}
+          </div>
+        ) : automations.length > 0 ? (
+          <div className='space-y-3'>
+            {automations.map(automation => (
+              <AutomationCard
+                key={automation.id}
+                automation={automation}
+                onToggleStatus={handleToggleStatus}
+                onDelete={setDeleteTarget}
+              />
+            ))}
           </div>
         ) : (
-          <div className='flex flex-col items-center justify-center h-64 text-center'>
-            <div className='w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4'>
-              <Zap className='h-8 w-8 text-muted-foreground' />
-            </div>
-            <h3 className='font-semibold mb-2'>No automations found</h3>
-            <p className='text-sm text-muted-foreground mb-4'>
-              {searchQuery || statusFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Create your first automation to get started'}
-            </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <Button asChild>
-                <Link href='/dashboard/automations/new'>
-                  <Plus className='h-4 w-4 mr-2' />
-                  Create Automation
-                </Link>
-              </Button>
-            )}
-          </div>
+          <EmptyState hasFilters={hasFilters} />
         )}
       </div>
+
+      {/* Delete dialog */}
+      <DeleteAutomationDialog
+        automation={deleteTarget}
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

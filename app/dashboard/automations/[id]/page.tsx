@@ -216,17 +216,10 @@ export default function AutomationDetailPage() {
     if (!automation) return;
 
     try {
-      // Assuming delete endpoint exists and is supported by automationsApi
-      // If not, I might need to add it to automationsApi first.
-      // Checking automationsApi... it does not have delete method in the snippet I read earlier!
-      // I need to check lib/api/automations.ts again.
-      // It has create, update, get, list. NO DELETE.
-      // I should add delete to lib/api/automations.ts first.
-
-      // Temporary: just redirect
+      await automationsApi.delete(automation.id);
       toast({
-        title: 'Delete functionality pending',
-        description: 'Delete API not yet implemented in frontend client',
+        title: 'Automation deleted',
+        description: `"${automation.name}" has been permanently deleted.`,
       });
       router.push('/dashboard/automations');
     } catch (_error) {
