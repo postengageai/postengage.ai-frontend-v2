@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle, Clock } from 'lucide-react';
@@ -19,17 +19,30 @@ function StatCard({
   value,
   label,
   color = 'text-foreground',
+  loading = false,
 }: {
   value: string;
   label: string;
   color?: string;
+  loading?: boolean;
 }) {
   return (
     <div className='flex-1 rounded-xl border border-white/8 bg-white/5 px-4 py-4'>
-      <p className={`text-2xl font-bold tracking-tight ${color}`}>{value}</p>
+      {loading ? (
+        <div className='h-7 w-16 rounded bg-white/10 animate-pulse mb-1' />
+      ) : (
+        <p className={`text-2xl font-bold tracking-tight ${color}`}>{value}</p>
+      )}
       <p className='mt-0.5 text-xs text-white/50'>{label}</p>
     </div>
   );
+}
+
+/* Format large numbers: 2400000 → "2.4M+" */
+function formatStat(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K+`;
+  return n.toString();
 }
 
 /* ─── Inner page (needs search params) ─────────────────────────────────── */
@@ -46,6 +59,21 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Platform stats
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [platformStats, setPlatformStats] = useState<{
+    replies_sent: number;
+    total_automations: number;
+    active_users: number;
+  } | null>(null);
+
+  useEffect(() => {
+    AuthApi.getPlatformStats()
+      .then(setPlatformStats)
+      .catch(() => setPlatformStats(null))
+      .finally(() => setStatsLoading(false));
+  }, []);
 
   const isFormValid = email.includes('@') && password.length > 0;
 
@@ -66,11 +94,22 @@ function LoginContent() {
       router.push('/dashboard');
       router.refresh();
     } catch (error: unknown) {
-      if (error instanceof ApiError && error.code === 'PE-AUTH-007') {
-        setShowResend(true);
-      }
-      if (error instanceof ApiError && error.isValidationError) {
-        setFieldErrors(error.getFieldErrors());
+      if (error instanceof ApiError) {
+        // Redirect to locked/suspended screens
+        if (error.code === 'PE-AUTH-005') {
+          router.push(`/account-locked?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        if (error.code === 'PE-AUTH-006') {
+          router.push('/account-suspended');
+          return;
+        }
+        if (error.code === 'PE-AUTH-007') {
+          setShowResend(true);
+        }
+        if (error.isValidationError) {
+          setFieldErrors(error.getFieldErrors());
+        }
       }
       errors.setError('loginError', error as ApiError);
     } finally {
@@ -79,7 +118,9 @@ function LoginContent() {
     }
   };
 
-  const errorDisplay = errors.loginError ? parseApiError(errors.loginError) : null;
+  const errorDisplay = errors.loginError
+    ? parseApiError(errors.loginError)
+    : null;
 
   return (
     <div className='min-h-screen bg-background flex'>
@@ -104,17 +145,43 @@ function LoginContent() {
             Your automations are running. Pick up where you left off.
           </p>
 
-          {/* Stat cards */}
+          {/* Stat cards — real data from /auth/platform-stats */}
           <div className='flex gap-3'>
-            <StatCard value='2.4M+' label='Replies sent' />
-            <StatCard value='98%'   label='Response rate' color='text-primary' />
-            <StatCard value='4.2×'  label='Avg ROI uplift' color='text-success' />
+            <StatCard
+              value={
+                platformStats ? formatStat(platformStats.replies_sent) : '—'
+              }
+              label='Replies sent'
+              loading={statsLoading}
+            />
+            <StatCard
+              value={
+                platformStats
+                  ? `${formatStat(platformStats.total_automations)}`
+                  : '—'
+              }
+              label='Automations live'
+              color='text-primary'
+              loading={statsLoading}
+            />
+            <StatCard
+              value={
+                platformStats
+                  ? `${formatStat(platformStats.active_users)}`
+                  : '—'
+              }
+              label='Active creators'
+              color='text-success'
+              loading={statsLoading}
+            />
           </div>
         </div>
 
         {/* Trust footer */}
         <div className='relative z-10 px-10 xl:px-14 pb-9'>
-          <p className='text-xs text-white/35'>Trusted by 10,000+ creators worldwide</p>
+          <p className='text-xs text-white/35'>
+            Trusted by 10,000+ creators worldwide
+          </p>
         </div>
       </div>
 
@@ -128,7 +195,6 @@ function LoginContent() {
         {/* Form */}
         <main className='flex-1 flex items-center justify-center px-4 py-10'>
           <div className='w-full max-w-[440px] rounded-2xl border border-border bg-card p-10 shadow-xl shadow-black/40'>
-
             {/* Session-expired banner */}
             {sessionExpired && (
               <div className='mb-6 flex items-center gap-2.5 rounded-lg border border-warning/40 bg-warning-muted px-4 py-3 text-sm text-warning'>
@@ -168,27 +234,39 @@ function LoginContent() {
             <form onSubmit={handleSubmit} className='space-y-5'>
               {/* Email */}
               <div className='space-y-2'>
-                <Label htmlFor='email' className='text-sm font-medium text-foreground'>
+                <Label
+                  htmlFor='email'
+                  className='text-sm font-medium text-foreground'
+                >
                   Email Address
                 </Label>
                 <Input
                   id='email'
                   type='email'
                   value={email}
-                  onChange={e => { setEmail(e.target.value); errors.clearErrors(); setFieldErrors({}); }}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    errors.clearErrors();
+                    setFieldErrors({});
+                  }}
                   placeholder='you@example.com'
                   disabled={isLoading}
                   className={fieldErrors.email ? 'border-destructive' : ''}
                 />
                 {fieldErrors.email && (
-                  <p className='text-xs text-destructive'>{fieldErrors.email}</p>
+                  <p className='text-xs text-destructive'>
+                    {fieldErrors.email}
+                  </p>
                 )}
               </div>
 
               {/* Password */}
               <div className='space-y-2'>
                 <div className='flex items-center justify-between'>
-                  <Label htmlFor='password' className='text-sm font-medium text-foreground'>
+                  <Label
+                    htmlFor='password'
+                    className='text-sm font-medium text-foreground'
+                  >
                     Password
                   </Label>
                   <Link
@@ -202,13 +280,19 @@ function LoginContent() {
                   id='password'
                   type='password'
                   value={password}
-                  onChange={e => { setPassword(e.target.value); errors.clearErrors(); setFieldErrors({}); }}
+                  onChange={e => {
+                    setPassword(e.target.value);
+                    errors.clearErrors();
+                    setFieldErrors({});
+                  }}
                   placeholder='Enter your password'
                   disabled={isLoading}
                   className={fieldErrors.password ? 'border-destructive' : ''}
                 />
                 {fieldErrors.password && (
-                  <p className='text-xs text-destructive'>{fieldErrors.password}</p>
+                  <p className='text-xs text-destructive'>
+                    {fieldErrors.password}
+                  </p>
                 )}
               </div>
 
@@ -230,7 +314,10 @@ function LoginContent() {
 
             <p className='mt-6 text-sm text-center text-muted-foreground'>
               Don&apos;t have an account?{' '}
-              <Link href='/signup' className='text-primary hover:text-primary-hover font-medium transition-colors'>
+              <Link
+                href='/signup'
+                className='text-primary hover:text-primary-hover font-medium transition-colors'
+              >
                 Sign up
               </Link>
             </p>
@@ -240,9 +327,19 @@ function LoginContent() {
         {/* Footer */}
         <footer className='px-6 pb-6 text-center'>
           <p className='text-xs text-muted-foreground/50'>
-            <Link href='https://postengage.ai/privacy' className='hover:text-muted-foreground transition-colors'>Privacy</Link>
+            <Link
+              href='https://postengage.ai/privacy'
+              className='hover:text-muted-foreground transition-colors'
+            >
+              Privacy
+            </Link>
             <span className='mx-2'>·</span>
-            <Link href='https://postengage.ai/terms' className='hover:text-muted-foreground transition-colors'>Terms</Link>
+            <Link
+              href='https://postengage.ai/terms'
+              className='hover:text-muted-foreground transition-colors'
+            >
+              Terms
+            </Link>
           </p>
         </footer>
       </div>
@@ -252,11 +349,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className='min-h-screen bg-background flex items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-primary' />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className='min-h-screen bg-background flex items-center justify-center'>
+          <Loader2 className='h-8 w-8 animate-spin text-primary' />
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );
