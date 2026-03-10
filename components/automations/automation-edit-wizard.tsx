@@ -154,6 +154,7 @@ function apiToFormData(apiData: Automation): AutomationFormData {
       }) || [],
     name: apiData.name,
     description: apiData.description,
+    labels: Array.isArray(apiData.labels) ? (apiData.labels as string[]) : [],
     status: parseEnum<AutomationStatusType>(
       apiData.status,
       AutomationStatus,

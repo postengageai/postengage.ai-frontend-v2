@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -29,7 +28,6 @@ import {
   MessageSquare,
   Mail,
   Send,
-  Clock,
   Bot as BotIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -135,10 +133,7 @@ export function ConfigureActionsStep({
         },
       };
     } else {
-      // REPLY_COMMENT or PRIVATE_REPLY
-      payload = {
-        text: '',
-      };
+      payload = { text: '' };
     }
 
     const newAction = {
@@ -176,7 +171,6 @@ export function ConfigureActionsStep({
         | ReplyCommentPayload
         | PrivateReplyPayload
         | SendDmPayload;
-
       return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
     });
 
@@ -197,7 +191,6 @@ export function ConfigureActionsStep({
             dmPayload.message && dmPayload.message.type === 'text'
               ? dmPayload.message
               : null;
-
           return !message || !message.text || !message.text.trim();
         }
 
@@ -237,256 +230,246 @@ export function ConfigureActionsStep({
 
   const availableActions = getAvailableActions();
 
+  const hasAiEnabled = actions.some(action => {
+    const payload = action.action_payload as
+      | ReplyCommentPayload
+      | PrivateReplyPayload
+      | SendDmPayload;
+    return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+  });
+
   return (
     <div>
-      <h2 className='mb-2 text-xl font-bold text-foreground sm:text-2xl'>
-        Configure Actions
-      </h2>
-      <p className='mb-6 text-sm text-muted-foreground sm:mb-8 sm:text-base'>
-        Choose what happens when the automation triggers
-      </p>
+      <div className='mb-8 flex items-start justify-between gap-4'>
+        <div>
+          <h2 className='mb-1 text-2xl font-bold text-foreground'>
+            Configure Actions
+          </h2>
+          <p className='text-muted-foreground'>
+            Choose what happens when the automation triggers
+          </p>
+        </div>
 
-      {actions.length < 2 && (
-        <div className='mb-6'>
-          <Label className='mb-3 block text-sm font-medium'>Add Action</Label>
-          <div className='grid gap-3 sm:grid-cols-2'>
+        {/* Add Action button — visible when there's room */}
+        {actions.length < 2 && (
+          <div className='hidden sm:flex flex-shrink-0 gap-2'>
             {availableActions.map(action => {
-              const Icon = action.icon;
               const isAdded = actions.some(a => a.action_type === action.type);
+              if (isAdded) return null;
+              const Icon = action.icon;
               return (
-                <button
+                <Button
                   key={action.type}
+                  variant='outline'
+                  size='sm'
                   onClick={() => addAction(action.type)}
-                  disabled={isAdded}
-                  className='group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50'
+                  className='gap-1.5'
                 >
-                  <div className='rounded-lg bg-primary/10 p-2 transition-colors group-hover:bg-primary group-hover:text-primary-foreground'>
-                    <Icon className='h-5 w-5 text-primary group-hover:text-primary-foreground' />
-                  </div>
-                  <div className='flex-1'>
-                    <div className='flex flex-wrap items-center gap-2'>
-                      <p className='font-semibold text-foreground'>
-                        {action.label}
-                      </p>
-                      <Badge
-                        variant='secondary'
-                        className='bg-primary/10 text-xs text-primary'
-                      >
-                        Free
-                      </Badge>
-                    </div>
-                    <p className='mt-1 text-xs text-muted-foreground'>
-                      {action.description}
-                    </p>
-                  </div>
-                </button>
+                  <Icon className='h-3.5 w-3.5' />
+                  <Plus className='h-3 w-3' />
+                  {action.label}
+                </Button>
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* Empty state */}
+      {actions.length === 0 && (
+        <div className='mb-6'>
+          <div className='rounded-xl border-2 border-dashed border-border p-10 text-center'>
+            <div className='mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
+              <Plus className='h-7 w-7 text-muted-foreground' />
+            </div>
+            <h3 className='mb-1 font-semibold text-foreground'>
+              No actions yet
+            </h3>
+            <p className='mb-4 text-sm text-muted-foreground'>
+              Add at least one action to continue
+            </p>
+            {/* Mobile add buttons */}
+            <div className='flex flex-wrap justify-center gap-2'>
+              {availableActions.map(action => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.type}
+                    variant='outline'
+                    size='sm'
+                    onClick={() => addAction(action.type)}
+                    className='gap-1.5'
+                  >
+                    <Icon className='h-4 w-4' />
+                    {action.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Mobile add buttons when actions exist */}
+      {actions.length > 0 && actions.length < 2 && (
+        <div className='mb-4 flex flex-wrap gap-2 sm:hidden'>
+          {availableActions.map(action => {
+            const isAdded = actions.some(a => a.action_type === action.type);
+            if (isAdded) return null;
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.type}
+                variant='outline'
+                size='sm'
+                onClick={() => addAction(action.type)}
+                className='gap-1.5'
+              >
+                <Icon className='h-3.5 w-3.5' />
+                <Plus className='h-3 w-3' />
+                {action.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Action Cards */}
       {actions.length > 0 && (
         <div className='space-y-4'>
-          {actions.map((action, index) => (
-            <Card
-              key={index}
-              className='overflow-hidden border-border transition-all hover:border-primary/50'
-            >
-              <div className='flex items-center justify-between border-b bg-muted/30 px-6 py-4'>
-                <div className='flex items-center gap-3'>
-                  <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary'>
-                    {action.execution_order}
-                  </div>
-                  <div>
-                    <p className='font-semibold text-foreground'>
-                      {action.action_type ===
-                        AutomationActionType.REPLY_COMMENT &&
-                        'Reply to Comment'}
-                      {action.action_type ===
-                        AutomationActionType.PRIVATE_REPLY &&
-                        'Send Private Reply'}
-                      {action.action_type === AutomationActionType.SEND_DM &&
-                        'Send DM Reply'}
-                    </p>
-                    <div className='flex items-center justify-between text-xs text-muted-foreground'>
-                      <div className='flex items-center gap-1.5'>
-                        <Clock className='h-3 w-3' />
-                        <span>{action.delay_seconds}s delay</span>
-                      </div>
-                      <div className='flex items-center gap-1.5'>
-                        {(() => {
-                          const payload = action.action_payload as
-                            | ReplyCommentPayload
-                            | PrivateReplyPayload
-                            | SendDmPayload;
-                          const hasAi =
-                            'use_ai_reply' in payload &&
-                            Boolean(payload.use_ai_reply);
+          {actions.map((action, index) => {
+            const actionPayload = action.action_payload as
+              | ReplyCommentPayload
+              | PrivateReplyPayload
+              | SendDmPayload;
+            const hasAi =
+              'use_ai_reply' in actionPayload &&
+              Boolean(actionPayload.use_ai_reply);
 
-                          if (hasAi) {
-                            const selectedBot = bots.find(
-                              bot => bot._id === selectedBotId
-                            );
+            let creditCost = 0;
+            if (hasAi) {
+              const isByom = userConfig?.mode === LlmConfigMode.BYOM;
+              const infraCost = CREDIT_COSTS.BYOM_INFRA;
+              if (isByom) {
+                creditCost = infraCost;
+              } else {
+                const selectedBot = bots.find(b => b._id === selectedBotId);
+                const hasKnowledge =
+                  selectedBot?.knowledge_sources &&
+                  selectedBot.knowledge_sources.length > 0;
+                const aiTierCost = hasKnowledge
+                  ? CREDIT_COSTS.AI_KNOWLEDGE
+                  : CREDIT_COSTS.AI_STANDARD;
+                creditCost = infraCost + aiTierCost;
+              }
+            }
 
-                            // Calculate credit cost
-                            let creditCost = 0;
-                            const isByom =
-                              userConfig?.mode === LlmConfigMode.BYOM;
-                            const infraCost = CREDIT_COSTS.BYOM_INFRA;
-
-                            if (isByom) {
-                              creditCost = infraCost;
-                            } else {
-                              // Platform mode: Infra + AI Tier
-                              const hasKnowledge =
-                                selectedBot?.knowledge_sources &&
-                                selectedBot.knowledge_sources.length > 0;
-
-                              const aiTierCost = hasKnowledge
-                                ? CREDIT_COSTS.AI_KNOWLEDGE
-                                : CREDIT_COSTS.AI_STANDARD;
-
-                              creditCost = infraCost + aiTierCost;
-                            }
-
-                            return (
-                              <>
-                                <Badge
-                                  variant='secondary'
-                                  className='bg-primary/10 text-[10px] text-primary h-5 px-1.5'
-                                >
-                                  {creditCost} credits
-                                </Badge>
-                                <BotIcon className='h-3 w-3 text-primary ml-1' />
-                                <span className='font-medium text-primary'>
-                                  AI
-                                  {selectedBot ? ` · ${selectedBot.name}` : ''}
-                                  {isByom && ' (BYOM)'}
-                                </span>
-                              </>
-                            );
-                          }
-
-                          return (
-                            <Badge
-                              variant='secondary'
-                              className='bg-muted text-[10px] text-muted-foreground h-5 px-1.5'
-                            >
-                              Free
-                            </Badge>
-                          );
-                        })()}
+            return (
+              <Card
+                key={index}
+                className='overflow-hidden border-border transition-all hover:border-primary/40'
+              >
+                {/* Card Header */}
+                <div className='flex items-center justify-between border-b border-border bg-muted/30 px-5 py-3.5'>
+                  <div className='flex items-center gap-3'>
+                    <div className='flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-white'>
+                      {action.execution_order}
+                    </div>
+                    <div>
+                      <p className='font-semibold text-foreground'>
+                        {action.action_type ===
+                          AutomationActionType.REPLY_COMMENT &&
+                          'Reply to Comment'}
+                        {action.action_type ===
+                          AutomationActionType.PRIVATE_REPLY &&
+                          'Send Private Reply'}
+                        {action.action_type === AutomationActionType.SEND_DM &&
+                          'Send DM Reply'}
+                      </p>
+                      <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                        {hasAi ? (
+                          <>
+                            <BotIcon className='h-3 w-3 text-primary' />
+                            <span className='text-primary'>
+                              AI · {creditCost} credit
+                              {creditCost !== 1 ? 's' : ''}
+                            </span>
+                          </>
+                        ) : (
+                          <Badge
+                            variant='secondary'
+                            className='h-4 bg-muted px-1.5 text-[10px] text-muted-foreground'
+                          >
+                            Free
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => removeAction(index)}
+                    className='h-8 w-8 text-muted-foreground hover:text-destructive'
+                  >
+                    <Trash2 className='h-4 w-4' />
+                  </Button>
                 </div>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => removeAction(index)}
-                  className='h-8 w-8 text-muted-foreground hover:text-destructive'
-                >
-                  <Trash2 className='h-4 w-4' />
-                </Button>
-              </div>
 
-              <div className='space-y-6 p-6'>
-                {action.action_type === AutomationActionType.SEND_DM ? (
-                  <InstagramDmAction
-                    payload={action.action_payload as SendDmPayload}
-                    onUpdate={updates =>
-                      updateAction(index, {
-                        action_payload: {
-                          ...action.action_payload,
-                          ...updates,
-                        } as SendDmPayload,
-                      })
-                    }
-                  />
-                ) : action.action_type === AutomationActionType.REPLY_COMMENT ||
-                  action.action_type === AutomationActionType.PRIVATE_REPLY ? (
-                  <InstagramCommentAction
-                    actionType={action.action_type}
-                    payload={
-                      action.action_payload as
-                        | ReplyCommentPayload
-                        | PrivateReplyPayload
-                    }
-                    onUpdate={updates =>
-                      updateAction(index, {
-                        action_payload: {
-                          ...action.action_payload,
-                          ...updates,
-                        } as ReplyCommentPayload | PrivateReplyPayload,
-                      })
-                    }
-                  />
-                ) : null}
-
-                <div className='space-y-3 rounded-lg border bg-card/50 p-4'>
-                  <div className='flex items-center justify-between'>
-                    <Label className='text-sm font-medium'>
-                      Response Delay
-                    </Label>
-                    <span className='text-xs font-medium text-muted-foreground'>
-                      {action.delay_seconds}s
-                    </span>
-                  </div>
-                  <Slider
-                    value={[action.delay_seconds]}
-                    onValueChange={([value]) =>
-                      updateAction(index, { delay_seconds: value })
-                    }
-                    min={1}
-                    max={30}
-                    step={1}
-                    className='w-full'
-                  />
-                  <p className='text-xs text-muted-foreground'>
-                    Recommended: {index === 0 ? '2-5' : '5-10'} seconds to
-                    appear natural
-                  </p>
+                {/* Card Body */}
+                <div className='p-5'>
+                  {action.action_type === AutomationActionType.SEND_DM ? (
+                    <InstagramDmAction
+                      payload={action.action_payload as SendDmPayload}
+                      onUpdate={updates =>
+                        updateAction(index, {
+                          action_payload: {
+                            ...action.action_payload,
+                            ...updates,
+                          } as SendDmPayload,
+                        })
+                      }
+                    />
+                  ) : action.action_type ===
+                      AutomationActionType.REPLY_COMMENT ||
+                    action.action_type ===
+                      AutomationActionType.PRIVATE_REPLY ? (
+                    <InstagramCommentAction
+                      actionType={action.action_type}
+                      payload={
+                        action.action_payload as
+                          | ReplyCommentPayload
+                          | PrivateReplyPayload
+                      }
+                      onUpdate={updates =>
+                        updateAction(index, {
+                          action_payload: {
+                            ...action.action_payload,
+                            ...updates,
+                          } as ReplyCommentPayload | PrivateReplyPayload,
+                        })
+                      }
+                    />
+                  ) : null}
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {actions.length === 0 && (
-        <div className='rounded-lg border-2 border-dashed border-border p-12 text-center'>
-          <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted'>
-            <Plus className='h-8 w-8 text-muted-foreground' />
-          </div>
-          <h3 className='mb-2 text-lg font-semibold text-foreground'>
-            No actions yet
-          </h3>
-          <p className='text-sm text-muted-foreground'>
-            Add at least one action to continue
-          </p>
-        </div>
-      )}
-
-      {actions.some(action => {
-        const payload = action.action_payload as
-          | ReplyCommentPayload
-          | PrivateReplyPayload
-          | SendDmPayload;
-
-        return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
-      }) && (
-        <div className='mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4'>
-          <div className='mb-2 flex items-center gap-2'>
+      {/* AI Bot Configuration */}
+      {hasAiEnabled && (
+        <div className='mt-6 rounded-xl border border-primary/20 bg-primary/5 p-5'>
+          <div className='mb-3 flex items-center gap-2'>
             <BotIcon className='h-5 w-5 text-primary' />
-            <h3 className='font-semibold text-primary'>AI Configuration</h3>
+            <h3 className='font-semibold text-primary'>AI Bot Configuration</h3>
           </div>
           <p className='mb-4 text-sm text-muted-foreground'>
-            You have enabled AI replies. Select which bot should handle these
-            responses.
+            Select which bot handles AI-powered responses for this automation.
           </p>
 
-          <div className='max-w-md'>
+          <div className='max-w-sm'>
             <Label className='mb-2 block text-sm font-medium'>
               Select AI Bot
             </Label>
@@ -509,39 +492,36 @@ export function ConfigureActionsStep({
             )}
             {selectedBotId && (
               <p className='mt-2 text-xs text-muted-foreground'>
-                Responses will use bot{' '}
+                Using bot{' '}
                 <span className='font-medium'>
                   {bots.find(b => b._id === selectedBotId)?.name}
                 </span>
-                {bots.find(b => b._id === selectedBotId)?.brand_voice_id
-                  ? ' with its configured brand voice.'
-                  : ' with your default brand voice.'}
               </p>
             )}
-            <div className='mt-3 flex flex-wrap gap-3 text-xs'>
+            <div className='mt-3 flex gap-3 text-xs'>
               <Link
                 href='/dashboard/intelligence/bots'
                 className='text-primary hover:underline'
               >
                 Manage bots
               </Link>
-              <span className='text-muted-foreground'>•</span>
+              <span className='text-muted-foreground'>·</span>
               <Link
                 href='/dashboard/intelligence/brand-voices'
                 className='text-primary hover:underline'
               >
-                Manage brand voices
+                Brand voices
               </Link>
             </div>
           </div>
         </div>
       )}
 
-      <div className='mt-6 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:justify-between'>
+      <div className='mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between'>
         <Button
           variant='outline'
           onClick={prevStep}
-          className='w-full sm:w-auto bg-transparent'
+          className='w-full bg-transparent sm:w-auto'
         >
           <ChevronLeft className='mr-2 h-4 w-4' />
           Back

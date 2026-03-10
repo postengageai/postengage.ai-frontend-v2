@@ -194,6 +194,7 @@ export interface Automation {
   id: string;
   name: string;
   description?: string;
+  labels?: string[];
   platform: AutomationPlatform;
   status: AutomationStatus;
   execution_mode: AutomationExecutionMode;
@@ -361,7 +362,11 @@ export class AutomationsApi {
     const response = await httpClient.get<AutomationHistoryResponse>(
       `${AUTOMATIONS_BASE_URL}/${id}/history`,
       {
-        params: { page, limit, ...(status && status !== 'all' ? { status } : {}) },
+        params: {
+          page,
+          limit,
+          ...(status && status !== 'all' ? { status } : {}),
+        },
       }
     );
     return response.data!;
@@ -371,7 +376,10 @@ export class AutomationsApi {
     automationId: string,
     executionId: string
   ): Promise<SuccessResponse<{ message: string; execution_id: string }>> {
-    const response = await httpClient.post<{ message: string; execution_id: string }>(
+    const response = await httpClient.post<{
+      message: string;
+      execution_id: string;
+    }>(
       `${AUTOMATIONS_BASE_URL}/${automationId}/executions/${executionId}/retry`
     );
     return response.data!;
