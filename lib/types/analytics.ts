@@ -23,6 +23,32 @@ export interface IntelligenceQualityAnalytics {
   };
 }
 
+export interface IntelligenceLogItem {
+  _id: string;
+  platform: string;
+  platform_user_id: string;
+  platform_username: string | null;
+  message_text: string;
+  message_type: string;
+  intent_label: string;
+  intent_confidence: number;
+  intent_reasoning: string;
+  decision_action: string;
+  response_text: string | null;
+  risk_score: number;
+  risk_flags: string[];
+  created_at: string;
+}
+
+export interface IntelligenceLogsByIntentResponse {
+  period: { start: string; end: string; type?: AnalyticsPeriod };
+  intent: string;
+  items: IntelligenceLogItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface IntelligenceAnalyticsItem {
   date: string;
   social_account_id: string;

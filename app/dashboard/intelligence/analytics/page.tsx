@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -101,16 +102,22 @@ function BarRow({
   total,
   colorClass,
   badge,
+  onClick,
 }: {
   label: string;
   count: number;
   total: number;
   colorClass?: string;
   badge?: string;
+  onClick?: () => void;
 }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
-    <div className='space-y-1'>
+    <div
+      className={`space-y-1 ${onClick ? 'cursor-pointer rounded-md p-1 -mx-1 hover:bg-muted/50 transition-colors' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+    >
       <div className='flex items-center justify-between text-sm'>
         <div className='flex items-center gap-2 min-w-0'>
           <span className='truncate font-medium'>{label}</span>
@@ -170,6 +177,7 @@ const periodOptions: { value: AnalyticsPeriod; label: string }[] = [
 
 export default function IntelligenceAnalyticsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState<AnalyticsPeriod>(
     AnalyticsPeriod.LAST_7_DAYS
@@ -577,7 +585,15 @@ export default function IntelligenceAnalyticsPage() {
                   .sort((a, b) => b.count - a.count)
                   .slice(0, 4)
                   .map(intent => (
-                    <Card key={intent.label}>
+                    <Card
+                      key={intent.label}
+                      className='cursor-pointer hover:border-primary/60 hover:shadow-sm transition-all'
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/intelligence/analytics/intents/${encodeURIComponent(intent.label)}?period=${period}`
+                        )
+                      }
+                    >
                       <CardContent className='p-4'>
                         <div className='flex items-start justify-between gap-2'>
                           <p className='text-xs font-medium text-muted-foreground capitalize leading-tight'>
@@ -597,7 +613,8 @@ export default function IntelligenceAnalyticsPage() {
                           {totalIntents > 0
                             ? Math.round((intent.count / totalIntents) * 100)
                             : 0}
-                          % of intents
+                          % of intents ·{' '}
+                          <span className='text-primary'>View messages →</span>
                         </p>
                       </CardContent>
                     </Card>
@@ -619,6 +636,11 @@ export default function IntelligenceAnalyticsPage() {
                         count={intent.count}
                         total={totalIntents}
                         badge={`${(intent.avg_confidence * 100).toFixed(0)}% conf`}
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/intelligence/analytics/intents/${encodeURIComponent(intent.label)}?period=${period}`
+                          )
+                        }
                       />
                     ))}
                 </CardContent>

@@ -18,6 +18,7 @@ import {
   AnalyticsPeriod,
   IntelligenceAnalyticsItem,
   IntelligenceQualityAnalytics,
+  IntelligenceLogsByIntentResponse,
 } from '../types/analytics';
 import type {
   BotHealthScore,
@@ -338,6 +339,25 @@ export class IntelligenceApi {
       ? `/api/v1/analytics/intelligence/quality?${query}`
       : `/api/v1/analytics/intelligence/quality`;
     const response = await httpClient.get<IntelligenceQualityAnalytics>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Intent log drill-down (GET /analytics/intelligence/logs?intent=&period=&page=&limit=)
+  static async getLogsByIntent(params: {
+    intent: string;
+    period?: AnalyticsPeriod;
+    page?: number;
+    limit?: number;
+  }): Promise<SuccessResponse<IntelligenceLogsByIntentResponse>> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('intent', params.intent);
+    if (params.period) searchParams.set('period', params.period);
+    if (params.page) searchParams.set('page', String(params.page));
+    if (params.limit) searchParams.set('limit', String(params.limit));
+    const url = `/api/v1/analytics/intelligence/logs?${searchParams.toString()}`;
+    const response =
+      await httpClient.get<IntelligenceLogsByIntentResponse>(url);
     if (response.error) throw response.error;
     return response.data;
   }
