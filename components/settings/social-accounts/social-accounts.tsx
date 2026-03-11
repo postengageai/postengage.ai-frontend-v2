@@ -322,81 +322,85 @@ export function SocialAccounts() {
               <div
                 key={account.id}
                 className={cn(
-                  'flex items-center gap-4 rounded-lg border p-4 transition-colors',
+                  'flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border p-4 transition-colors',
                   needsReconnect
                     ? 'border-destructive/50 bg-destructive/5'
                     : 'border-border'
                 )}
               >
-                {/* Avatar & Platform */}
-                <div className='relative'>
-                  {account.avatar?.url ? (
-                    <Image
-                      src={account.avatar.url || '/placeholder.svg'}
-                      alt={account.username}
-                      width={48}
-                      height={48}
-                      className='rounded-full'
-                    />
-                  ) : (
-                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
-                      <Instagram className='h-5 w-5 text-muted-foreground' />
-                    </div>
-                  )}
-                  <div className='absolute -bottom-1 -right-1 rounded-full bg-background p-0.5'>
-                    <Instagram className='h-4 w-4 text-pink-500' />
-                  </div>
-                </div>
-
-                {/* Account Info */}
-                <div className='flex-1 min-w-0'>
-                  <div className='flex items-center gap-2'>
-                    <span className='font-medium text-foreground truncate'>
-                      {account.username}
-                    </span>
-                    {account.is_primary && (
-                      <Badge variant='outline' className='gap-1 text-xs'>
-                        <Star className='h-3 w-3 fill-current' />
-                        Primary
-                      </Badge>
-                    )}
-                  </div>
-                  <div className='mt-1 flex items-center gap-3 text-xs text-muted-foreground'>
-                    <span className='flex items-center gap-1'>
-                      <StatusIcon
-                        className={cn(
-                          'h-3 w-3',
-                          account.connection_status === 'connected'
-                            ? 'text-green-500'
-                            : account.connection_status === 'expired' ||
-                                account.connection_status === 'error'
-                              ? 'text-destructive'
-                              : 'text-muted-foreground'
-                        )}
+                {/* Top row: Avatar + Account Info + Actions */}
+                <div className='flex items-center gap-3 flex-1 min-w-0'>
+                  {/* Avatar & Platform */}
+                  <div className='relative shrink-0'>
+                    {account.avatar?.url ? (
+                      <Image
+                        src={account.avatar.url || '/placeholder.svg'}
+                        alt={account.username}
+                        width={48}
+                        height={48}
+                        className='rounded-full'
                       />
-                      {status.label}
-                    </span>
-                    <span>•</span>
-                    <span>Connected {formatDate(account.connected_at)}</span>
-                    {account.connection_status === 'connected' && (
-                      <>
-                        <span>•</span>
-                        <span>
-                          Synced {formatRelativeTime(account.last_synced_at)}
-                        </span>
-                      </>
+                    ) : (
+                      <div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
+                        <Instagram className='h-5 w-5 text-muted-foreground' />
+                      </div>
                     )}
+                    <div className='absolute -bottom-1 -right-1 rounded-full bg-background p-0.5'>
+                      <Instagram className='h-4 w-4 text-pink-500' />
+                    </div>
+                  </div>
+
+                  {/* Account Info */}
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-center gap-2'>
+                      <span className='font-medium text-foreground truncate'>
+                        {account.username}
+                      </span>
+                      {account.is_primary && (
+                        <Badge variant='outline' className='gap-1 text-xs shrink-0'>
+                          <Star className='h-3 w-3 fill-current' />
+                          Primary
+                        </Badge>
+                      )}
+                    </div>
+                    <div className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground'>
+                      <span className='flex items-center gap-1'>
+                        <StatusIcon
+                          className={cn(
+                            'h-3 w-3',
+                            account.connection_status === 'connected'
+                              ? 'text-green-500'
+                              : account.connection_status === 'expired' ||
+                                  account.connection_status === 'error'
+                                ? 'text-destructive'
+                                : 'text-muted-foreground'
+                          )}
+                        />
+                        {status.label}
+                      </span>
+                      <span className='hidden sm:inline'>•</span>
+                      <span>Connected {formatDate(account.connected_at)}</span>
+                      {account.connection_status === 'connected' && (
+                        <>
+                          <span className='hidden sm:inline'>•</span>
+                          <span>
+                            Synced {formatRelativeTime(account.last_synced_at)}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className='flex items-center gap-2'>
+                {/* Actions row — full width on mobile, inline on desktop */}
+                <div className='flex items-center gap-1.5 sm:gap-2 sm:shrink-0'>
                   {needsReconnect ? (
                     <Button
                       variant='outline'
                       size='sm'
                       onClick={() => handleReconnect(account.id)}
                       disabled={reconnectingId === account.id}
+                      className='flex-1 sm:flex-none'
                     >
                       {reconnectingId === account.id ? (
                         <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -413,13 +417,15 @@ export function SocialAccounts() {
                           size='sm'
                           onClick={() => handleSetPrimary(account.id)}
                           disabled={settingPrimaryId === account.id}
+                          title='Set as primary account'
+                          className='flex-1 sm:flex-none'
                         >
                           {settingPrimaryId === account.id ? (
-                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            <Loader2 className='h-4 w-4 animate-spin sm:mr-2' />
                           ) : (
-                            <Star className='mr-2 h-4 w-4' />
+                            <Star className='h-4 w-4 sm:mr-2' />
                           )}
-                          Set primary
+                          <span className='hidden sm:inline'>Set primary</span>
                         </Button>
                       )}
                       <Button
@@ -428,20 +434,21 @@ export function SocialAccounts() {
                         onClick={() => handleSync(account.id)}
                         disabled={syncingId === account.id}
                         title='Re-sync profile data from Instagram'
+                        className='flex-1 sm:flex-none'
                       >
                         {syncingId === account.id ? (
-                          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          <Loader2 className='h-4 w-4 animate-spin sm:mr-2' />
                         ) : (
-                          <RefreshCw className='mr-2 h-4 w-4' />
+                          <RefreshCw className='h-4 w-4 sm:mr-2' />
                         )}
-                        Sync
+                        <span className='hidden sm:inline'>Sync</span>
                       </Button>
                     </>
                   )}
                   <Button
                     variant='ghost'
                     size='icon'
-                    className='text-muted-foreground hover:text-destructive'
+                    className='text-muted-foreground hover:text-destructive shrink-0'
                     onClick={() => setDisconnectingId(account.id)}
                   >
                     <Trash2 className='h-4 w-4' />

@@ -151,7 +151,7 @@ export function MediaGallery({
               </div>
             )}
 
-            <div className='absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3'>
+            <div className='absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-3 transition-opacity sm:opacity-0 sm:group-hover:opacity-100'>
               <div
                 className='text-white text-sm font-medium truncate'
                 title={name}
@@ -171,7 +171,7 @@ export function MediaGallery({
 
             {isUpload && (onDelete || onEdit) && (
               <div
-                className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity'
+                className='absolute top-2 right-2 transition-opacity sm:opacity-0 sm:group-hover:opacity-100'
                 onClick={e => e.stopPropagation()}
               >
                 <DropdownMenu>

@@ -105,7 +105,7 @@ function OAuthSuccessContent() {
 
   return (
     <div className='min-h-screen bg-background flex items-center justify-center px-4 py-12'>
-      <div className='w-full max-w-[440px] rounded-2xl border border-success/25 bg-[#0d1f14] p-12 text-center shadow-xl shadow-black/40'>
+      <div className='w-full max-w-[440px] rounded-2xl border border-success/25 bg-[#0d1f14] p-5 sm:p-12 text-center shadow-xl shadow-black/40'>
         {/* Animated checkmark */}
         <div className='flex justify-center mb-6'>
           <div

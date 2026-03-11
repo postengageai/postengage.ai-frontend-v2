@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Plus, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import type { Bot } from '@/lib/types/intelligence';
 import { V2Toolbar } from './v2-toolbar';
@@ -129,6 +131,10 @@ export function AutomationBuilderV2({
   const router = useRouter();
 
   const [name, setName] = useState(initialState?.name || 'Untitled Automation');
+  const [description, setDescription] = useState(
+    initialState?.description || ''
+  );
+  const [labels, setLabels] = useState<string[]>(initialState?.labels || []);
   const [status, setStatus] = useState<BuilderState['status']>(
     initialState?.status || 'draft'
   );
@@ -332,6 +338,8 @@ export function AutomationBuilderV2({
       const state: BuilderState = {
         id: initialState?.id || generateId(),
         name,
+        description,
+        labels,
         status: activate ? 'active' : 'draft',
         nodes,
         bot_id: selectedBotId,
@@ -350,29 +358,42 @@ export function AutomationBuilderV2({
     }
   };
 
+  const [mobileNodePanelOpen, setMobileNodePanelOpen] = useState(false);
+
   return (
-    <div className='flex h-screen flex-col bg-[#0a0a14] text-white'>
+    <div className='flex h-[100dvh] flex-col bg-[#0a0a14] text-white'>
       <V2Toolbar
         name={name}
         status={status}
         zoom={zoom}
+        description={description}
+        labels={labels}
         isSaving={isSaving}
         onNameChange={setName}
+        onDescriptionChange={setDescription}
+        onLabelsChange={setLabels}
         onZoomIn={() => setZoom(z => Math.min(z + 10, 200))}
         onZoomOut={() => setZoom(z => Math.max(z - 10, 50))}
         onFitView={() => setZoom(100)}
-        onSettings={() => {}}
         onTestRun={() => {}}
         onSaveActivate={() => handleSave(true)}
         onBack={() => router.push('/dashboard/automations')}
       />
 
-      <div className='flex flex-1 overflow-hidden'>
-        <V2NodePanel
-          onAddNode={addNode}
-          activeTriggerNodeId={activeTriggerNodeId}
-        />
+      {/* Main area */}
+      <div className='relative flex flex-1 overflow-hidden'>
+        {/* Node panel — sidebar on md+, hidden on mobile */}
+        <div className='hidden md:block'>
+          <V2NodePanel
+            onAddNode={id => {
+              addNode(id);
+              setMobileNodePanelOpen(false);
+            }}
+            activeTriggerNodeId={activeTriggerNodeId}
+          />
+        </div>
 
+        {/* Canvas always fills remaining space */}
         <V2Canvas
           nodes={nodes}
           selectedNodeId={selectedNodeId}
@@ -391,15 +412,61 @@ export function AutomationBuilderV2({
           }
         />
 
+        {/* Inspector — overlay on mobile, sidebar on md+ */}
         {selectedNode && (
-          <V2Inspector
-            node={selectedNode}
-            bots={bots}
-            selectedBotId={selectedBotId}
-            onSelectBot={setSelectedBotId}
-            onUpdateConfig={updateNodeConfig}
-            onClose={() => setSelectedNodeId(null)}
-          />
+          <div className='absolute inset-0 z-30 md:relative md:inset-auto md:z-auto'>
+            <V2Inspector
+              node={selectedNode}
+              bots={bots}
+              selectedBotId={selectedBotId}
+              onSelectBot={setSelectedBotId}
+              onUpdateConfig={updateNodeConfig}
+              onClose={() => setSelectedNodeId(null)}
+            />
+          </div>
+        )}
+
+        {/* Mobile bottom-sheet node panel */}
+        {mobileNodePanelOpen && (
+          <div className='absolute inset-0 z-40 flex flex-col md:hidden'>
+            {/* Backdrop */}
+            <div
+              className='flex-1 bg-black/60 backdrop-blur-sm'
+              onClick={() => setMobileNodePanelOpen(false)}
+            />
+            {/* Sheet */}
+            <div className='max-h-[70vh] overflow-y-auto rounded-t-2xl bg-[#0d0d1a] shadow-2xl'>
+              <div className='flex items-center justify-between border-b border-white/10 px-4 py-3'>
+                <p className='text-sm font-semibold text-white'>Add Node</p>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => setMobileNodePanelOpen(false)}
+                  className='h-7 w-7 p-0 text-slate-400 hover:text-white'
+                >
+                  <X className='h-4 w-4' />
+                </Button>
+              </div>
+              <V2NodePanel
+                onAddNode={id => {
+                  addNode(id);
+                  setMobileNodePanelOpen(false);
+                }}
+                activeTriggerNodeId={activeTriggerNodeId}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Mobile FAB — add node */}
+        {!selectedNode && !mobileNodePanelOpen && (
+          <button
+            onClick={() => setMobileNodePanelOpen(true)}
+            className='absolute bottom-16 right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 shadow-lg shadow-violet-900/40 hover:bg-violet-500 active:scale-95 md:hidden'
+            aria-label='Add node'
+          >
+            <Plus className='h-5 w-5 text-white' />
+          </button>
         )}
       </div>
 

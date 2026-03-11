@@ -54,7 +54,7 @@ function AccountLockedContent() {
     : 'Your account will be unlocked in approximately 30 minutes.';
 
   return (
-    <div className='w-full max-w-[440px] rounded-2xl border border-warning/25 bg-[#1a150a] p-12 text-center shadow-xl shadow-black/40'>
+    <div className='w-full max-w-[440px] rounded-2xl border border-warning/25 bg-[#1a150a] p-5 sm:p-12 text-center shadow-xl shadow-black/40'>
       {/* Lock icon */}
       <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-warning/30 bg-warning/15 flex items-center justify-center'>
         <svg

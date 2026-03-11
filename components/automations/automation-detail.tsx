@@ -401,6 +401,45 @@ function AnalyticsTab({
   const [stats, setStats] = useState<AutomationStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const handleExport = useCallback(() => {
+    if (!stats) return;
+    const rows: string[] = [];
+    // Summary section
+    rows.push('SUMMARY');
+    rows.push(`Period,${period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : 'Last 90 days'}`);
+    rows.push(`Total Executions,${stats.total_executions}`);
+    rows.push(`Successful,${stats.successful}`);
+    rows.push(`Failed,${stats.failed}`);
+    rows.push(`Skipped,${stats.skipped}`);
+    rows.push(`Avg Duration (ms),${stats.avg_duration_ms}`);
+    rows.push(`Credits Used,${stats.credits_used}`);
+    rows.push('');
+    // Daily breakdown
+    rows.push('DAILY BREAKDOWN');
+    rows.push('Date,Successful,Failed,Skipped,Total');
+    for (const d of stats.daily ?? []) {
+      const total = d.successful + d.failed + d.skipped;
+      rows.push(`${d.date},${d.successful},${d.failed},${d.skipped},${total}`);
+    }
+    // Action performance
+    if (stats.action_performance && stats.action_performance.length > 0) {
+      rows.push('');
+      rows.push('ACTION PERFORMANCE');
+      rows.push('Step,Action Type,Sent,Success,Rate (%),Avg Time (ms)');
+      for (const a of stats.action_performance) {
+        rows.push(`${a.step},${a.action_type},${a.sent},${a.success},${a.rate},${a.avg_time_ms}`);
+      }
+    }
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `automation-analytics-${automationId}-${period}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [stats, period, automationId]);
+
   const fetchStats = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -488,9 +527,15 @@ function AnalyticsTab({
             </button>
           ))}
         </div>
-        <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-8 gap-1.5 text-xs'
+          onClick={handleExport}
+          disabled={!stats || isLoading}
+        >
           <Download className='h-3.5 w-3.5' />
-          Export
+          Export CSV
         </Button>
       </div>
 
@@ -550,7 +595,7 @@ function AnalyticsTab({
         {/* Stacked bar chart (2/3 width) */}
         <Card className='bg-card/50 lg:col-span-2'>
           <CardHeader className='pb-2'>
-            <div className='flex items-center justify-between'>
+            <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
               <div>
                 <CardTitle className='text-sm font-medium'>
                   Executions Over Time
@@ -559,7 +604,7 @@ function AnalyticsTab({
                   Daily breakdown · last {period === '7d' ? '7 days' : period === '30d' ? '30 days' : '90 days'}
                 </p>
               </div>
-              <div className='flex items-center gap-3'>
+              <div className='flex items-center gap-3 flex-wrap'>
                 {[
                   { color: 'bg-indigo-500', label: 'Successful' },
                   { color: 'bg-[color:var(--error,#ef4444)]', label: 'Failed' },
@@ -577,6 +622,12 @@ function AnalyticsTab({
             {isLoading ? (
               <div className='flex h-48 items-center justify-center'>
                 <RefreshCw className='h-5 w-5 animate-spin text-muted-foreground' />
+              </div>
+            ) : !stats?.daily?.length || stats.daily.every(d => d.successful + d.failed + d.skipped === 0) ? (
+              <div className='flex h-48 flex-col items-center justify-center gap-2 text-center text-muted-foreground'>
+                <BarChart3 className='h-8 w-8 opacity-30' />
+                <p className='text-sm'>No execution data for this period</p>
+                <p className='text-xs opacity-60'>Run the automation to see chart data</p>
               </div>
             ) : (
               <div className='h-52'>
@@ -983,7 +1034,27 @@ function HistoryTab({
         </div>
 
         {/* Export */}
-        <Button variant='outline' size='sm' className='ml-auto h-8 gap-1.5 text-xs'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='ml-auto h-8 gap-1.5 text-xs'
+          disabled={executions.length === 0 || isLoading}
+          onClick={() => {
+            const rows = ['Time,User,Trigger Type,Trigger Text,Actions Run,Status,Duration (ms),Credits'];
+            for (const e of executions) {
+              const actionsStr = (e.actions_run ?? []).map(a => getActionLabel(a)).join('; ');
+              const text = (e.trigger_data?.text ?? '').replace(/"/g, '""');
+              rows.push(`"${formatDate(e.executed_at)}","${e.trigger_data?.username ?? ''}","${getTriggerTypeBadge(e)}","${text}","${actionsStr}","${e.status}",${e.duration_ms ?? 0},${e.credits_used ?? 0}`);
+            }
+            const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `automation-history-${automationId}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
           <Download className='h-3.5 w-3.5' />
           Export CSV
         </Button>
@@ -1006,190 +1077,264 @@ function HistoryTab({
             </p>
           </div>
         ) : (
-          <div className='overflow-x-auto'>
-            {/* Table header */}
-            <div className='grid min-w-[700px] grid-cols-[1fr_2fr_1.2fr_0.8fr_0.7fr_0.5fr_2rem] gap-2 border-b border-border bg-muted/20 px-4 py-2.5'>
-              {['TIME', 'TRIGGER EVENT', 'ACTIONS RUN', 'STATUS', 'DURATION', 'CREDITS', ''].map(h => (
-                <div key={h} className='text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
-                  {h}
-                </div>
-              ))}
+          <div>
+            {/* Mobile card rows */}
+            <div className='sm:hidden divide-y divide-border/50'>
+              {filtered.map(exec => {
+                const isExpanded = expandedId === exec._id;
+                const isFailed = exec.status === 'failed';
+                const triggerBadge = getTriggerTypeBadge(exec);
+                const actionsRun = exec.actions_run?.length
+                  ? exec.actions_run.map(a => getActionLabel(a))
+                  : ['—'];
+
+                return (
+                  <div key={exec._id} className={cn(isFailed && isExpanded && 'bg-[color:var(--error,#ef4444)]/5')}>
+                    <div
+                      className='cursor-pointer px-4 py-3 transition-colors hover:bg-muted/20'
+                      onClick={() => setExpandedId(isExpanded ? null : exec._id)}
+                    >
+                      {/* Row: avatar + username + status + chevron */}
+                      <div className='flex items-start gap-2'>
+                        <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold'>
+                          {getUserInitial(exec.trigger_data?.username)}
+                        </div>
+                        <div className='flex-1 min-w-0'>
+                          <div className='flex items-center justify-between gap-2'>
+                            <div className='flex items-center gap-1.5 min-w-0'>
+                              <span className='text-xs font-medium truncate'>@{exec.trigger_data?.username ?? 'instagram_user'}</span>
+                              <span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0'>{triggerBadge}</span>
+                            </div>
+                            <div className='flex items-center gap-2 shrink-0'>
+                              <span className={cn('inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium', getStatusBadgeStyle(exec.status))}>
+                                {getStatusLabel(exec.status)}
+                              </span>
+                              {isExpanded ? <ChevronUp className='h-3.5 w-3.5 text-muted-foreground' /> : <ChevronDown className='h-3.5 w-3.5 text-muted-foreground' />}
+                            </div>
+                          </div>
+                          {exec.trigger_data?.text && (
+                            <p className='mt-0.5 text-[11px] text-muted-foreground line-clamp-1'>&ldquo;{exec.trigger_data.text}&rdquo;</p>
+                          )}
+                          <div className='mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground'>
+                            <span>{formatTimeAgo(exec.executed_at)}</span>
+                            <span>·</span>
+                            <span className='flex items-center gap-0.5'><Zap className='h-2.5 w-2.5' />{exec.credits_used ?? 0} credits</span>
+                            {actionsRun[0] !== '—' && <span>· {actionsRun.join(', ')}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded detail panel (same for mobile) */}
+
+                    {isExpanded && (
+                      <div className='mx-4 mb-3'>
+                        {isFailed ? (
+                          <div className='rounded-lg border border-[color:var(--error,#ef4444)]/30 bg-[color:var(--error,#ef4444)]/5 p-4'>
+                            <div className='mb-3 flex items-center gap-2'>
+                              <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)]' />
+                              <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>Execution Failed</span>
+                              <span className='ml-auto text-xs text-muted-foreground'>{formatDate(exec.executed_at)}</span>
+                            </div>
+                            <div className='mb-3 grid gap-3 grid-cols-1 sm:grid-cols-2'>
+                              <div className='rounded-md border border-border/50 bg-background/60 p-3'>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Code</p>
+                                <p className='font-mono text-sm'>{exec.error_code ?? 'UNKNOWN_ERROR'}</p>
+                              </div>
+                              <div className='rounded-md border border-border/50 bg-background/60 p-3'>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Message</p>
+                                <p className='text-sm'>{exec.error_message ?? 'An unexpected error occurred.'}</p>
+                              </div>
+                            </div>
+                            <div className='flex flex-wrap gap-2'>
+                              <Button size='sm' className='h-8 gap-1.5 text-xs' disabled={retryingId === exec._id} onClick={e => { e.stopPropagation(); handleRetry(exec); }}>
+                                <RotateCcw className={cn('h-3.5 w-3.5', retryingId === exec._id && 'animate-spin')} />
+                                Retry
+                              </Button>
+                              <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' onClick={e => e.stopPropagation()}>
+                                <FileText className='h-3.5 w-3.5' />View Log
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className='rounded-lg border border-border/50 bg-muted/10 p-3'>
+                            <div className='grid gap-3 grid-cols-3 text-sm'>
+                              <div>
+                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Trigger</p>
+                                <p className='font-medium'>{triggerBadge}</p>
+                              </div>
+                              <div>
+                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Duration</p>
+                                <p className='font-medium'>{formatDuration(exec.duration_ms)}</p>
+                              </div>
+                              <div>
+                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Credits</p>
+                                <p className='font-medium'>{exec.credits_used ?? 0}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Rows */}
-            {filtered.map(exec => {
-              const isExpanded = expandedId === exec._id;
-              const isFailed = exec.status === 'failed';
-              const triggerBadge = getTriggerTypeBadge(exec);
-              const actionsRun = exec.actions_run?.length
-                ? exec.actions_run.map(a => getActionLabel(a))
-                : ['—'];
+            {/* Desktop table layout */}
+            <div className='hidden sm:block overflow-x-auto'>
+              {/* Table header */}
+              <div className='grid min-w-[780px] grid-cols-[140px_1fr_130px_90px_80px_70px_32px] gap-3 border-b border-border bg-muted/20 px-4 py-2.5'>
+                {['TIME', 'TRIGGER EVENT', 'ACTIONS RUN', 'STATUS', 'DURATION', 'CREDITS', ''].map(h => (
+                  <div key={h} className='text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>{h}</div>
+                ))}
+              </div>
 
-              return (
-                <div
-                  key={exec._id}
-                  className={cn(
-                    'border-b border-border/50 last:border-0',
-                    isFailed && isExpanded && 'bg-[color:var(--error,#ef4444)]/5'
-                  )}
-                >
-                  {/* Main row */}
-                  <div
-                    className={cn(
-                      'grid min-w-[700px] cursor-pointer grid-cols-[1fr_2fr_1.2fr_0.8fr_0.7fr_0.5fr_2rem] items-center gap-2 px-4 py-3 transition-colors hover:bg-muted/20',
-                    )}
-                    onClick={() => setExpandedId(isExpanded ? null : exec._id)}
-                  >
-                    {/* Time */}
-                    <div>
-                      <p className='text-xs font-medium'>{formatTimeAgo(exec.executed_at)}</p>
-                      <p className='text-[10px] text-muted-foreground'>{formatDate(exec.executed_at)}</p>
-                    </div>
+              {/* Desktop Rows */}
+              {filtered.map(exec => {
+                const isExpanded = expandedId === exec._id;
+                const isFailed = exec.status === 'failed';
+                const triggerBadge = getTriggerTypeBadge(exec);
+                const actionsRun = exec.actions_run?.length
+                  ? exec.actions_run.map(a => getActionLabel(a))
+                  : null;
 
-                    {/* Trigger event */}
-                    <div className='flex items-start gap-2'>
-                      <div className='flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold'>
-                        {getUserInitial(exec.trigger_data?.username)}
-                      </div>
+                return (
+                  <div key={`dt-${exec._id}`} className={cn('border-b border-border/50 last:border-0', isFailed && isExpanded && 'bg-[color:var(--error,#ef4444)]/5')}>
+                    <div
+                      className='grid min-w-[780px] cursor-pointer grid-cols-[140px_1fr_130px_90px_80px_70px_32px] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/20'
+                      onClick={() => setExpandedId(isExpanded ? null : exec._id)}
+                    >
+                      {/* Time — fixed width so it never wraps */}
                       <div className='min-w-0'>
-                        <div className='flex items-center gap-1.5'>
-                          <span className='text-xs font-medium'>
-                            @{exec.trigger_data?.username ?? 'instagram_user'}
-                          </span>
-                          <span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground'>
-                            {triggerBadge}
-                          </span>
+                        <p className='whitespace-nowrap text-xs font-medium'>{formatDate(exec.executed_at)}</p>
+                        <p className='mt-0.5 text-[10px] text-muted-foreground'>{formatTimeAgo(exec.executed_at)}</p>
+                      </div>
+                      {/* Trigger event */}
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <div className='flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold'>
+                          {getUserInitial(exec.trigger_data?.username)}
                         </div>
-                        {exec.trigger_data?.text && (
-                          <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>
-                            &ldquo;{exec.trigger_data.text}&rdquo;
-                          </p>
+                        <div className='min-w-0 flex-1'>
+                          <div className='flex items-center gap-1.5'>
+                            <span className='max-w-[120px] truncate text-xs font-medium'>
+                              @{exec.trigger_data?.username ?? 'instagram_user'}
+                            </span>
+                            <span className='shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground'>
+                              {triggerBadge}
+                            </span>
+                          </div>
+                          {exec.trigger_data?.text && (
+                            <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>
+                              &ldquo;{exec.trigger_data.text}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {/* Actions run */}
+                      <div className='min-w-0'>
+                        {actionsRun ? (
+                          <div className='space-y-0.5'>
+                            {actionsRun.slice(0, 2).map((a, i) => (
+                              <div key={i} className='flex items-center gap-1'>
+                                <Zap className='h-3 w-3 shrink-0 text-muted-foreground' />
+                                <span className='truncate text-[11px] text-muted-foreground'>{a}</span>
+                              </div>
+                            ))}
+                            {actionsRun.length > 2 && (
+                              <p className='text-[10px] text-muted-foreground'>+{actionsRun.length - 2} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className='text-xs text-muted-foreground/40'>—</span>
                         )}
+                      </div>
+                      {/* Status */}
+                      <div>
+                        <span className={cn('inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-medium', getStatusBadgeStyle(exec.status))}>
+                          {getStatusLabel(exec.status)}
+                        </span>
+                      </div>
+                      {/* Duration */}
+                      <div className={cn('text-xs font-medium tabular-nums', exec.status === 'failed' ? 'text-[color:var(--error,#ef4444)]' : 'text-muted-foreground')}>
+                        {formatDuration(exec.duration_ms)}
+                      </div>
+                      {/* Credits */}
+                      <div className='flex items-center gap-0.5 text-xs tabular-nums'>
+                        <Zap className='h-3 w-3 text-amber-400' />
+                        <span>{exec.credits_used ?? 0}</span>
+                      </div>
+                      {/* Chevron */}
+                      <div className='flex justify-center text-muted-foreground'>
+                        {isExpanded ? <ChevronUp className='h-3.5 w-3.5' /> : <ChevronDown className='h-3.5 w-3.5' />}
                       </div>
                     </div>
 
-                    {/* Actions run */}
-                    <div className='space-y-0.5'>
-                      {actionsRun.map((a, i) => (
-                        <div key={i} className='flex items-center gap-1'>
-                          {a !== '—' && <Zap className='h-3 w-3 shrink-0 text-muted-foreground' />}
-                          <span className='text-[11px] text-muted-foreground'>{a}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <span
-                        className={cn(
-                          'inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                          getStatusBadgeStyle(exec.status)
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <div className='border-t border-border/30 bg-muted/10 px-4 py-3'>
+                        {isFailed ? (
+                          <div className='flex flex-col gap-3'>
+                            <div className='flex items-center gap-2'>
+                              <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)]' />
+                              <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>Execution Failed</span>
+                            </div>
+                            <div className='grid gap-3 sm:grid-cols-2'>
+                              <div className='rounded-md border border-border/50 bg-background/60 p-3'>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Code</p>
+                                <p className='font-mono text-sm'>{exec.error_code ?? 'UNKNOWN_ERROR'}</p>
+                              </div>
+                              <div className='rounded-md border border-border/50 bg-background/60 p-3'>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Message</p>
+                                <p className='text-sm'>{exec.error_message ?? 'An unexpected error occurred.'}</p>
+                              </div>
+                            </div>
+                            <div className='flex gap-2'>
+                              <Button size='sm' className='h-7 gap-1.5 text-xs' disabled={retryingId === exec._id} onClick={e => { e.stopPropagation(); handleRetry(exec); }}>
+                                <RotateCcw className={cn('h-3 w-3', retryingId === exec._id && 'animate-spin')} />
+                                Retry
+                              </Button>
+                              <Button variant='outline' size='sm' className='h-7 gap-1.5 text-xs' onClick={e => e.stopPropagation()}>
+                                <FileText className='h-3 w-3' />View Log
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className='flex flex-col gap-2'>
+                            {/* Full trigger text */}
+                            {exec.trigger_data?.text && (
+                              <div>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Trigger Message</p>
+                                <p className='rounded-md border border-border/40 bg-background/50 px-3 py-2 text-sm text-foreground/90'>
+                                  &ldquo;{exec.trigger_data.text}&rdquo;
+                                </p>
+                              </div>
+                            )}
+                            {/* Actions + meta row */}
+                            <div className='flex flex-wrap items-center gap-4 text-xs text-muted-foreground'>
+                              {actionsRun && (
+                                <div className='flex items-center gap-1'>
+                                  <Zap className='h-3 w-3 text-amber-400' />
+                                  <span>{actionsRun.join(', ')}</span>
+                                </div>
+                              )}
+                              <span>·</span>
+                              <span>{formatDuration(exec.duration_ms)} duration</span>
+                              <span>·</span>
+                              <span className='flex items-center gap-0.5'>
+                                <Zap className='h-3 w-3 text-amber-400' />{exec.credits_used ?? 0} credits used
+                              </span>
+                              <span>·</span>
+                              <span>{formatDate(exec.executed_at)}</span>
+                            </div>
+                          </div>
                         )}
-                      >
-                        {getStatusLabel(exec.status)}
-                      </span>
-                    </div>
-
-                    {/* Duration */}
-                    <div className={cn(
-                      'text-xs font-medium',
-                      exec.status === 'failed' ? 'text-[color:var(--error,#ef4444)]' : 'text-muted-foreground'
-                    )}>
-                      {formatDuration(exec.duration_ms)}
-                    </div>
-
-                    {/* Credits */}
-                    <div className='flex items-center gap-0.5 text-xs'>
-                      <Zap className='h-3 w-3 text-muted-foreground' />
-                      <span>{exec.credits_used ?? 0}</span>
-                    </div>
-
-                    {/* Expand chevron */}
-                    <div className='text-muted-foreground'>
-                      {isExpanded
-                        ? <ChevronUp className='h-3.5 w-3.5' />
-                        : <ChevronDown className='h-3.5 w-3.5' />}
-                    </div>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Expanded detail panel */}
-                  {isExpanded && (
-                    <div className='mx-4 mb-3'>
-                      {isFailed ? (
-                        <div className='rounded-lg border border-[color:var(--error,#ef4444)]/30 bg-[color:var(--error,#ef4444)]/5 p-4'>
-                          <div className='mb-3 flex items-center gap-2'>
-                            <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)]' />
-                            <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>
-                              Execution Failed
-                            </span>
-                            <span className='ml-auto text-xs text-muted-foreground'>
-                              {formatDate(exec.executed_at)}
-                            </span>
-                          </div>
-
-                          <div className='mb-3 grid gap-3 sm:grid-cols-2'>
-                            <div className='rounded-md border border-border/50 bg-background/60 p-3'>
-                              <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
-                                Error Code
-                              </p>
-                              <p className='font-mono text-sm'>
-                                {exec.error_code ?? 'UNKNOWN_ERROR'}
-                              </p>
-                            </div>
-                            <div className='rounded-md border border-border/50 bg-background/60 p-3'>
-                              <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
-                                Error Message
-                              </p>
-                              <p className='text-sm'>
-                                {exec.error_message ?? 'An unexpected error occurred.'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className='flex gap-2'>
-                            <Button
-                              size='sm'
-                              className='h-8 gap-1.5 text-xs'
-                              disabled={retryingId === exec._id}
-                              onClick={e => { e.stopPropagation(); handleRetry(exec); }}
-                            >
-                              <RotateCcw className={cn('h-3.5 w-3.5', retryingId === exec._id && 'animate-spin')} />
-                              Retry Execution
-                            </Button>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              className='h-8 gap-1.5 text-xs'
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <FileText className='h-3.5 w-3.5' />
-                              View Full Log
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className='rounded-lg border border-border/50 bg-muted/10 p-3'>
-                          <div className='grid gap-3 sm:grid-cols-3 text-sm'>
-                            <div>
-                              <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Trigger</p>
-                              <p className='font-medium'>{triggerBadge}</p>
-                            </div>
-                            <div>
-                              <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Duration</p>
-                              <p className='font-medium'>{formatDuration(exec.duration_ms)}</p>
-                            </div>
-                            <div>
-                              <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Credits</p>
-                              <p className='font-medium'>{exec.credits_used ?? 0}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </Card>

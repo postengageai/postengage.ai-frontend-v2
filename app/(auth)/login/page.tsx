@@ -194,7 +194,7 @@ function LoginContent() {
 
         {/* Form */}
         <main className='flex-1 flex items-center justify-center px-4 py-10'>
-          <div className='w-full max-w-[440px] rounded-2xl border border-border bg-card p-10 shadow-xl shadow-black/40'>
+          <div className='w-full max-w-[440px] rounded-2xl border border-border bg-card p-5 sm:p-10 shadow-xl shadow-black/40'>
             {/* Session-expired banner */}
             {sessionExpired && (
               <div className='mb-6 flex items-center gap-2.5 rounded-lg border border-warning/40 bg-warning-muted px-4 py-3 text-sm text-warning'>

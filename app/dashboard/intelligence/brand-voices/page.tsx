@@ -134,34 +134,34 @@ export default function BrandVoicesPage() {
   );
 
   return (
-    <div className='h-full flex flex-col'>
+    <div className='h-full flex flex-col overflow-x-hidden'>
       {/* Header Section */}
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10'>
-        <div className='min-w-0'>
-          <h2 className='text-xl sm:text-2xl font-bold tracking-tight'>
-            Brand Voices
-          </h2>
-          <p className='text-sm text-muted-foreground mt-0.5'>
-            Manage the personalities and tones your AI bots will use.
-          </p>
-        </div>
-        <div className='flex items-center gap-2 shrink-0'>
-          <div className='relative w-full sm:w-52'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder='Search voices...'
-              className='pl-9 bg-background'
-            />
+      <div className='flex flex-col gap-3 p-4 sm:p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10'>
+        <div className='flex items-center justify-between gap-2'>
+          <div className='min-w-0'>
+            <h2 className='text-xl sm:text-2xl font-bold tracking-tight'>
+              Brand Voices
+            </h2>
+            <p className='text-sm text-muted-foreground mt-0.5'>
+              Manage the personalities and tones your AI bots will use.
+            </p>
           </div>
-          <Link href='/dashboard/intelligence/brand-voices/new'>
-            <Button className='shrink-0'>
+          <Link href='/dashboard/intelligence/brand-voices/new' className='shrink-0'>
+            <Button>
               <Plus className='mr-2 h-4 w-4' />
               <span className='hidden sm:inline'>Create Voice</span>
               <span className='sm:hidden'>New</span>
             </Button>
           </Link>
+        </div>
+        <div className='relative'>
+          <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+          <Input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder='Search voices...'
+            className='pl-9 bg-background'
+          />
         </div>
       </div>
 
@@ -214,120 +214,159 @@ export default function BrandVoicesPage() {
             </Link>
           </div>
         ) : (
-          <div className='border rounded-lg bg-card shadow-sm overflow-x-auto'>
-            <Table className='min-w-[640px]'>
-              <TableHeader>
-                <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                  <TableHead className='w-[250px]'>Name</TableHead>
-                  <TableHead>Tone</TableHead>
-                  <TableHead>Formality</TableHead>
-                  <TableHead>Keywords</TableHead>
-                  <TableHead>Voice DNA</TableHead>
-                  <TableHead className='text-right'>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVoices.map(voice => (
-                  <TableRow key={voice._id} className='group'>
-                    <TableCell className='font-medium'>
-                      <div className='flex flex-col'>
-                        <span className='text-base'>{voice.name}</span>
-                        {voice.description && (
-                          <span className='text-xs text-muted-foreground line-clamp-1'>
-                            {voice.description}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant='secondary' className='capitalize'>
-                        {voice.tone_primary}
-                        {voice.tone_intensity > 7 && '+'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant='outline' className='capitalize'>
-                        {voice.formality}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className='flex flex-wrap gap-1'>
-                        {voice.keywords_to_include?.slice(0, 3).map(k => (
-                          <span
-                            key={k}
-                            className='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary'
-                          >
-                            {k}
-                          </span>
-                        ))}
-                        {(voice.keywords_to_include?.length || 0) > 3 && (
-                          <span className='text-xs text-muted-foreground self-center ml-1'>
-                            +{voice.keywords_to_include!.length - 3} more
-                          </span>
-                        )}
-                        {(!voice.keywords_to_include ||
-                          voice.keywords_to_include.length === 0) && (
-                          <span className='text-xs text-muted-foreground italic'>
-                            None
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getDnaBadge(voice._id)}</TableCell>
-                    <TableCell className='text-right'>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            className='h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity'
-                          >
-                            <MoreHorizontal className='h-4 w-4' />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end'>
-                          <Link
-                            href={`/dashboard/intelligence/brand-voices/${voice._id}`}
-                          >
+          <>
+            {/* Mobile card layout */}
+            <div className='flex flex-col gap-3 sm:hidden'>
+              {filteredVoices.map(voice => (
+                <div key={voice._id} className='rounded-lg border bg-card p-4 shadow-sm'>
+                  <div className='flex items-start justify-between gap-2'>
+                    <div className='min-w-0 flex-1'>
+                      <p className='font-semibold text-base truncate'>{voice.name}</p>
+                      {voice.description && (
+                        <p className='text-xs text-muted-foreground line-clamp-2 mt-0.5'>
+                          {voice.description}
+                        </p>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant='ghost' size='sm' className='h-8 w-8 p-0 shrink-0'>
+                          <MoreHorizontal className='h-4 w-4' />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align='end'>
+                        <Link href={`/dashboard/intelligence/brand-voices/${voice._id}`}>
+                          <DropdownMenuItem>
+                            <Pencil className='mr-2 h-4 w-4' />Edit
+                          </DropdownMenuItem>
+                        </Link>
+                        {voiceDnaMap[voice._id] ? (
+                          <Link href={`/dashboard/intelligence/voice-dna/${voiceDnaMap[voice._id]._id}`}>
                             <DropdownMenuItem>
-                              <Pencil className='mr-2 h-4 w-4' />
-                              Edit
+                              <Dna className='mr-2 h-4 w-4' />View Voice DNA
                             </DropdownMenuItem>
                           </Link>
-                          {voiceDnaMap[voice._id] ? (
-                            <Link
-                              href={`/dashboard/intelligence/voice-dna/${voiceDnaMap[voice._id]._id}`}
-                            >
-                              <DropdownMenuItem>
-                                <Dna className='mr-2 h-4 w-4' />
-                                View Voice DNA
-                              </DropdownMenuItem>
-                            </Link>
-                          ) : (
-                            <Link
-                              href={`/dashboard/intelligence/voice-dna?create=true&brand_voice_id=${voice._id}`}
-                            >
-                              <DropdownMenuItem>
-                                <Dna className='mr-2 h-4 w-4' />
-                                Generate Voice DNA
-                              </DropdownMenuItem>
-                            </Link>
-                          )}
-                          <DropdownMenuItem
-                            className='text-destructive focus:text-destructive'
-                            onClick={() => deleteVoice(voice._id)}
-                          >
-                            <Trash className='mr-2 h-4 w-4' />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                        ) : (
+                          <Link href={`/dashboard/intelligence/voice-dna?create=true&brand_voice_id=${voice._id}`}>
+                            <DropdownMenuItem>
+                              <Dna className='mr-2 h-4 w-4' />Generate Voice DNA
+                            </DropdownMenuItem>
+                          </Link>
+                        )}
+                        <DropdownMenuItem className='text-destructive focus:text-destructive' onClick={() => deleteVoice(voice._id)}>
+                          <Trash className='mr-2 h-4 w-4' />Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className='mt-3 flex flex-wrap gap-2 items-center'>
+                    <Badge variant='secondary' className='capitalize'>{voice.tone_primary}{voice.tone_intensity > 7 && '+'}</Badge>
+                    <Badge variant='outline' className='capitalize'>{voice.formality}</Badge>
+                    {getDnaBadge(voice._id)}
+                  </div>
+                  {voice.keywords_to_include && voice.keywords_to_include.length > 0 && (
+                    <div className='mt-2 flex flex-wrap gap-1'>
+                      {voice.keywords_to_include.slice(0, 4).map(k => (
+                        <span key={k} className='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary'>{k}</span>
+                      ))}
+                      {voice.keywords_to_include.length > 4 && (
+                        <span className='text-xs text-muted-foreground self-center'>+{voice.keywords_to_include.length - 4} more</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table layout */}
+            <div className='hidden sm:block border rounded-lg bg-card shadow-sm overflow-x-auto'>
+              <Table className='min-w-[640px]'>
+                <TableHeader>
+                  <TableRow className='bg-muted/40 hover:bg-muted/40'>
+                    <TableHead className='w-[250px]'>Name</TableHead>
+                    <TableHead>Tone</TableHead>
+                    <TableHead>Formality</TableHead>
+                    <TableHead>Keywords</TableHead>
+                    <TableHead>Voice DNA</TableHead>
+                    <TableHead className='text-right'>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredVoices.map(voice => (
+                    <TableRow key={voice._id} className='group'>
+                      <TableCell className='font-medium'>
+                        <div className='flex flex-col'>
+                          <span className='text-base'>{voice.name}</span>
+                          {voice.description && (
+                            <span className='text-xs text-muted-foreground line-clamp-1'>
+                              {voice.description}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant='secondary' className='capitalize'>
+                          {voice.tone_primary}
+                          {voice.tone_intensity > 7 && '+'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant='outline' className='capitalize'>
+                          {voice.formality}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className='flex flex-wrap gap-1'>
+                          {voice.keywords_to_include?.slice(0, 3).map(k => (
+                            <span key={k} className='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary'>{k}</span>
+                          ))}
+                          {(voice.keywords_to_include?.length || 0) > 3 && (
+                            <span className='text-xs text-muted-foreground self-center ml-1'>+{voice.keywords_to_include!.length - 3} more</span>
+                          )}
+                          {(!voice.keywords_to_include || voice.keywords_to_include.length === 0) && (
+                            <span className='text-xs text-muted-foreground italic'>None</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getDnaBadge(voice._id)}</TableCell>
+                      <TableCell className='text-right'>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant='ghost' size='sm' className='h-8 w-8 p-0 transition-opacity sm:opacity-0 sm:group-hover:opacity-100'>
+                              <MoreHorizontal className='h-4 w-4' />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align='end'>
+                            <Link href={`/dashboard/intelligence/brand-voices/${voice._id}`}>
+                              <DropdownMenuItem>
+                                <Pencil className='mr-2 h-4 w-4' />Edit
+                              </DropdownMenuItem>
+                            </Link>
+                            {voiceDnaMap[voice._id] ? (
+                              <Link href={`/dashboard/intelligence/voice-dna/${voiceDnaMap[voice._id]._id}`}>
+                                <DropdownMenuItem>
+                                  <Dna className='mr-2 h-4 w-4' />View Voice DNA
+                                </DropdownMenuItem>
+                              </Link>
+                            ) : (
+                              <Link href={`/dashboard/intelligence/voice-dna?create=true&brand_voice_id=${voice._id}`}>
+                                <DropdownMenuItem>
+                                  <Dna className='mr-2 h-4 w-4' />Generate Voice DNA
+                                </DropdownMenuItem>
+                              </Link>
+                            )}
+                            <DropdownMenuItem className='text-destructive focus:text-destructive' onClick={() => deleteVoice(voice._id)}>
+                              <Trash className='mr-2 h-4 w-4' />Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
     </div>

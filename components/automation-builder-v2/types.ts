@@ -139,6 +139,10 @@ export interface BuilderState {
   nodes: FlowNode[];
   /** Bot selected for AI-enabled actions */
   bot_id?: string;
+  /** Organisational labels e.g. ["promo", "q4"] */
+  labels?: string[];
+  /** Optional description */
+  description?: string;
 }
 
 export interface ValidationError {

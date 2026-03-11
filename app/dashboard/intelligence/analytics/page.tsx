@@ -19,8 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 import { Input } from '@/components/ui/input';
@@ -78,7 +76,6 @@ export default function IntelligenceAnalyticsPage() {
     AnalyticsPeriod.LAST_7_DAYS
   );
   const [filterAccount, setFilterAccount] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [state, setState] = useState<IntelligenceAnalyticsState>({
     periodLabel: '',
     items: [],
@@ -168,23 +165,17 @@ export default function IntelligenceAnalyticsPage() {
             className='max-w-sm'
           />
         </div>
-        <div className='flex items-center space-x-2'>
-          <Switch
-            id='advanced-mode'
-            checked={showAdvanced}
-            onCheckedChange={setShowAdvanced}
-          />
-          <Label htmlFor='advanced-mode'>Show Advanced Metrics</Label>
-        </div>
       </div>
 
       <Tabs defaultValue='overview' className='space-y-4'>
-        <TabsList>
-          <TabsTrigger value='overview'>Overview</TabsTrigger>
-          <TabsTrigger value='quality'>Quality & Safety</TabsTrigger>
-          <TabsTrigger value='diversity'>Response Diversity</TabsTrigger>
-          <TabsTrigger value='intents'>Intent Analysis</TabsTrigger>
-        </TabsList>
+        <div className='overflow-x-auto pb-1'>
+          <TabsList className='w-max'>
+            <TabsTrigger value='overview'>Overview</TabsTrigger>
+            <TabsTrigger value='quality'>Quality & Safety</TabsTrigger>
+            <TabsTrigger value='diversity'>Response Diversity</TabsTrigger>
+            <TabsTrigger value='intents'>Intent Analysis</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value='overview' className='space-y-4'>
           <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>

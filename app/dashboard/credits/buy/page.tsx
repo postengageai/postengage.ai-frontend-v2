@@ -40,10 +40,10 @@ export default function BuyCreditsPage() {
   ];
 
   return (
-    <div className='mx-auto max-w-5xl space-y-8'>
+    <div className='mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8 sm:space-y-8'>
       {/* Header */}
       <div>
-        <h1 className='text-2xl font-semibold tracking-tight text-foreground'>
+        <h1 className='text-xl font-semibold tracking-tight text-foreground sm:text-2xl'>
           Buy Credits
         </h1>
         <p className='mt-1 text-sm text-muted-foreground'>
@@ -72,8 +72,8 @@ export default function BuyCreditsPage() {
       </section>
 
       {/* What is a Credit */}
-      <section className='pt-8'>
-        <div className='rounded-2xl border border-border bg-card p-8'>
+      <section className='pt-4 sm:pt-8'>
+        <div className='rounded-2xl border border-border bg-card p-4 sm:p-8'>
           <div className='flex items-center gap-3 mb-6'>
             <Coins className='h-6 w-6 text-primary' />
             <h2 className='text-xl font-semibold'>What's a credit?</h2>

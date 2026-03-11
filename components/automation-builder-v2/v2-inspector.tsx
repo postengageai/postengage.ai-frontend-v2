@@ -84,7 +84,7 @@ export function V2Inspector({
   ];
 
   return (
-    <aside className='flex h-full w-[300px] flex-shrink-0 flex-col border-l border-white/10 bg-[#0d0d1a]'>
+    <aside className='flex h-full w-full flex-shrink-0 flex-col border-l border-white/10 bg-[#0d0d1a] md:w-[300px]'>
       {/* Inspector header */}
       <div className='flex items-center justify-between border-b border-white/10 px-4 py-3'>
         <div className='flex items-center gap-2'>

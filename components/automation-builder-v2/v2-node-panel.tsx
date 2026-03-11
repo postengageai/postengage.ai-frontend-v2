@@ -59,7 +59,7 @@ export function V2NodePanel({
   };
 
   return (
-    <aside className='flex w-[232px] flex-shrink-0 flex-col border-r border-white/10 bg-[#0d0d1a]'>
+    <aside className='flex w-full flex-shrink-0 flex-col border-r border-white/10 bg-[#0d0d1a] md:w-[232px]'>
       {/* Panel Header */}
       <div className='border-b border-white/10 px-4 py-3'>
         <p className='text-[10px] font-semibold uppercase tracking-widest text-slate-500'>

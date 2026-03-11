@@ -200,21 +200,21 @@ function AutomationCard({
         isActive ? 'border-border' : 'border-border/60 opacity-80'
       )}
     >
-      <div className='p-5'>
+      <div className='p-4 sm:p-5'>
         {/* Row 1: icon + name + status + menu */}
-        <div className='flex items-start gap-3.5'>
+        <div className='flex items-start gap-3'>
           {/* Platform icon */}
-          <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400'>
-            <Instagram className='h-5 w-5 text-white' />
+          <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 sm:h-10 sm:w-10'>
+            <Instagram className='h-4 w-4 text-white sm:h-5 sm:w-5' />
           </div>
 
           {/* Name + subtitle */}
-          <div className='flex-1 min-w-0'>
+          <div className='min-w-0 flex-1'>
             <div className='flex items-start justify-between gap-2'>
-              <div className='min-w-0'>
+              <div className='min-w-0 flex-1'>
                 <Link
                   href={`/dashboard/automations/${automation.id}`}
-                  className='font-semibold text-[15px] leading-snug truncate block hover:text-primary transition-colors'
+                  className='block truncate text-[14px] font-semibold leading-snug transition-colors hover:text-primary sm:text-[15px]'
                 >
                   {automation.name}
                 </Link>
@@ -230,25 +230,23 @@ function AutomationCard({
                     </>
                   )}
                   {automation.last_executed_at && (
-                    <>
-                      <span className='text-border'>·</span>
-                      <span>
-                        Last run{' '}
-                        {formatDistanceToNow(
-                          new Date(automation.last_executed_at),
-                          { addSuffix: true }
-                        )}
-                      </span>
-                    </>
+                    <span className='hidden sm:inline'>
+                      <span className='mx-1 text-border'>·</span>
+                      Last run{' '}
+                      {formatDistanceToNow(
+                        new Date(automation.last_executed_at),
+                        { addSuffix: true }
+                      )}
+                    </span>
                   )}
                 </div>
               </div>
 
-              {/* Status badge + menu */}
-              <div className='flex items-center gap-2 shrink-0'>
+              {/* Status badge + menu — always visible on mobile (no opacity-0) */}
+              <div className='flex shrink-0 items-center gap-1.5'>
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium',
+                    'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium sm:px-2.5',
                     isActive
                       ? 'bg-[color:var(--success,#22c55e)]/12 text-[color:var(--success,#22c55e)]'
                       : isDraft
@@ -274,7 +272,7 @@ function AutomationCard({
                     <Button
                       variant='ghost'
                       size='icon'
-                      className='h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity'
+                      className='h-7 w-7 text-muted-foreground transition-opacity sm:opacity-0 sm:group-hover:opacity-100'
                     >
                       <MoreHorizontal className='h-4 w-4' />
                     </Button>
@@ -332,7 +330,7 @@ function AutomationCard({
 
         {/* Row 2: Actions pills */}
         {automation.actions?.length > 0 && (
-          <div className='mt-3 flex flex-wrap items-center gap-1.5 pl-[54px]'>
+          <div className='mt-3 flex flex-wrap items-center gap-1.5 pl-12 sm:pl-[52px]'>
             {automation.actions.slice(0, 3).map(action => (
               <span
                 key={action.id}
@@ -357,71 +355,74 @@ function AutomationCard({
           </div>
         )}
 
-        {/* Row 3: Stats + buttons */}
-        <div className='mt-4 flex items-center justify-between pl-[54px]'>
-          {/* Stats */}
-          <div className='flex items-center gap-5 text-xs'>
-            <div>
-              <p className='text-muted-foreground'>Total Runs</p>
-              <p className='font-semibold text-foreground mt-0.5'>
-                {(automation.execution_count || 0).toLocaleString()}
-              </p>
+        {/* Row 3: Stats + buttons — stacks on very small, row on sm+ */}
+        <div className='mt-3 pl-12 sm:mt-4 sm:pl-[52px]'>
+          <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+            {/* Stats */}
+            <div className='flex items-center gap-4 text-xs sm:gap-5'>
+              <div>
+                <p className='text-muted-foreground'>Total Runs</p>
+                <p className='mt-0.5 font-semibold text-foreground'>
+                  {(automation.execution_count || 0).toLocaleString()}
+                </p>
+              </div>
+              <div className='h-7 w-px bg-border' />
+              <div>
+                <p className='text-muted-foreground'>Last Run</p>
+                <p className='mt-0.5 font-semibold text-foreground'>
+                  {automation.last_executed_at
+                    ? formatDistanceToNow(new Date(automation.last_executed_at))
+                    : '—'}
+                </p>
+              </div>
+              {successRate !== null && (
+                <>
+                  <div className='h-7 w-px bg-border' />
+                  <div>
+                    <p className='text-muted-foreground'>Success</p>
+                    <p
+                      className={cn(
+                        'mt-0.5 font-semibold',
+                        successRate >= 90
+                          ? 'text-[color:var(--success,#22c55e)]'
+                          : successRate >= 70
+                            ? 'text-amber-500'
+                            : 'text-[color:var(--error,#ef4444)]'
+                      )}
+                    >
+                      {successRate}%
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
-            <div className='w-px h-7 bg-border' />
-            <div>
-              <p className='text-muted-foreground'>Last Run</p>
-              <p className='font-semibold text-foreground mt-0.5'>
-                {automation.last_executed_at
-                  ? formatDistanceToNow(new Date(automation.last_executed_at))
-                  : '—'}
-              </p>
-            </div>
-            {successRate !== null && (
-              <>
-                <div className='w-px h-7 bg-border' />
-                <div>
-                  <p className='text-muted-foreground'>Success Rate</p>
-                  <p
-                    className={cn(
-                      'font-semibold mt-0.5',
-                      successRate >= 90
-                        ? 'text-[color:var(--success,#22c55e)]'
-                        : successRate >= 70
-                          ? 'text-amber-500'
-                          : 'text-[color:var(--error,#ef4444)]'
-                    )}
-                  >
-                    {successRate}%
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
 
-          {/* CTA buttons */}
-          <div className='flex items-center gap-2'>
-            <Button
-              variant='ghost'
-              size='sm'
-              asChild
-              className='h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5'
-            >
-              <Link href={`/dashboard/automations/${automation.id}`}>
-                <BarChart2 className='h-3.5 w-3.5' />
-                View Stats
-              </Link>
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              asChild
-              className='h-8 text-xs gap-1.5 bg-transparent'
-            >
-              <Link href={`/dashboard/automations/${automation.id}/edit`}>
-                <Pencil className='h-3.5 w-3.5' />
-                Edit
-              </Link>
-            </Button>
+            {/* CTA buttons */}
+            <div className='flex items-center gap-2'>
+              <Button
+                variant='ghost'
+                size='sm'
+                asChild
+                className='h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground'
+              >
+                <Link href={`/dashboard/automations/${automation.id}`}>
+                  <BarChart2 className='h-3.5 w-3.5' />
+                  <span className='hidden sm:inline'>View Stats</span>
+                  <span className='sm:hidden'>Stats</span>
+                </Link>
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                asChild
+                className='h-8 gap-1.5 bg-transparent text-xs'
+              >
+                <Link href={`/dashboard/automations/${automation.id}/edit`}>
+                  <Pencil className='h-3.5 w-3.5' />
+                  Edit
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -566,59 +567,68 @@ export default function AutomationsPage() {
   const hasFilters = !!debouncedSearch || statusFilter !== 'all';
 
   return (
-    <div className='flex flex-col h-full'>
+    <div className='flex h-full flex-col'>
       {/* ── Header ── */}
-      <div className='flex-none px-6 py-5 border-b border-border'>
-        <div className='flex items-center justify-between gap-4 mb-5'>
-          <div>
-            <h1 className='text-2xl font-bold leading-tight'>Automations</h1>
-            <p className='text-sm text-muted-foreground mt-0.5'>
+      <div className='flex-none border-b border-border px-4 py-4 sm:px-6 sm:py-5'>
+        {/* Title row — stacks on mobile */}
+        <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
+          <div className='min-w-0'>
+            <h1 className='text-xl font-bold leading-tight sm:text-2xl'>
+              Automations
+            </h1>
+            <p className='mt-0.5 text-sm text-muted-foreground'>
               Build and manage workflows that run on Instagram automatically
             </p>
           </div>
-          <div className='flex items-center gap-2.5 shrink-0'>
+          {/* Action buttons — scrollable row on mobile */}
+          <div className='flex shrink-0 items-center gap-2 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0'>
             <Button
               variant='outline'
               size='sm'
-              className='gap-1.5 bg-transparent h-9 text-muted-foreground'
+              className='h-9 shrink-0 gap-1.5 bg-transparent text-muted-foreground'
             >
               <Filter className='h-3.5 w-3.5' />
-              Filter
+              <span className='hidden sm:inline'>Filter</span>
             </Button>
             <Button
               asChild
               variant='outline'
               size='sm'
-              className='gap-1.5 h-9 bg-transparent border-violet-500/40 text-violet-400 hover:bg-violet-500/10 hover:text-violet-300'
+              className='h-9 shrink-0 gap-1.5 bg-transparent border-violet-500/40 text-violet-400 hover:bg-violet-500/10 hover:text-violet-300'
             >
               <Link href='/dashboard/automations/flow/new'>
                 <GitFork className='h-3.5 w-3.5' />
-                Flow Builder
+                <span className='hidden sm:inline'>Flow Builder</span>
+                <span className='sm:hidden'>Flow</span>
+                <span className='ml-0.5 rounded-full border border-amber-500/30 bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400'>
+                  Beta
+                </span>
               </Link>
             </Button>
-            <Button asChild size='sm' className='gap-1.5 h-9'>
+            <Button asChild size='sm' className='h-9 shrink-0 gap-1.5'>
               <Link href='/dashboard/automations/new'>
                 <Plus className='h-4 w-4' />
-                New Automation
+                <span className='hidden sm:inline'>New Automation</span>
+                <span className='sm:hidden'>New</span>
               </Link>
             </Button>
           </div>
         </div>
 
-        {/* Filter bar */}
-        <div className='flex flex-wrap items-center gap-2.5'>
-          <div className='relative flex-1 min-w-[200px] max-w-sm'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground' />
+        {/* Filter bar — wraps gracefully */}
+        <div className='flex flex-wrap items-center gap-2'>
+          <div className='relative w-full min-w-0 flex-1 sm:max-w-sm'>
+            <Search className='absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground' />
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder='Search automations...'
-              className='pl-9 h-9 bg-background/60 text-sm'
+              className='h-9 bg-background/60 pl-9 text-sm'
             />
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className='w-32 h-9 bg-background/60 text-sm'>
+            <SelectTrigger className='h-9 w-[120px] bg-background/60 text-sm'>
               <SelectValue placeholder='Status' />
             </SelectTrigger>
             <SelectContent>
@@ -630,7 +640,7 @@ export default function AutomationsPage() {
           </Select>
 
           <Select defaultValue='all'>
-            <SelectTrigger className='w-36 h-9 bg-background/60 text-sm'>
+            <SelectTrigger className='h-9 w-[130px] bg-background/60 text-sm'>
               <SelectValue placeholder='Platform' />
             </SelectTrigger>
             <SelectContent>
@@ -643,7 +653,7 @@ export default function AutomationsPage() {
           {!isLoading && (
             <div className='ml-auto flex items-center gap-1 text-xs text-muted-foreground'>
               <span>
-                Showing {automations.length} automation
+                {automations.length} automation
                 {automations.length !== 1 ? 's' : ''}
               </span>
               {activeCount > 0 && (
@@ -660,7 +670,7 @@ export default function AutomationsPage() {
       </div>
 
       {/* ── List ── */}
-      <div className='flex-1 overflow-y-auto px-6 py-5'>
+      <div className='flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'>
         {isLoading ? (
           <div className='space-y-3'>
             {[0, 1, 2].map(i => (

@@ -142,6 +142,7 @@ export interface AutomationConditionResponse extends AutomationCondition {
 export interface CreateAutomationRequest {
   name: string;
   description?: string;
+  labels?: string[];
   social_account_id: string;
   bot_id?: string;
   platform: AutomationPlatform;

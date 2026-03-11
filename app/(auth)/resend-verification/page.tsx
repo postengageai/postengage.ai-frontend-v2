@@ -70,17 +70,28 @@ function ResendVerificationContent() {
       <main className='flex-1 flex items-center justify-center px-4 py-12'>
         {isSubmitted ? (
           /* ── State B: Sent ──────────────────────────────────────── */
-          <div className='w-full max-w-[440px] rounded-2xl border border-success/25 bg-[#0d1f14] p-12 text-center shadow-xl shadow-black/40'>
+          <div className='w-full max-w-[440px] rounded-2xl border border-success/25 bg-[#0d1f14] p-5 sm:p-12 text-center shadow-xl shadow-black/40'>
             {/* Green checkmark */}
             <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-success/30 bg-success/15 flex items-center justify-center'>
-              <svg className='h-7 w-7 text-success' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
+              <svg
+                className='h-7 w-7 text-success'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
                 <path d='M20 6L9 17l-5-5' />
               </svg>
             </div>
 
-            <h1 className='text-2xl font-bold text-foreground'>Verification Email Sent!</h1>
+            <h1 className='text-2xl font-bold text-foreground'>
+              Verification Email Sent!
+            </h1>
             <p className='mt-3 text-sm text-muted-foreground leading-relaxed'>
-              If this email is registered, we&apos;ve sent a new verification link. Check your inbox or spam.
+              If this email is registered, we&apos;ve sent a new verification
+              link. Check your inbox or spam.
             </p>
 
             {/* Countdown resend button */}
@@ -91,11 +102,23 @@ function ResendVerificationContent() {
               className='mt-8 w-full h-10 border-success/40 text-success hover:bg-success/10 disabled:opacity-60 rounded-[--radius-md]'
             >
               {isLoading ? (
-                <><Loader2 className='mr-2 h-4 w-4 animate-spin' />Sending...</>
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Sending...
+                </>
               ) : countdown > 0 ? (
                 <>
-                  <svg className='mr-2 h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
-                    <circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/>
+                  <svg
+                    className='mr-2 h-4 w-4'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='2'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  >
+                    <circle cx='12' cy='12' r='10' />
+                    <polyline points='12 6 12 12 16 14' />
                   </svg>
                   Resend in {countdown}s
                 </>
@@ -106,17 +129,29 @@ function ResendVerificationContent() {
           </div>
         ) : (
           /* ── State A: Form ──────────────────────────────────────── */
-          <div className='w-full max-w-[440px] rounded-2xl border border-border bg-card p-12 shadow-xl shadow-black/40'>
+          <div className='w-full max-w-[440px] rounded-2xl border border-border bg-card p-5 sm:p-12 shadow-xl shadow-black/40'>
             <div className='text-center mb-8'>
               {/* Envelope icon */}
               <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-primary/25 bg-primary/15 flex items-center justify-center'>
-                <svg className='h-7 w-7 text-primary' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' strokeLinejoin='round'>
-                  <rect x='2' y='4' width='20' height='16' rx='2' /><path d='M2 7l10 7 10-7' />
+                <svg
+                  className='h-7 w-7 text-primary'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='1.75'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                >
+                  <rect x='2' y='4' width='20' height='16' rx='2' />
+                  <path d='M2 7l10 7 10-7' />
                 </svg>
               </div>
-              <h1 className='text-2xl font-bold text-foreground'>Resend Verification Email</h1>
+              <h1 className='text-2xl font-bold text-foreground'>
+                Resend Verification Email
+              </h1>
               <p className='mt-2 text-sm text-muted-foreground'>
-                Enter your email address and we&apos;ll send you a fresh verification link.
+                Enter your email address and we&apos;ll send you a fresh
+                verification link.
               </p>
             </div>
 
@@ -124,8 +159,17 @@ function ResendVerificationContent() {
               <div className='space-y-2'>
                 <Label htmlFor='email'>Email Address</Label>
                 <div className='relative'>
-                  <svg className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' strokeLinejoin='round'>
-                    <rect x='2' y='4' width='20' height='16' rx='2' /><path d='M2 7l10 7 10-7' />
+                  <svg
+                    className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='1.75'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  >
+                    <rect x='2' y='4' width='20' height='16' rx='2' />
+                    <path d='M2 7l10 7 10-7' />
                   </svg>
                   <Input
                     id='email'
@@ -145,16 +189,31 @@ function ResendVerificationContent() {
                 disabled={!email.includes('@') || isLoading}
               >
                 {isLoading ? (
-                  <><Loader2 className='mr-2 h-4 w-4 animate-spin' />Sending...</>
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Sending...
+                  </>
                 ) : (
-                  <><Send className='mr-2 h-4 w-4' />Send Verification Email</>
+                  <>
+                    <Send className='mr-2 h-4 w-4' />
+                    Send Verification Email
+                  </>
                 )}
               </Button>
             </form>
 
             <p className='mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground/60'>
-              <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
-                <circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/>
+              <svg
+                className='h-3.5 w-3.5'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <circle cx='12' cy='12' r='10' />
+                <polyline points='12 6 12 12 16 14' />
               </svg>
               Resend available again in 60s if already sent recently
             </p>
@@ -168,7 +227,10 @@ function ResendVerificationContent() {
 
             <p className='text-sm text-center text-muted-foreground'>
               Already verified?{' '}
-              <Link href='/login' className='text-primary hover:text-primary-hover font-medium transition-colors'>
+              <Link
+                href='/login'
+                className='text-primary hover:text-primary-hover font-medium transition-colors'
+              >
                 Sign in
               </Link>
             </p>
@@ -181,11 +243,13 @@ function ResendVerificationContent() {
 
 export default function ResendVerificationPage() {
   return (
-    <Suspense fallback={
-      <div className='min-h-screen bg-background flex items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-primary' />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className='min-h-screen bg-background flex items-center justify-center'>
+          <Loader2 className='h-8 w-8 animate-spin text-primary' />
+        </div>
+      }
+    >
       <ResendVerificationContent />
     </Suspense>
   );
