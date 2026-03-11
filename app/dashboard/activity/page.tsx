@@ -3,6 +3,7 @@
 import type React from 'react';
 
 import { useState, useMemo, useEffect } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -139,40 +140,60 @@ export default function ActivityPage() {
   ).length;
 
   const handleMarkAsRead = async (id: string) => {
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n =>
+        n.id === id
+          ? {
+              ...n,
+              status: 'read' as NotificationStatusType,
+              read_at: new Date().toISOString(),
+            }
+          : n
+      )
+    );
     try {
       await notificationsApi.markAsRead(id);
+    } catch {
+      // H-7 FIX: roll back optimistic update and surface error to user
       setNotifications(prev =>
         prev.map(n =>
           n.id === id
             ? {
                 ...n,
-                status: 'read' as NotificationStatusType,
-                read_at: new Date().toISOString(),
+                status: 'unread' as NotificationStatusType,
+                read_at: undefined,
               }
             : n
         )
       );
-    } catch {
-      // Ignore error
+      toast.error('Failed to mark notification as read. Please try again.');
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    // Snapshot for rollback
+    const snapshot = [...notifications];
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n =>
+        n.status === 'unread'
+          ? {
+              ...n,
+              status: 'read' as NotificationStatusType,
+              read_at: new Date().toISOString(),
+            }
+          : n
+      )
+    );
     try {
       await notificationsApi.markAllAsRead();
-      setNotifications(prev =>
-        prev.map(n =>
-          n.status === 'unread'
-            ? {
-                ...n,
-                status: 'read' as NotificationStatusType,
-                read_at: new Date().toISOString(),
-              }
-            : n
-        )
-      );
     } catch {
-      // Ignore error
+      // H-7 FIX: roll back optimistic update and surface error to user
+      setNotifications(snapshot);
+      toast.error(
+        'Failed to mark all notifications as read. Please try again.'
+      );
     }
   };
 

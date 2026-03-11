@@ -104,8 +104,22 @@ const PUBLIC_ROUTES = [
   '/forgot-password',
   '/reset-password',
   '/resend-verification',
+  // H-6 FIX: OAuth callback/result routes were missing — users completing
+  // Google/Instagram/LinkedIn OAuth got redirected to /login mid-flow.
+  '/oauth/success',
+  '/oauth/error',
+  '/oauth/callback',
+  // Account status pages shown before/after auth — must be public
+  '/account-locked',
+  '/account-suspended',
   '/', // Landing page often public
 ];
+
+/** Returns true when the given pathname requires no authentication. */
+const isPublicRoute = (pathname: string) =>
+  PUBLIC_ROUTES.includes(pathname) ||
+  // All /oauth/* paths are public — covers any new OAuth providers added later
+  pathname.startsWith('/oauth/');
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
@@ -144,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             dispatch({ type: 'SET_AUTHENTICATED', payload: true });
 
             // Redirect authenticated users from public routes to dashboard
-            if (PUBLIC_ROUTES.includes(pathname) && pathname !== '/') {
+            if (isPublicRoute(pathname) && pathname !== '/') {
               router.push('/dashboard');
             }
           } else {
@@ -153,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
             // Redirect if not on a public route
-            if (!PUBLIC_ROUTES.includes(pathname)) {
+            if (!isPublicRoute(pathname)) {
               router.push('/login');
             }
           }
@@ -163,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(false);
           dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
-          if (!PUBLIC_ROUTES.includes(pathname)) {
+          if (!isPublicRoute(pathname)) {
             router.push('/login');
           }
         } finally {
