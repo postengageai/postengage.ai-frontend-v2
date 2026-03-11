@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+
 import { formatDistanceToNow } from 'date-fns';
 import {
   Plus,
@@ -18,13 +18,11 @@ import {
   Trash2,
   MessageCircle,
   Mail,
-  TrendingUp,
-  Clock,
   AlertTriangle,
   BarChart2,
+  GitFork,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -181,7 +179,7 @@ function AutomationCard({
   onDelete: (automation: Automation) => void;
 }) {
   const isActive = automation.status === AutomationStatus.ACTIVE;
-  const isPaused =
+  const _isPaused =
     automation.status === AutomationStatus.INACTIVE ||
     automation.status === AutomationStatus.PAUSED;
   const isDraft = automation.status === AutomationStatus.DRAFT;
@@ -486,14 +484,13 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AutomationsPage() {
-  const router = useRouter();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 400);
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState<Automation | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [_isDeleting, setIsDeleting] = useState(false);
 
   const fetchAutomations = useCallback(async () => {
     setIsLoading(true);
@@ -587,6 +584,17 @@ export default function AutomationsPage() {
             >
               <Filter className='h-3.5 w-3.5' />
               Filter
+            </Button>
+            <Button
+              asChild
+              variant='outline'
+              size='sm'
+              className='gap-1.5 h-9 bg-transparent border-violet-500/40 text-violet-400 hover:bg-violet-500/10 hover:text-violet-300'
+            >
+              <Link href='/dashboard/automations/flow/new'>
+                <GitFork className='h-3.5 w-3.5' />
+                Flow Builder
+              </Link>
             </Button>
             <Button asChild size='sm' className='gap-1.5 h-9'>
               <Link href='/dashboard/automations/new'>
