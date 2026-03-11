@@ -8,6 +8,21 @@ export enum AnalyticsPeriod {
   CUSTOM = 'custom',
 }
 
+export interface IntelligenceQualityAnalytics {
+  period: { start: string; end: string; type?: AnalyticsPeriod };
+  intents: { label: string; count: number; avg_confidence: number }[];
+  decisions: { action: string; count: number }[];
+  message_types: { type: string; count: number }[];
+  quality: {
+    total: number;
+    passed_validation: number;
+    avg_confidence: number;
+    avg_risk_score: number;
+    avg_regeneration_count: number;
+    flagged_count: number;
+  };
+}
+
 export interface IntelligenceAnalyticsItem {
   date: string;
   social_account_id: string;

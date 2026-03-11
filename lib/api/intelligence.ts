@@ -14,7 +14,11 @@ import {
   HotLeadsResponse,
   GetHotLeadsParams,
 } from '../types/intelligence';
-import { AnalyticsPeriod, IntelligenceAnalyticsItem } from '../types/analytics';
+import {
+  AnalyticsPeriod,
+  IntelligenceAnalyticsItem,
+  IntelligenceQualityAnalytics,
+} from '../types/analytics';
 import type {
   BotHealthScore,
   FlaggedReply,
@@ -319,6 +323,21 @@ export class IntelligenceApi {
       : `${INTELLIGENCE_BASE_URL}/leads`;
 
     const response = await httpClient.get<HotLeadsResponse>(url);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // Quality Analytics (GET /analytics/intelligence/quality)
+  static async getIntelligenceQualityAnalytics(params: {
+    period?: AnalyticsPeriod;
+  }): Promise<SuccessResponse<IntelligenceQualityAnalytics>> {
+    const searchParams = new URLSearchParams();
+    if (params.period) searchParams.set('period', params.period);
+    const query = searchParams.toString();
+    const url = query
+      ? `/api/v1/analytics/intelligence/quality?${query}`
+      : `/api/v1/analytics/intelligence/quality`;
+    const response = await httpClient.get<IntelligenceQualityAnalytics>(url);
     if (response.error) throw response.error;
     return response.data;
   }
