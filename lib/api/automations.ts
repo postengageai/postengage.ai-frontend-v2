@@ -109,6 +109,8 @@ export interface AutomationAction {
   delay_seconds?: number;
   status?: AutomationActionStatus;
   action_payload: AutomationActionPayload;
+  /** Per-action bot override. Takes precedence over the automation-level bot_id. */
+  bot_id?: string;
 }
 
 export interface AutomationActionResponse extends AutomationAction {

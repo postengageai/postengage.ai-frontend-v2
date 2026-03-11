@@ -93,18 +93,18 @@ export interface AutomationFormData extends Partial<
     status: 'active';
   } | null;
 
-  // Step 5
+  // Step 5 — each action can independently use a different AI bot
   actions: Array<{
     action_type: AutomationActionTypeType;
     execution_order: number;
     delay_seconds: number;
     status: 'active';
     action_payload: AutomationActionPayload;
+    /** Bot selected for this specific action (only relevant when use_ai_reply is true). */
+    bot_id?: string;
+    /** Display name for the selected bot — kept for the Review step label. */
+    bot_name?: string;
   }>;
-
-  // Step 5 (Bot Selection if needed)
-  bot_id?: string;
-  bot_name?: string;
 
   // Step 6
   name?: string;
@@ -223,7 +223,6 @@ export function AutomationWizard({
       name: formData.name || 'New Automation',
       description: formData.description,
       social_account_id: formData.social_account_id,
-      bot_id: formData.bot_id,
       platform: formData.platform,
       status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
       execution_mode:
@@ -268,6 +267,8 @@ export function AutomationWizard({
         delay_seconds: action.delay_seconds,
         status: action.status as 'active' | 'inactive',
         action_payload: action.action_payload,
+        // Only send bot_id when the action actually uses AI
+        ...(action.bot_id ? { bot_id: action.bot_id } : {}),
       })),
     };
     onComplete(payload);

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import {
@@ -60,9 +59,6 @@ export function ConfigureActionsStep({
   const [actions, setActions] = useState(formData.actions || []);
   const [bots, setBots] = useState<Bot[]>([]);
   const [userConfig, setUserConfig] = useState<UserLlmConfig | null>(null);
-  const [selectedBotId, setSelectedBotId] = useState<string | undefined>(
-    formData.bot_id
-  );
   const { toast } = useToast();
 
   useEffect(() => {
@@ -142,6 +138,8 @@ export function ConfigureActionsStep({
       delay_seconds: actions.length === 0 ? 2 : 5,
       status: 'active' as const,
       action_payload: payload,
+      bot_id: undefined,
+      bot_name: undefined,
     };
     setActions([...actions, newAction]);
   };
@@ -166,77 +164,82 @@ export function ConfigureActionsStep({
   };
 
   const handleNext = () => {
-    const useAi = actions.some(action => {
+    // Validate fallback messages for all AI-enabled actions
+    const missingFallback = actions.filter(action => {
       const payload = action.action_payload as
         | ReplyCommentPayload
         | PrivateReplyPayload
         | SendDmPayload;
-      return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+
+      if (!('use_ai_reply' in payload) || !payload.use_ai_reply) {
+        return false;
+      }
+
+      if (action.action_type === AutomationActionType.SEND_DM) {
+        const dmPayload = payload as SendDmPayload;
+        const message =
+          dmPayload.message && dmPayload.message.type === 'text'
+            ? dmPayload.message
+            : null;
+        return !message || !message.text || !message.text.trim();
+      }
+
+      const textPayload = payload as ReplyCommentPayload | PrivateReplyPayload;
+      return !textPayload.text || !textPayload.text.trim();
     });
 
-    if (useAi) {
-      const missingFallback = actions.filter(action => {
-        const payload = action.action_payload as
-          | ReplyCommentPayload
-          | PrivateReplyPayload
-          | SendDmPayload;
-
-        if (!('use_ai_reply' in payload) || !payload.use_ai_reply) {
-          return false;
-        }
-
-        if (action.action_type === AutomationActionType.SEND_DM) {
-          const dmPayload = payload as SendDmPayload;
-          const message =
-            dmPayload.message && dmPayload.message.type === 'text'
-              ? dmPayload.message
-              : null;
-          return !message || !message.text || !message.text.trim();
-        }
-
-        const textPayload = payload as
-          | ReplyCommentPayload
-          | PrivateReplyPayload;
-        return !textPayload.text || !textPayload.text.trim();
-      });
-
-      if (missingFallback.length > 0) {
-        toast({
-          title: 'Fallback message required',
-          description:
-            'When AI replies are enabled, each action must have a fallback message.',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    if (useAi && !selectedBotId) {
+    if (missingFallback.length > 0) {
       toast({
-        title: 'Bot Required',
-        description: 'Please select an AI Bot to handle the automated replies.',
+        title: 'Fallback message required',
+        description:
+          'When AI replies are enabled, each action must have a fallback message.',
         variant: 'destructive',
       });
       return;
     }
 
-    updateFormData({
-      actions,
-      bot_id: selectedBotId,
-      bot_name: bots.find(b => b._id === selectedBotId)?.name,
+    // Validate that every AI-enabled action has its own bot selected
+    const missingBot = actions.filter(action => {
+      const payload = action.action_payload as
+        | ReplyCommentPayload
+        | PrivateReplyPayload
+        | SendDmPayload;
+      const usesAi = 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+      return usesAi && !action.bot_id;
     });
+
+    if (missingBot.length > 0) {
+      const count = missingBot.length;
+      toast({
+        title: count === 1 ? 'Bot required' : `${count} actions need a bot`,
+        description:
+          'Please select an AI bot for each action that has AI replies enabled.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateFormData({ actions });
     nextStep();
   };
 
   const availableActions = getAvailableActions();
 
-  const hasAiEnabled = actions.some(action => {
-    const payload = action.action_payload as
-      | ReplyCommentPayload
-      | PrivateReplyPayload
-      | SendDmPayload;
-    return 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
-  });
+  /** Credit cost for a single action, using its own bot selection. */
+  const getActionCreditCost = (index: number, hasAi: boolean): number => {
+    if (!hasAi) return 0;
+    const isByom = userConfig?.mode === LlmConfigMode.BYOM;
+    const infraCost = CREDIT_COSTS.BYOM_INFRA;
+    if (isByom) return infraCost;
+
+    const bot = bots.find(b => b._id === actions[index]?.bot_id);
+    const hasKnowledge =
+      bot?.knowledge_sources && bot.knowledge_sources.length > 0;
+    const aiTierCost = hasKnowledge
+      ? CREDIT_COSTS.AI_KNOWLEDGE
+      : CREDIT_COSTS.AI_STANDARD;
+    return infraCost + aiTierCost;
+  };
 
   return (
     <div>
@@ -288,7 +291,6 @@ export function ConfigureActionsStep({
             <p className='mb-4 text-sm text-muted-foreground'>
               Add at least one action to continue
             </p>
-            {/* Mobile add buttons */}
             <div className='flex flex-wrap justify-center gap-2'>
               {availableActions.map(action => {
                 const Icon = action.icon;
@@ -345,24 +347,8 @@ export function ConfigureActionsStep({
             const hasAi =
               'use_ai_reply' in actionPayload &&
               Boolean(actionPayload.use_ai_reply);
-
-            let creditCost = 0;
-            if (hasAi) {
-              const isByom = userConfig?.mode === LlmConfigMode.BYOM;
-              const infraCost = CREDIT_COSTS.BYOM_INFRA;
-              if (isByom) {
-                creditCost = infraCost;
-              } else {
-                const selectedBot = bots.find(b => b._id === selectedBotId);
-                const hasKnowledge =
-                  selectedBot?.knowledge_sources &&
-                  selectedBot.knowledge_sources.length > 0;
-                const aiTierCost = hasKnowledge
-                  ? CREDIT_COSTS.AI_KNOWLEDGE
-                  : CREDIT_COSTS.AI_STANDARD;
-                creditCost = infraCost + aiTierCost;
-              }
-            }
+            const creditCost = getActionCreditCost(index, hasAi);
+            const selectedBot = bots.find(b => b._id === action.bot_id);
 
             return (
               <Card
@@ -427,6 +413,10 @@ export function ConfigureActionsStep({
                             ...action.action_payload,
                             ...updates,
                           } as SendDmPayload,
+                          // Clear bot when AI is turned off
+                          ...(updates.use_ai_reply === false
+                            ? { bot_id: undefined, bot_name: undefined }
+                            : {}),
                         })
                       }
                     />
@@ -447,73 +437,91 @@ export function ConfigureActionsStep({
                             ...action.action_payload,
                             ...updates,
                           } as ReplyCommentPayload | PrivateReplyPayload,
+                          // Clear bot when AI is turned off
+                          ...(updates.use_ai_reply === false
+                            ? { bot_id: undefined, bot_name: undefined }
+                            : {}),
                         })
                       }
                     />
                   ) : null}
+
+                  {/* ── Per-action bot selector (only when AI is on) ────────── */}
+                  {hasAi && (
+                    <div className='mt-5 rounded-lg border border-primary/20 bg-primary/5 p-4'>
+                      <div className='mb-3 flex items-center gap-2'>
+                        <BotIcon className='h-4 w-4 text-primary' />
+                        <h4 className='text-sm font-semibold text-primary'>
+                          AI Bot for this action
+                        </h4>
+                      </div>
+
+                      <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3'>
+                        <Select
+                          value={action.bot_id ?? ''}
+                          onValueChange={val => {
+                            const bot = bots.find(b => b._id === val);
+                            updateAction(index, {
+                              bot_id: val || undefined,
+                              bot_name: bot?.name,
+                            });
+                          }}
+                        >
+                          <SelectTrigger className='max-w-xs'>
+                            <SelectValue placeholder='Select a bot...' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bots.map(bot => (
+                              <SelectItem key={bot._id} value={bot._id}>
+                                {bot.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {selectedBot && (
+                          <p className='text-xs text-muted-foreground'>
+                            Using{' '}
+                            <span className='font-medium text-foreground'>
+                              {selectedBot.name}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      {bots.length === 0 && (
+                        <p className='mt-2 text-xs text-destructive'>
+                          No bots found.{' '}
+                          <Link
+                            href='/dashboard/intelligence/bots'
+                            className='underline'
+                          >
+                            Create one first.
+                          </Link>
+                        </p>
+                      )}
+
+                      <div className='mt-2.5 flex gap-3 text-xs'>
+                        <Link
+                          href='/dashboard/intelligence/bots'
+                          className='text-primary hover:underline'
+                        >
+                          Manage bots
+                        </Link>
+                        <span className='text-muted-foreground'>·</span>
+                        <Link
+                          href='/dashboard/intelligence/brand-voices'
+                          className='text-primary hover:underline'
+                        >
+                          Brand voices
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             );
           })}
-        </div>
-      )}
-
-      {/* AI Bot Configuration */}
-      {hasAiEnabled && (
-        <div className='mt-6 rounded-xl border border-primary/20 bg-primary/5 p-5'>
-          <div className='mb-3 flex items-center gap-2'>
-            <BotIcon className='h-5 w-5 text-primary' />
-            <h3 className='font-semibold text-primary'>AI Bot Configuration</h3>
-          </div>
-          <p className='mb-4 text-sm text-muted-foreground'>
-            Select which bot handles AI-powered responses for this automation.
-          </p>
-
-          <div className='max-w-sm'>
-            <Label className='mb-2 block text-sm font-medium'>
-              Select AI Bot
-            </Label>
-            <Select value={selectedBotId} onValueChange={setSelectedBotId}>
-              <SelectTrigger>
-                <SelectValue placeholder='Select a bot...' />
-              </SelectTrigger>
-              <SelectContent>
-                {bots.map(bot => (
-                  <SelectItem key={bot._id} value={bot._id}>
-                    {bot.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {bots.length === 0 && (
-              <p className='mt-2 text-xs text-destructive'>
-                No bots found. Please create a bot first.
-              </p>
-            )}
-            {selectedBotId && (
-              <p className='mt-2 text-xs text-muted-foreground'>
-                Using bot{' '}
-                <span className='font-medium'>
-                  {bots.find(b => b._id === selectedBotId)?.name}
-                </span>
-              </p>
-            )}
-            <div className='mt-3 flex gap-3 text-xs'>
-              <Link
-                href='/dashboard/intelligence/bots'
-                className='text-primary hover:underline'
-              >
-                Manage bots
-              </Link>
-              <span className='text-muted-foreground'>·</span>
-              <Link
-                href='/dashboard/intelligence/brand-voices'
-                className='text-primary hover:underline'
-              >
-                Brand voices
-              </Link>
-            </div>
-          </div>
         </div>
       )}
 

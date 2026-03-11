@@ -131,14 +131,23 @@ export function ReviewStep({
   isEditMode = false,
 }: ReviewStepProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [bot, setBot] = useState<Bot | null>(null);
+  /** Map of bot._id → Bot for per-action cost/label lookup. */
+  const [botsMap, setBotsMap] = useState<Record<string, Bot>>({});
   const [userConfig, setUserConfig] = useState<UserLlmConfig | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const hasAnyAi = formData.actions?.some(action => {
+          const p = action.action_payload as
+            | ReplyCommentPayload
+            | PrivateReplyPayload
+            | SendDmPayload;
+          return 'use_ai_reply' in p && Boolean(p.use_ai_reply);
+        });
+
         const promises: Promise<unknown>[] = [IntelligenceApi.getUserConfig()];
-        if (formData.bot_id) {
+        if (hasAnyAi) {
           promises.push(
             IntelligenceApi.getBots({
               social_account_id: formData.social_account_id,
@@ -147,18 +156,16 @@ export function ReviewStep({
         }
         const [configRes, botsRes] = await Promise.all(promises);
         setUserConfig((configRes as { data: UserLlmConfig }).data);
-        if (formData.bot_id && botsRes) {
-          const foundBot = (botsRes as { data: Bot[] }).data?.find(
-            (b: Bot) => b._id === formData.bot_id
-          );
-          setBot(foundBot || null);
+        if (botsRes) {
+          const bots: Bot[] = (botsRes as { data: Bot[] }).data || [];
+          setBotsMap(Object.fromEntries(bots.map(b => [b._id, b])));
         }
       } catch (_err) {
         // non-critical
       }
     };
     fetchData();
-  }, [formData.bot_id, formData.social_account_id]);
+  }, [formData.actions, formData.social_account_id]);
 
   const handleSave = async (isDraft: boolean) => {
     if (isLoading) return;
@@ -173,29 +180,32 @@ export function ReviewStep({
     }
   };
 
-  // Credit calculation
-  const calculateTotalCredits = () => {
-    if (!formData.actions) return 0;
-    return formData.actions.reduce((sum, action) => {
-      const payload = action.action_payload as
-        | ReplyCommentPayload
-        | PrivateReplyPayload
-        | SendDmPayload;
-      const hasAi = 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
-      if (!hasAi) return sum;
-      const isByom = userConfig?.mode === LlmConfigMode.BYOM;
-      const infraCost = CREDIT_COSTS.BYOM_INFRA;
-      if (isByom) return sum + infraCost;
-      const hasKnowledge =
-        bot?.knowledge_sources && bot.knowledge_sources.length > 0;
-      const aiTierCost = hasKnowledge
-        ? CREDIT_COSTS.AI_KNOWLEDGE
-        : CREDIT_COSTS.AI_STANDARD;
-      return sum + infraCost + aiTierCost;
-    }, 0);
+  /** Per-action credit cost using that action's own bot. */
+  const getActionCreditCost = (
+    action: AutomationFormData['actions'][0]
+  ): number => {
+    const payload = action.action_payload as
+      | ReplyCommentPayload
+      | PrivateReplyPayload
+      | SendDmPayload;
+    const hasAi = 'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+    if (!hasAi) return 0;
+    const isByom = userConfig?.mode === LlmConfigMode.BYOM;
+    const infraCost = CREDIT_COSTS.BYOM_INFRA;
+    if (isByom) return infraCost;
+    const bot = action.bot_id ? botsMap[action.bot_id] : undefined;
+    const hasKnowledge =
+      bot?.knowledge_sources && bot.knowledge_sources.length > 0;
+    const aiTierCost = hasKnowledge
+      ? CREDIT_COSTS.AI_KNOWLEDGE
+      : CREDIT_COSTS.AI_STANDARD;
+    return infraCost + aiTierCost;
   };
 
-  const totalCredits = calculateTotalCredits();
+  const totalCredits = (formData.actions || []).reduce(
+    (sum, action) => sum + getActionCreditCost(action),
+    0
+  );
   const TriggerIcon = getTriggerIcon(formData.trigger_type);
   const ExecutionIcon = getExecutionModeIcon(formData.execution_mode);
 
@@ -311,8 +321,15 @@ export function ReviewStep({
                   | SendDmPayload;
                 const hasAi =
                   'use_ai_reply' in payload && Boolean(payload.use_ai_reply);
+                const actionCost = getActionCreditCost(action);
+                const botName =
+                  action.bot_name ||
+                  (action.bot_id ? botsMap[action.bot_id]?.name : undefined);
                 return (
-                  <div key={i} className='flex items-center gap-2 text-sm'>
+                  <div
+                    key={i}
+                    className='flex flex-wrap items-center gap-2 text-sm'
+                  >
                     <div className='flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary'>
                       {i + 1}
                     </div>
@@ -325,7 +342,7 @@ export function ReviewStep({
                         className='bg-primary/10 text-xs text-primary'
                       >
                         <BotIcon className='mr-1 h-3 w-3' />
-                        AI · {totalCredits} cr
+                        {botName ? botName : 'AI'} · {actionCost} cr
                       </Badge>
                     ) : (
                       <Badge
