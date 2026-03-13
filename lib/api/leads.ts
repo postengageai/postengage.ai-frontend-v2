@@ -60,9 +60,16 @@ export class LeadsApi {
   static async getLeads(
     params?: GetLeadsParams
   ): Promise<SuccessResponse<LeadsResponse>> {
-    const q: Record<string, unknown> = { ...params };
+    // Build params explicitly to avoid sending unknown fields that would
+    // trigger `forbidNonWhitelisted` on the backend. Also renames per_page
+    // → limit because PaginationDto uses `limit` as the field name.
+    const q: Record<string, unknown> = {};
+    if (params?.page !== undefined) q.page = params.page;
+    const pageSize = params?.limit ?? params?.per_page;
+    if (pageSize !== undefined) q.limit = pageSize;
+    if (params?.search) q.search = params.search;
+    if (params?.platform && params.platform !== 'all') q.platform = params.platform;
     if (params?.tags?.length) q.tags = params.tags.join(',');
-    if (params?.platform === 'all') delete q.platform;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await httpClient.get<any>(BASE, { params: q });

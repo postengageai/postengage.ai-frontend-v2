@@ -5,7 +5,6 @@ import React, {
   useContext,
   useReducer,
   useEffect,
-  useRef,
 } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthSession, AuthActions } from '../schemas/auth';
@@ -130,9 +129,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     state => state.actions
   );
 
-  // Use ref to track initialization without affecting dependency array
-  const isInitializedRef = useRef(false);
-
   // Setup logout handler for HTTP client
   useEffect(() => {
     setLogoutHandler(() => {
@@ -144,52 +140,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setUser, setIsAuthenticated, router]);
 
-  // Initialize auth state by checking session with backend
+  // Check auth ONCE on mount — just resolves who the user is, no redirect here.
+  // Redirect logic lives in the separate effect below so it fires on every
+  // client-side navigation as well, not only on the initial load.
   useEffect(() => {
     const initAuth = async () => {
-      // Only check auth if not already initialized
-      if (!isInitializedRef.current) {
-        setAuthLoading(true);
-        try {
-          const user = await AuthApi.checkAuth();
-          if (user) {
-            setUser(user);
-            setIsAuthenticated(true);
-            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
-
-            // Redirect authenticated users from public routes to dashboard
-            if (isPublicRoute(pathname) && pathname !== '/') {
-              router.push('/dashboard');
-            }
-          } else {
-            setUser(null);
-            setIsAuthenticated(false);
-            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-            // Redirect if not on a public route
-            if (!isPublicRoute(pathname)) {
-              router.push('/login');
-            }
-          }
-        } catch (_error) {
-          // console.warn('Failed to check auth status:', _error);
+      setAuthLoading(true);
+      try {
+        const user = await AuthApi.checkAuth();
+        if (user) {
+          setUser(user);
+          setIsAuthenticated(true);
+          dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+        } else {
           setUser(null);
           setIsAuthenticated(false);
           dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-          if (!isPublicRoute(pathname)) {
-            router.push('/login');
-          }
-        } finally {
-          dispatch({ type: 'SET_LOADING', payload: false });
-          setAuthLoading(false);
-          isInitializedRef.current = true; // Mark as initialized
         }
+      } catch (_error) {
+        setUser(null);
+        setIsAuthenticated(false);
+        dispatch({ type: 'SET_AUTHENTICATED', payload: false });
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        setAuthLoading(false);
       }
     };
 
     initAuth();
-  }, [dispatch, pathname, router, setUser, setIsAuthenticated, setAuthLoading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty — run once on mount
+
+  // Route guard — fires whenever pathname or auth state changes.
+  // This handles both the initial load AND client-side navigation so that
+  // navigating to a protected page after initialisation still redirects.
+  useEffect(() => {
+    // Don't redirect while the initial auth check is still in flight
+    if (state.isLoading) return;
+
+    if (state.isAuthenticated) {
+      // Bounce authenticated users away from auth pages
+      if (isPublicRoute(pathname) && pathname !== '/') {
+        router.push('/dashboard');
+      }
+    } else {
+      // Bounce unauthenticated users away from protected pages
+      if (!isPublicRoute(pathname)) {
+        router.push('/login');
+      }
+    }
+  }, [state.isAuthenticated, state.isLoading, pathname, router]);
 
   const value: AuthContextType = {
     ...state,
