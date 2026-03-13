@@ -17,8 +17,17 @@ export function useLogout() {
         method: 'POST',
         credentials: 'include',
       });
-    } catch {
-      // Continue with logout even if API call fails
+    } catch (err) {
+      // H-7 NOTE: intentionally proceed with client-side logout even when the
+      // API call fails (network down, server error) — the httpOnly cookie will
+      // expire naturally. Log in dev so it's traceable without alarming users.
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[logout] API call failed, proceeding with client logout:',
+          err
+        );
+      }
     } finally {
       // Always redirect to login
       router.push('/login');

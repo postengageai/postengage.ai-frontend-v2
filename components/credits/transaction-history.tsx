@@ -32,6 +32,7 @@ import {
   ExternalLink,
   Gift,
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface TransactionHistoryProps {
   transactions: CreditTransaction[];
@@ -142,11 +143,15 @@ export function TransactionHistory({
     const color = isPositive ? 'text-success' : 'text-foreground';
     const size = large ? 'text-2xl' : 'text-sm';
 
+    // credit_amount may already be negative from the backend — use Math.abs
+    // to avoid double-negative rendering (e.g. "--1")
+    const absAmount = Math.abs(transaction.credit_amount);
+
     if (transaction.status === 'cancelled') {
       return (
         <span className={`text-muted-foreground line-through ${size}`}>
           {sign}
-          {transaction.credit_amount}
+          {absAmount}
         </span>
       );
     }
@@ -154,7 +159,7 @@ export function TransactionHistory({
     return (
       <span className={`font-mono font-semibold ${color} ${size}`}>
         {sign}
-        {transaction.credit_amount}
+        {absAmount}
       </span>
     );
   };
@@ -505,12 +510,12 @@ export function TransactionHistory({
                   className='w-full gap-2 bg-transparent'
                   asChild
                 >
-                  <a
-                    href={`/automations?id=${selectedTransaction.automation_id}`}
+                  <Link
+                    href={`/dashboard/automations/${selectedTransaction.automation_id}`}
                   >
                     <ExternalLink className='h-4 w-4' />
                     View Automation
-                  </a>
+                  </Link>
                 </Button>
               )}
             </div>

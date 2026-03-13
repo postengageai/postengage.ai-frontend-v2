@@ -1,24 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ChevronLeft, X, Plus, AlertCircle } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { ChevronLeft, X, Plus, AlertCircle, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { AutomationFormData } from '../automation-wizard';
 import {
   AutomationConditionType,
   AutomationConditionOperator,
-  type AutomationConditionOperatorType,
   AutomationConditionKeywordMode,
   type AutomationConditionKeywordModeType,
   AutomationConditionSource,
@@ -33,6 +24,51 @@ interface ConfigureConditionStepProps {
   prevStep: () => void;
 }
 
+const MATCH_MODES = [
+  {
+    value: AutomationConditionKeywordMode.ANY,
+    label: 'Contains any keyword',
+    description: 'Trigger if at least one keyword matches',
+  },
+  {
+    value: AutomationConditionKeywordMode.ALL,
+    label: 'Contains all keywords',
+    description: 'Trigger only when every keyword is present',
+  },
+  {
+    value: AutomationConditionKeywordMode.EXACT,
+    label: 'Exact match',
+    description: 'Message must match the keyword exactly',
+  },
+] as const;
+
+const QUICK_ADD_TEMPLATES = {
+  [AutomationTriggerType.NEW_COMMENT]: [
+    { label: 'Giveaway', keywords: ['giveaway', 'win', 'prize', 'entry'] },
+    {
+      label: 'Product inquiry',
+      keywords: ['price', 'cost', 'how much', 'buy'],
+    },
+    { label: 'Link request', keywords: ['link', 'where', 'find', 'website'] },
+    {
+      label: 'Testimonial',
+      keywords: ['love', 'amazing', 'recommend', 'great'],
+    },
+  ],
+  [AutomationTriggerType.DM_RECEIVED]: [
+    {
+      label: 'Product info',
+      keywords: ['product', 'details', 'info', 'pricing'],
+    },
+    {
+      label: 'Support',
+      keywords: ['help', 'support', 'issue', 'problem', 'broken'],
+    },
+    { label: 'Order', keywords: ['order', 'buy', 'purchase', 'payment'] },
+    { label: 'Collab', keywords: ['collab', 'partnership', 'brand deal'] },
+  ],
+};
+
 export function ConfigureConditionStep({
   formData,
   updateFormData,
@@ -43,10 +79,6 @@ export function ConfigureConditionStep({
     formData.condition?.condition_value || []
   );
   const [keywordInput, setKeywordInput] = useState('');
-  const [operator, setOperator] = useState<AutomationConditionOperatorType>(
-    formData.condition?.condition_operator ||
-      AutomationConditionOperator.CONTAINS
-  );
   const [keywordMode, setKeywordMode] =
     useState<AutomationConditionKeywordModeType>(
       formData.condition?.condition_keyword_mode ||
@@ -58,19 +90,25 @@ export function ConfigureConditionStep({
       ? AutomationConditionSource.COMMENT_TEXT
       : AutomationConditionSource.DM_TEXT;
 
-  const addKeyword = () => {
-    if (
-      keywordInput.trim() &&
-      !keywords.includes(keywordInput.trim().toLowerCase())
-    ) {
-      const newKeywords = [...keywords, keywordInput.trim().toLowerCase()];
-      setKeywords(newKeywords);
+  const addKeyword = (raw: string) => {
+    const trimmed = raw.trim().toLowerCase();
+    if (trimmed && !keywords.includes(trimmed)) {
+      setKeywords(prev => [...prev, trimmed]);
+    }
+  };
+
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addKeyword(keywordInput);
       setKeywordInput('');
+    } else if (e.key === 'Backspace' && !keywordInput && keywords.length > 0) {
+      setKeywords(prev => prev.slice(0, -1));
     }
   };
 
   const removeKeyword = (keyword: string) => {
-    setKeywords(keywords.filter(k => k !== keyword));
+    setKeywords(prev => prev.filter(k => k !== keyword));
   };
 
   const handleNext = () => {
@@ -79,7 +117,7 @@ export function ConfigureConditionStep({
         keywords.length > 0
           ? {
               condition_type: AutomationConditionType.KEYWORD,
-              condition_operator: operator,
+              condition_operator: AutomationConditionOperator.CONTAINS,
               condition_keyword_mode: keywordMode,
               condition_source: conditionSource,
               condition_value: keywords,
@@ -95,39 +133,35 @@ export function ConfigureConditionStep({
     nextStep();
   };
 
-  // Quick add templates
-  const quickKeywords = {
-    [AutomationTriggerType.NEW_COMMENT]: [
-      { label: 'Pricing', keywords: ['price', 'cost', 'how much'] },
-      { label: 'Interested', keywords: ['interested', 'want', 'need'] },
-      { label: 'Questions', keywords: ['how', 'what', 'when', 'where'] },
-    ],
-    [AutomationTriggerType.DM_RECEIVED]: [
-      { label: 'Product Info', keywords: ['product', 'details', 'info'] },
-      { label: 'Support', keywords: ['help', 'support', 'issue', 'problem'] },
-      { label: 'Order', keywords: ['order', 'buy', 'purchase', 'payment'] },
-    ],
-  };
-
-  const templates =
-    formData.trigger_type && formData.trigger_type in quickKeywords
-      ? quickKeywords[formData.trigger_type as keyof typeof quickKeywords]
-      : [];
+  const triggerType =
+    formData.trigger_type && formData.trigger_type in QUICK_ADD_TEMPLATES
+      ? (formData.trigger_type as keyof typeof QUICK_ADD_TEMPLATES)
+      : null;
+  const templates = triggerType ? QUICK_ADD_TEMPLATES[triggerType] : [];
 
   return (
     <div>
-      <h2 className='mb-2 text-2xl font-bold text-foreground'>
-        Add Keyword Condition
-      </h2>
-      <p className='mb-2 text-muted-foreground'>
+      <div className='mb-2 flex items-center gap-2'>
+        <h2 className='text-2xl font-bold text-foreground'>
+          Add Keyword Condition
+        </h2>
+        <Badge
+          variant='secondary'
+          className='bg-muted text-xs text-muted-foreground'
+        >
+          Optional
+        </Badge>
+      </div>
+      <p className='mb-4 text-muted-foreground'>
         Filter{' '}
         {formData.trigger_type === AutomationTriggerType.NEW_COMMENT
           ? 'comments'
           : 'DMs'}{' '}
-        by keywords (optional)
+        by keywords
       </p>
-      <div className='mb-8 flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/5 p-3'>
-        <AlertCircle className='mt-0.5 h-4 w-4 text-warning' />
+
+      <div className='mb-6 flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/5 p-3'>
+        <AlertCircle className='mt-0.5 h-4 w-4 flex-shrink-0 text-warning' />
         <p className='text-sm text-muted-foreground'>
           Leave empty to trigger on all{' '}
           {formData.trigger_type === AutomationTriggerType.NEW_COMMENT
@@ -139,9 +173,9 @@ export function ConfigureConditionStep({
       {/* Quick Add Templates */}
       {templates.length > 0 && (
         <div className='mb-6'>
-          <Label className='mb-3 block text-sm font-medium'>
-            Quick Add Templates
-          </Label>
+          <p className='mb-2.5 text-sm font-medium text-foreground'>
+            Quick add templates
+          </p>
           <div className='flex flex-wrap gap-2'>
             {templates.map(template => (
               <Button
@@ -149,13 +183,11 @@ export function ConfigureConditionStep({
                 variant='outline'
                 size='sm'
                 onClick={() => {
-                  const newKeywords = [
-                    ...new Set([...keywords, ...template.keywords]),
-                  ];
-                  setKeywords(newKeywords);
+                  template.keywords.forEach(k => addKeyword(k));
                 }}
+                className='h-8 gap-1.5 text-xs'
               >
-                <Plus className='mr-1 h-3 w-3' />
+                <Plus className='h-3 w-3' />
                 {template.label}
               </Button>
             ))}
@@ -163,123 +195,94 @@ export function ConfigureConditionStep({
         </div>
       )}
 
-      {/* Operator Selection */}
+      {/* Inline Tag Input */}
       <div className='mb-6'>
-        <Label htmlFor='operator' className='mb-3 block text-sm font-medium'>
-          Keyword Operator
-        </Label>
-        <Select
-          value={operator}
-          onValueChange={(value: AutomationConditionOperatorType) =>
-            setOperator(value)
-          }
-        >
-          <SelectTrigger id='operator'>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={AutomationConditionOperator.CONTAINS}>
-              Contains keyword
-            </SelectItem>
-            <SelectItem value={AutomationConditionOperator.EQUALS}>
-              Equals exactly
-            </SelectItem>
-            <SelectItem value={AutomationConditionOperator.STARTS_WITH}>
-              Starts with
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Keyword Input */}
-      <div className='mb-6'>
-        <Label
-          htmlFor='keyword-input'
-          className='mb-3 block text-sm font-medium'
-        >
-          Keywords
-        </Label>
-        <div className='flex gap-2'>
-          <Input
-            id='keyword-input'
-            placeholder='Type keyword and press Enter...'
+        <p className='mb-2 text-sm font-medium text-foreground'>Keywords</p>
+        <div className='flex min-h-11 flex-wrap items-center gap-1.5 rounded-xl border border-input bg-background px-3 py-2 ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2'>
+          {keywords.map(keyword => (
+            <Badge
+              key={keyword}
+              variant='secondary'
+              className='gap-1 bg-primary/10 text-primary'
+            >
+              {keyword}
+              <button
+                type='button'
+                onClick={() => removeKeyword(keyword)}
+                className='ml-0.5 rounded-sm hover:bg-primary/20'
+              >
+                <X className='h-3 w-3' />
+              </button>
+            </Badge>
+          ))}
+          <input
             value={keywordInput}
             onChange={e => setKeywordInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addKeyword();
+            onKeyDown={handleInputKeyDown}
+            onBlur={() => {
+              if (keywordInput.trim()) {
+                addKeyword(keywordInput);
+                setKeywordInput('');
               }
             }}
+            placeholder={
+              keywords.length === 0 ? 'Type keyword and press Enter...' : ''
+            }
+            className='min-w-[180px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground'
           />
-          <Button onClick={addKeyword} disabled={!keywordInput.trim()}>
-            <Plus className='mr-2 h-4 w-4' />
-            Add
-          </Button>
+          {keywords.length > 0 && (
+            <span className='ml-auto flex-shrink-0 text-xs text-muted-foreground'>
+              {keywords.length} keyword{keywords.length !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
-
-        {/* Keywords List */}
-        {keywords.length > 0 && (
-          <div className='mt-3 flex flex-wrap gap-2'>
-            {keywords.map(keyword => (
-              <Badge
-                key={keyword}
-                variant='secondary'
-                className='gap-1 bg-primary/10 text-primary'
-              >
-                {keyword}
-                <button
-                  onClick={() => removeKeyword(keyword)}
-                  className='ml-1 rounded-sm hover:bg-primary/20'
-                >
-                  <X className='h-3 w-3' />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Keyword Mode */}
+      {/* Match Mode — 3 horizontal cards */}
       {keywords.length > 1 && (
-        <div className='mb-6'>
-          <Label className='mb-3 block text-sm font-medium'>Match Mode</Label>
-          <RadioGroup
-            value={keywordMode}
-            onValueChange={(value: AutomationConditionKeywordModeType) =>
-              setKeywordMode(value)
-            }
-          >
-            <div className='flex items-center space-x-2 rounded-md border border-border p-3'>
-              <RadioGroupItem
-                value={AutomationConditionKeywordMode.ANY}
-                id='any'
-              />
-              <Label htmlFor='any' className='cursor-pointer'>
-                <p className='font-medium'>Match ANY keyword</p>
-                <p className='text-sm text-muted-foreground'>
-                  Trigger if message contains at least one keyword
-                </p>
-              </Label>
-            </div>
-            <div className='flex items-center space-x-2 rounded-md border border-border p-3'>
-              <RadioGroupItem
-                value={AutomationConditionKeywordMode.ALL}
-                id='all'
-              />
-              <Label htmlFor='all' className='cursor-pointer'>
-                <p className='font-medium'>Match ALL keywords</p>
-                <p className='text-sm text-muted-foreground'>
-                  Trigger only if message contains all keywords
-                </p>
-              </Label>
-            </div>
-          </RadioGroup>
+        <div className='mb-8'>
+          <p className='mb-3 text-sm font-medium text-foreground'>Match Mode</p>
+          <div className='grid gap-3 sm:grid-cols-3'>
+            {MATCH_MODES.map(mode => {
+              const isSelected = keywordMode === mode.value;
+              return (
+                <Card
+                  key={mode.value}
+                  onClick={() => setKeywordMode(mode.value)}
+                  className={cn(
+                    'cursor-pointer p-4 transition-all hover:border-primary/60',
+                    isSelected ? 'border-primary bg-primary/5' : 'border-border'
+                  )}
+                >
+                  <div className='mb-2 flex items-center justify-between'>
+                    <div
+                      className={cn(
+                        'h-4 w-4 rounded-full border-2 flex items-center justify-center',
+                        isSelected
+                          ? 'border-primary bg-primary'
+                          : 'border-muted-foreground'
+                      )}
+                    >
+                      {isSelected && (
+                        <Check className='h-2.5 w-2.5 text-white' />
+                      )}
+                    </div>
+                  </div>
+                  <p className='text-sm font-semibold text-foreground'>
+                    {mode.label}
+                  </p>
+                  <p className='mt-1 text-xs text-muted-foreground'>
+                    {mode.description}
+                  </p>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      <div className='mt-8 flex justify-between'>
-        <Button variant='outline' onClick={prevStep}>
+      <div className='flex justify-between'>
+        <Button variant='outline' onClick={prevStep} className='bg-transparent'>
           <ChevronLeft className='mr-2 h-4 w-4' />
           Back
         </Button>

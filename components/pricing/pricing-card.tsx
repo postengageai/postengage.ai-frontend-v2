@@ -30,7 +30,7 @@ export function PricingCard({ pack }: PricingCardProps) {
 
   return (
     <div
-      className={`relative group rounded-2xl border p-8 transition-all duration-300 hover:translate-y-[-4px] ${
+      className={`relative group rounded-2xl border p-5 sm:p-8 transition-all duration-300 hover:translate-y-[-4px] ${
         pack.popular
           ? 'border-primary/50 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent shadow-xl shadow-primary/10'
           : 'border-border bg-card hover:border-border/80 hover:shadow-lg'

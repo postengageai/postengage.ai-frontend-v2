@@ -105,6 +105,37 @@ export class AuthApi {
       throw error;
     }
   }
+
+  // Get account lock/suspend status by email (public endpoint)
+  static async getAccountStatus(
+    email: string
+  ): Promise<{ status: string; unlocksAt?: string }> {
+    const response = await httpClient.get<{
+      status: string;
+      unlocksAt?: string;
+    }>(`${AUTH_BASE_URL}/account-status?email=${encodeURIComponent(email)}`);
+    return response.data?.data ?? { status: 'unknown' };
+  }
+
+  // Get platform-wide stats for the login page (public endpoint — marketing module)
+  static async getPlatformStats(): Promise<{
+    replies_sent: number;
+    total_automations: number;
+    active_users: number;
+  }> {
+    const response = await httpClient.get<{
+      replies_sent: number;
+      total_automations: number;
+      active_users: number;
+    }>('/api/v1/marketing/platform-stats');
+    return (
+      response.data?.data ?? {
+        replies_sent: 0,
+        total_automations: 0,
+        active_users: 0,
+      }
+    );
+  }
 }
 
 // Hook-friendly API functions

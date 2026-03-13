@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PaymentsApi } from '@/lib/api/payments';
 import { CreateOrderResponse } from '@/lib/types/payment';
+import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useCreditsStore } from '@/lib/credits/store';
 
@@ -103,11 +104,11 @@ export function useRazorpay() {
 
       rzp1.open();
     } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Something went wrong',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsProcessing(false);

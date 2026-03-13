@@ -41,13 +41,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { parseApiError } from '@/lib/http/errors';
 import { SupportApi } from '@/lib/api/support';
 
 const faqItems = [
   {
     question: 'How do credits work?',
     answer:
-      'Credits are consumed each time an automation action is executed. Different actions have different credit costs - for example, a simple reply costs 1 credit, while an AI-generated reply costs 2 credits. You can view your credit usage in the Credits section of your dashboard.',
+      'Credits are consumed only when AI generates a reply. Manual actions (simple replies, DMs) are free (0 credits). AI-generated replies cost between 6-13 credits depending on complexity. If you use your own API key (BYOM), AI actions cost only 1 credit for infrastructure.',
   },
   {
     question: "Why isn't my automation triggering?",
@@ -104,10 +105,11 @@ export default function HelpSupportPage() {
         title: 'Success',
         description: 'Support ticket submitted successfully',
       });
-    } catch {
+    } catch (_error) {
+      const err = parseApiError(_error);
       toast({
-        title: 'Error',
-        description: 'Failed to submit support ticket. Please try again.',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     } finally {

@@ -100,28 +100,54 @@ const resetInactivityTimer = () => {
   }, SESSION_TIMEOUT);
 };
 
+// M-9 FIX: store the cleanup fn at module scope so repeated calls to
+// initActivityTracking() (React strict-mode double-mount, re-auth) always
+// remove old listeners before adding new ones — prevents N-fold accumulation
+// of listeners and cascading inactivity timer resets.
+let activityTrackingCleanup: (() => void) | null = null;
+
 // Initialize activity tracking
 export const initActivityTracking = () => {
-  const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+  // Tear down any existing listeners first
+  if (activityTrackingCleanup) {
+    activityTrackingCleanup();
+    activityTrackingCleanup = null;
+  }
 
-  events.forEach(event => {
-    document.addEventListener(event, () => {
-      const { isAuthenticated } = useAuthStore.getState();
-      if (isAuthenticated) {
-        useAuthStore.getState().actions.updateLastActivity();
-        resetInactivityTimer();
-      }
-    });
-  });
+  const events = ['mousedown', 'keydown', 'touchstart', 'scroll'] as const;
+
+  const handler = () => {
+    const { isAuthenticated } = useAuthStore.getState();
+    if (isAuthenticated) {
+      useAuthStore.getState().actions.updateLastActivity();
+      resetInactivityTimer();
+    }
+  };
+
+  // { passive: true } — none of these call preventDefault; marking passive
+  // lets the browser optimise scroll perf.
+  events.forEach(event =>
+    document.addEventListener(event, handler, { passive: true })
+  );
 
   resetInactivityTimer();
+
+  activityTrackingCleanup = () => {
+    events.forEach(event => document.removeEventListener(event, handler));
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = null;
+    }
+  };
+
+  return activityTrackingCleanup;
 };
 
-// Cleanup function
+// Cleanup function — call on logout / component unmount
 export const cleanupActivityTracking = () => {
-  if (inactivityTimer) {
-    clearTimeout(inactivityTimer);
-    inactivityTimer = null;
+  if (activityTrackingCleanup) {
+    activityTrackingCleanup();
+    activityTrackingCleanup = null;
   }
 };
 
