@@ -108,7 +108,9 @@ function LoginContent() {
     } catch (error: unknown) {
       if (error instanceof ApiError) {
         if (error.code === 'PE-AUTH-005') {
-          router.push(`/account-locked?email=${encodeURIComponent(values.email)}`);
+          router.push(
+            `/account-locked?email=${encodeURIComponent(values.email)}`
+          );
           return;
         }
         if (error.code === 'PE-AUTH-006') {
@@ -120,8 +122,9 @@ function LoginContent() {
         // Map backend field errors onto react-hook-form fields
         if (error.isValidationError) {
           const fieldErrors = error.getFieldErrors();
-          (Object.entries(fieldErrors) as [keyof LoginFormValues, string][])
-            .forEach(([field, message]) => setError(field, { message }));
+          (
+            Object.entries(fieldErrors) as [keyof LoginFormValues, string][]
+          ).forEach(([field, message]) => setError(field, { message }));
           return;
         }
 
@@ -156,18 +159,26 @@ function LoginContent() {
 
           <div className='flex gap-3'>
             <StatCard
-              value={platformStats ? formatStat(platformStats.replies_sent) : '—'}
+              value={
+                platformStats ? formatStat(platformStats.replies_sent) : '—'
+              }
               label='Replies sent'
               loading={statsLoading}
             />
             <StatCard
-              value={platformStats ? formatStat(platformStats.total_automations) : '—'}
+              value={
+                platformStats
+                  ? formatStat(platformStats.total_automations)
+                  : '—'
+              }
               label='Automations live'
               color='text-primary'
               loading={statsLoading}
             />
             <StatCard
-              value={platformStats ? formatStat(platformStats.active_users) : '—'}
+              value={
+                platformStats ? formatStat(platformStats.active_users) : '—'
+              }
               label='Active creators'
               color='text-success'
               loading={statsLoading}
@@ -176,7 +187,9 @@ function LoginContent() {
         </div>
 
         <div className='relative z-10 px-10 xl:px-14 pb-9'>
-          <p className='text-xs text-white/35'>Trusted by 10,000+ creators worldwide</p>
+          <p className='text-xs text-white/35'>
+            Trusted by 10,000+ creators worldwide
+          </p>
         </div>
       </div>
 
@@ -222,10 +235,17 @@ function LoginContent() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className='space-y-5' noValidate>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className='space-y-5'
+              noValidate
+            >
               {/* Email */}
               <div className='space-y-2'>
-                <Label htmlFor='email' className='text-sm font-medium text-foreground'>
+                <Label
+                  htmlFor='email'
+                  className='text-sm font-medium text-foreground'
+                >
                   Email Address
                 </Label>
                 <Input
@@ -237,14 +257,19 @@ function LoginContent() {
                   {...register('email')}
                 />
                 {errors.email && (
-                  <p className='text-xs text-destructive'>{errors.email.message}</p>
+                  <p className='text-xs text-destructive'>
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
               {/* Password */}
               <div className='space-y-2'>
                 <div className='flex items-center justify-between'>
-                  <Label htmlFor='password' className='text-sm font-medium text-foreground'>
+                  <Label
+                    htmlFor='password'
+                    className='text-sm font-medium text-foreground'
+                  >
                     Password
                   </Label>
                   <Link
@@ -263,7 +288,9 @@ function LoginContent() {
                   {...register('password')}
                 />
                 {errors.password && (
-                  <p className='text-xs text-destructive'>{errors.password.message}</p>
+                  <p className='text-xs text-destructive'>
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
 
@@ -297,11 +324,17 @@ function LoginContent() {
 
         <footer className='px-6 pb-6 text-center'>
           <p className='text-xs text-muted-foreground/50'>
-            <Link href='https://postengage.ai/privacy' className='hover:text-muted-foreground transition-colors'>
+            <Link
+              href='https://postengage.ai/privacy'
+              className='hover:text-muted-foreground transition-colors'
+            >
               Privacy
             </Link>
             <span className='mx-2'>·</span>
-            <Link href='https://postengage.ai/terms' className='hover:text-muted-foreground transition-colors'>
+            <Link
+              href='https://postengage.ai/terms'
+              className='hover:text-muted-foreground transition-colors'
+            >
               Terms
             </Link>
           </p>

@@ -94,19 +94,36 @@ export default function DashboardPage() {
     },
   });
 
+  const toggleAutomationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const current = data?.automations.find((a) => a.id === id);
+      if (!current) throw new Error('Automation not found');
+      return current.status === 'active'
+        ? automationsApi.deactivate(id)
+        : automationsApi.activate(id);
+    },
+    onMutate: async (id) => {
+      qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          automations: old.automations.map((a) =>
+            a.id === id
+              ? { ...a, status: a.status === 'active' ? 'inactive' : 'active' }
+              : a
+          ),
+        };
+      });
+    },
+    onError: (error) => {
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      const err = parseApiError(error);
+      toast({ title: err.title, description: err.message, variant: 'destructive' });
+    },
+  });
+
   const handleToggleAutomation = (id: string) => {
-    // Optimistic local toggle — TODO: wire up actual toggle API
-    qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        automations: old.automations.map((a) =>
-          a.id === id
-            ? { ...a, status: a.status === 'active' ? 'inactive' : 'active' }
-            : a
-        ),
-      };
-    });
+    toggleAutomationMutation.mutate(id);
   };
 
   // ── Derived display data ───────────────────────────────────────────────────
