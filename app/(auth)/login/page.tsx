@@ -1,20 +1,37 @@
 'use client';
 
-import type React from 'react';
-import { useState, useEffect, Suspense } from 'react';
+import React from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Loader2, AlertCircle, Clock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthLogo } from '@/components/auth/auth-logo';
 import { AuthApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/auth/store';
-import { useUserActions } from '@/lib/user/store';
+import { useUserStore } from '@/lib/user/store';
 import { ApiError, parseApiError } from '@/lib/http/errors';
 
-/* ─── Left panel stat card ──────────────────────────────────────────────── */
+// ── Zod schema ─────────────────────────────────────────────────────────────────
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+// ── Left panel stat card ───────────────────────────────────────────────────────
+
 function StatCard({
   value,
   label,
@@ -38,105 +55,97 @@ function StatCard({
   );
 }
 
-/* Format large numbers: 2400000 → "2.4M+" */
 function formatStat(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K+`;
   return n.toString();
 }
 
-/* ─── Inner page (needs search params) ─────────────────────────────────── */
+// ── Inner page (needs search params) ──────────────────────────────────────────
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get('session') === 'expired';
+  const redirectTo = searchParams.get('redirect') ?? '/dashboard';
 
-  const { actions, errors } = useAuthStore();
-  const userActions = useUserActions();
+  const { actions, errors: authErrors } = useAuthStore();
+  const { actions: userActions } = useUserStore();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showResend, setShowResend] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Platform stats via TanStack Query (no useEffect needed)
+  const { data: platformStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['platform-stats'],
+    queryFn: () => AuthApi.getPlatformStats(),
+    staleTime: 10 * 60 * 1_000, // Stats rarely change — cache 10 min
+  });
 
-  // Platform stats
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [platformStats, setPlatformStats] = useState<{
-    replies_sent: number;
-    total_automations: number;
-    active_users: number;
-  } | null>(null);
+  // react-hook-form with Zod resolver
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
 
-  useEffect(() => {
-    AuthApi.getPlatformStats()
-      .then(setPlatformStats)
-      .catch(() => setPlatformStats(null))
-      .finally(() => setStatsLoading(false));
-  }, []);
+  const [showResend, setShowResend] = React.useState(false);
+  const [globalError, setGlobalError] = React.useState<string | null>(null);
 
-  const isFormValid = email.includes('@') && password.length > 0;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isFormValid || isLoading) return;
-
-    setIsLoading(true);
-    actions.setLoading(true);
-    errors.clearErrors();
+  const onSubmit = async (values: LoginFormValues) => {
     setShowResend(false);
-    setFieldErrors({});
+    setGlobalError(null);
+    authErrors.clearErrors();
 
     try {
-      const response = await AuthApi.login({ email, password });
+      const response = await AuthApi.login(values);
       userActions.setUser(response.data.user);
       actions.setIsAuthenticated(true);
-      router.push('/dashboard');
+      // router.refresh() syncs the middleware cookie state
+      router.push(redirectTo);
       router.refresh();
     } catch (error: unknown) {
       if (error instanceof ApiError) {
-        // Redirect to locked/suspended screens
         if (error.code === 'PE-AUTH-005') {
-          router.push(`/account-locked?email=${encodeURIComponent(email)}`);
+          router.push(`/account-locked?email=${encodeURIComponent(values.email)}`);
           return;
         }
         if (error.code === 'PE-AUTH-006') {
           router.push('/account-suspended');
           return;
         }
-        if (error.code === 'PE-AUTH-007') {
-          setShowResend(true);
-        }
+        if (error.code === 'PE-AUTH-007') setShowResend(true);
+
+        // Map backend field errors onto react-hook-form fields
         if (error.isValidationError) {
-          setFieldErrors(error.getFieldErrors());
+          const fieldErrors = error.getFieldErrors();
+          (Object.entries(fieldErrors) as [keyof LoginFormValues, string][])
+            .forEach(([field, message]) => setError(field, { message }));
+          return;
         }
+
+        const parsed = parseApiError(error);
+        setGlobalError(parsed.message);
+        authErrors.setError('loginError', error);
+      } else {
+        setGlobalError('Something went wrong. Please try again.');
       }
-      errors.setError('loginError', error as ApiError);
-    } finally {
-      setIsLoading(false);
-      actions.setLoading(false);
     }
   };
-
-  const errorDisplay = errors.loginError
-    ? parseApiError(errors.loginError)
-    : null;
 
   return (
     <div className='min-h-screen bg-background flex'>
       {/* ── Left panel (desktop only) ────────────────────────────────────── */}
       <div className='hidden lg:flex lg:w-[44%] shrink-0 relative flex-col overflow-hidden'>
-        {/* Layered backgrounds */}
         <div className='absolute inset-0 bg-grid-faint' />
         <div className='absolute inset-0 bg-hero-radial' />
         <div className='absolute inset-0 bg-auth-glow-bottom' />
 
-        {/* Logo */}
         <div className='relative z-10 p-9'>
           <AuthLogo />
         </div>
 
-        {/* Content */}
         <div className='relative z-10 flex-1 flex flex-col justify-center px-10 xl:px-14 pb-16'>
           <h2 className='text-[2.75rem] font-bold leading-[1.1] tracking-tight text-white mb-4'>
             Welcome back.
@@ -145,31 +154,20 @@ function LoginContent() {
             Your automations are running. Pick up where you left off.
           </p>
 
-          {/* Stat cards — real data from /auth/platform-stats */}
           <div className='flex gap-3'>
             <StatCard
-              value={
-                platformStats ? formatStat(platformStats.replies_sent) : '—'
-              }
+              value={platformStats ? formatStat(platformStats.replies_sent) : '—'}
               label='Replies sent'
               loading={statsLoading}
             />
             <StatCard
-              value={
-                platformStats
-                  ? `${formatStat(platformStats.total_automations)}`
-                  : '—'
-              }
+              value={platformStats ? formatStat(platformStats.total_automations) : '—'}
               label='Automations live'
               color='text-primary'
               loading={statsLoading}
             />
             <StatCard
-              value={
-                platformStats
-                  ? `${formatStat(platformStats.active_users)}`
-                  : '—'
-              }
+              value={platformStats ? formatStat(platformStats.active_users) : '—'}
               label='Active creators'
               color='text-success'
               loading={statsLoading}
@@ -177,25 +175,19 @@ function LoginContent() {
           </div>
         </div>
 
-        {/* Trust footer */}
         <div className='relative z-10 px-10 xl:px-14 pb-9'>
-          <p className='text-xs text-white/35'>
-            Trusted by 10,000+ creators worldwide
-          </p>
+          <p className='text-xs text-white/35'>Trusted by 10,000+ creators worldwide</p>
         </div>
       </div>
 
       {/* ── Right panel ─────────────────────────────────────────────────── */}
       <div className='flex-1 flex flex-col'>
-        {/* Mobile logo */}
         <header className='lg:hidden px-6 pt-6 pb-4'>
           <AuthLogo size='sm' />
         </header>
 
-        {/* Form */}
         <main className='flex-1 flex items-center justify-center px-4 py-10'>
           <div className='w-full max-w-[440px] rounded-2xl border border-border bg-card p-5 sm:p-10 shadow-xl shadow-black/40'>
-            {/* Session-expired banner */}
             {sessionExpired && (
               <div className='mb-6 flex items-center gap-2.5 rounded-lg border border-warning/40 bg-warning-muted px-4 py-3 text-sm text-warning'>
                 <Clock className='h-4 w-4 shrink-0' />
@@ -210,17 +202,16 @@ function LoginContent() {
               Enter your credentials to continue.
             </p>
 
-            {/* Error banner */}
-            {errorDisplay && (
+            {globalError && (
               <div className='mb-5 flex items-start gap-2.5 rounded-lg border border-error/40 bg-error-muted px-4 py-3 text-sm text-error'>
                 <AlertCircle className='h-4 w-4 mt-0.5 shrink-0' />
                 <div>
-                  <span>{errorDisplay.message}</span>
+                  <span>{globalError}</span>
                   {showResend && (
                     <span>
                       {' '}
                       <Link
-                        href={`/resend-verification?email=${encodeURIComponent(email)}`}
+                        href={`/resend-verification?email=${encodeURIComponent('')}`}
                         className='underline underline-offset-2 font-medium'
                       >
                         Resend verification email
@@ -231,42 +222,29 @@ function LoginContent() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className='space-y-5'>
+            <form onSubmit={handleSubmit(onSubmit)} className='space-y-5' noValidate>
               {/* Email */}
               <div className='space-y-2'>
-                <Label
-                  htmlFor='email'
-                  className='text-sm font-medium text-foreground'
-                >
+                <Label htmlFor='email' className='text-sm font-medium text-foreground'>
                   Email Address
                 </Label>
                 <Input
                   id='email'
                   type='email'
-                  value={email}
-                  onChange={e => {
-                    setEmail(e.target.value);
-                    errors.clearErrors();
-                    setFieldErrors({});
-                  }}
                   placeholder='you@example.com'
-                  disabled={isLoading}
-                  className={fieldErrors.email ? 'border-destructive' : ''}
+                  disabled={isSubmitting}
+                  className={errors.email ? 'border-destructive' : ''}
+                  {...register('email')}
                 />
-                {fieldErrors.email && (
-                  <p className='text-xs text-destructive'>
-                    {fieldErrors.email}
-                  </p>
+                {errors.email && (
+                  <p className='text-xs text-destructive'>{errors.email.message}</p>
                 )}
               </div>
 
               {/* Password */}
               <div className='space-y-2'>
                 <div className='flex items-center justify-between'>
-                  <Label
-                    htmlFor='password'
-                    className='text-sm font-medium text-foreground'
-                  >
+                  <Label htmlFor='password' className='text-sm font-medium text-foreground'>
                     Password
                   </Label>
                   <Link
@@ -279,29 +257,22 @@ function LoginContent() {
                 <Input
                   id='password'
                   type='password'
-                  value={password}
-                  onChange={e => {
-                    setPassword(e.target.value);
-                    errors.clearErrors();
-                    setFieldErrors({});
-                  }}
                   placeholder='Enter your password'
-                  disabled={isLoading}
-                  className={fieldErrors.password ? 'border-destructive' : ''}
+                  disabled={isSubmitting}
+                  className={errors.password ? 'border-destructive' : ''}
+                  {...register('password')}
                 />
-                {fieldErrors.password && (
-                  <p className='text-xs text-destructive'>
-                    {fieldErrors.password}
-                  </p>
+                {errors.password && (
+                  <p className='text-xs text-destructive'>{errors.password.message}</p>
                 )}
               </div>
 
               <Button
                 type='submit'
                 className='w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
-                disabled={!isFormValid || isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                     Signing in...
@@ -324,20 +295,13 @@ function LoginContent() {
           </div>
         </main>
 
-        {/* Footer */}
         <footer className='px-6 pb-6 text-center'>
           <p className='text-xs text-muted-foreground/50'>
-            <Link
-              href='https://postengage.ai/privacy'
-              className='hover:text-muted-foreground transition-colors'
-            >
+            <Link href='https://postengage.ai/privacy' className='hover:text-muted-foreground transition-colors'>
               Privacy
             </Link>
             <span className='mx-2'>·</span>
-            <Link
-              href='https://postengage.ai/terms'
-              className='hover:text-muted-foreground transition-colors'
-            >
+            <Link href='https://postengage.ai/terms' className='hover:text-muted-foreground transition-colors'>
               Terms
             </Link>
           </p>

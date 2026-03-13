@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import {
@@ -23,6 +23,7 @@ import {
   Linkedin,
   Youtube,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -45,10 +46,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddLeadSheet } from '@/components/leads/add-lead-sheet';
 import { ExportLeadsDialog } from '@/components/leads/export-leads-dialog';
-import { LeadsApi } from '@/lib/api/leads';
-import type { Lead, GetLeadsParams, CaptureSource } from '@/lib/types/leads';
+import type { CaptureSource } from '@/lib/types/leads';
 import type { SocialPlatform } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
+import { useLeads, useLeadTags, queryKeys } from '@/lib/hooks';
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 
@@ -127,102 +128,74 @@ const PER_PAGE = 10;
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
+  // ── Filter state ───────────────────────────────────────────────────────────
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [platform, setPlatform] = useState<SocialPlatform | 'all'>('all');
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
   const [showMoreTags, setShowMoreTags] = useState(false);
-
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Debounce search input — resets page to 1 on new search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const fetchLeads = useCallback(
-    async (overrides?: Partial<GetLeadsParams>) => {
-      setLoading(true);
-      try {
-        const params: GetLeadsParams = {
-          page,
-          per_page: PER_PAGE,
-          search: search || undefined,
-          platform: platform === 'all' ? undefined : platform,
-          tags: activeTags.length ? activeTags : undefined,
-          ...overrides,
-        };
-        const res = await LeadsApi.getLeads(params);
-        setLeads(res.data?.leads ?? []);
-        setTotal(res.data?.total ?? 0);
-      } catch {
-        setLeads([]);
-        setTotal(0);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page, search, platform, activeTags]
+  // ── Data fetching via TanStack Query ───────────────────────────────────────
+  const { data, isLoading, isFetching } = useLeads({
+    page,
+    limit: PER_PAGE,
+    search: debouncedSearch || undefined,
+    platform: platform === 'all' ? undefined : platform,
+    tags: activeTags.length ? activeTags : undefined,
+  });
+
+  const { data: tagsData } = useLeadTags();
+
+  const leads = data?.leads ?? [];
+  const total = data?.total ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allTags = (tagsData ?? []).map((t: any) =>
+    typeof t === 'string' ? t : t.name
   );
 
-  const fetchTags = useCallback(async () => {
-    try {
-      const res = await LeadsApi.getLeadTags();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setAllTags(
-        (res.data ?? []).map((t: any) => (typeof t === 'string' ? t : t.name))
-      );
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTags();
-  }, [fetchTags]);
-
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(
-      () => fetchLeads({ search: value, page: 1 }),
-      400
-    );
-  };
-
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handlePlatformChange = (val: string) => {
     setPlatform(val as SocialPlatform | 'all');
     setPage(1);
   };
 
   const toggleTag = (tag: string) => {
-    setActiveTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    setActiveTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
     setPage(1);
   };
 
   const clearFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setPlatform('all');
     setActiveTags([]);
     setPage(1);
   };
 
+  // ── Derived ────────────────────────────────────────────────────────────────
   const hasFilters = search || platform !== 'all' || activeTags.length > 0;
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const startIdx = (page - 1) * PER_PAGE + 1;
   const endIdx = Math.min(page * PER_PAGE, total);
-
   const visibleTags = showMoreTags ? allTags : allTags.slice(0, 8);
+  // Show skeleton only on initial load, not on background refetches
+  const showSkeleton = isLoading;
 
   return (
     <div className='flex h-full flex-col gap-6 p-6'>
@@ -259,7 +232,7 @@ export default function LeadsPage() {
               className='pl-9'
               placeholder='Search by name or username…'
               value={search}
-              onChange={e => handleSearchChange(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
@@ -291,7 +264,7 @@ export default function LeadsPage() {
         {/* Tag filter chips */}
         {allTags.length > 0 && (
           <div className='flex flex-wrap items-center gap-2'>
-            {visibleTags.map(tag => (
+            {visibleTags.map((tag: string) => (
               <button
                 key={tag}
                 onClick={() => toggleTag(tag)}
@@ -310,7 +283,7 @@ export default function LeadsPage() {
             ))}
             {allTags.length > 8 && (
               <button
-                onClick={() => setShowMoreTags(v => !v)}
+                onClick={() => setShowMoreTags((v) => !v)}
                 className='text-xs text-muted-foreground hover:text-foreground'
               >
                 {showMoreTags ? 'Show less' : `+ ${allTags.length - 8} more`}
@@ -321,7 +294,12 @@ export default function LeadsPage() {
       </div>
 
       {/* Table */}
-      <div className='flex-1 overflow-auto rounded-lg border'>
+      <div
+        className={cn(
+          'flex-1 overflow-auto rounded-lg border transition-opacity',
+          isFetching && !showSkeleton ? 'opacity-70' : 'opacity-100'
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -332,7 +310,7 @@ export default function LeadsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {showSkeleton ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell>
@@ -399,9 +377,9 @@ export default function LeadsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              leads.map(lead => {
+              leads.map((lead) => {
                 const primaryProfile =
-                  lead.social_profiles?.find(p => p.is_primary) ??
+                  lead.social_profiles?.find((p) => p.is_primary) ??
                   lead.social_profiles?.[0];
                 const displayPlatform =
                   lead.platform ?? primaryProfile?.platform;
@@ -464,7 +442,7 @@ export default function LeadsPage() {
                             —
                           </span>
                         ) : (
-                          lead.tags.slice(0, 3).map(tag => (
+                          lead.tags.slice(0, 3).map((tag) => (
                             <Badge
                               key={tag}
                               variant='outline'
@@ -499,7 +477,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Pagination */}
-      {!loading && total > 0 && (
+      {!showSkeleton && total > 0 && (
         <div className='flex items-center justify-between'>
           <p className='text-sm text-muted-foreground'>
             Showing {startIdx}–{endIdx} of {total} leads
@@ -509,8 +487,8 @@ export default function LeadsPage() {
               variant='outline'
               size='icon'
               className='h-8 w-8'
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || isFetching}
             >
               <ChevronLeft className='h-4 w-4' />
             </Button>
@@ -521,8 +499,8 @@ export default function LeadsPage() {
               variant='outline'
               size='icon'
               className='h-8 w-8'
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isFetching}
             >
               <ChevronRight className='h-4 w-4' />
             </Button>
@@ -534,9 +512,10 @@ export default function LeadsPage() {
       <AddLeadSheet
         open={addLeadOpen}
         onOpenChange={setAddLeadOpen}
-        onSuccess={newLead => {
-          setLeads(prev => [newLead, ...prev]);
-          setTotal(prev => prev + 1);
+        onSuccess={() => {
+          // Invalidate leads cache so new lead appears without manual state juggling
+          qc.invalidateQueries({ queryKey: queryKeys.leads.lists() });
+          qc.invalidateQueries({ queryKey: queryKeys.leads.tags() });
         }}
       />
       <ExportLeadsDialog

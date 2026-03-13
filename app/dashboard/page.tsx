@@ -1,219 +1,156 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
 import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
 import { DashboardSkeleton } from '@/components/dashboard/skeleton';
-import { dashboardApi } from '@/lib/api/dashboard';
 import { notificationsApi } from '@/lib/api/notifications';
 import { automationsApi } from '@/lib/api/automations';
-import { IntelligenceApi } from '@/lib/api/intelligence';
 import { useToast } from '@/components/ui/use-toast';
 import { parseApiError } from '@/lib/http/errors';
-import type {
-  Automation,
-  ConnectedAccount,
-  PerformanceMetrics as IPerformanceMetrics,
-} from '@/lib/types/dashboard';
+import type { Automation, ConnectedAccount } from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { ImpactCard } from '@/components/dashboard/impact-card';
 import type { Notification } from '@/lib/types/notifications';
-import type { DashboardImpact } from '@/lib/api/dashboard';
 import { analytics } from '@/lib/analytics';
+import { useDashboardStats, useBots, queryKeys } from '@/lib/hooks';
+import type { DashboardStatsResponse } from '@/lib/api/dashboard';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const qc = useQueryClient();
 
-  const [connectedAccount, setConnectedAccount] =
-    useState<ConnectedAccount | null>(null);
-  const [credits, setCredits] = useState({
-    remaining: 0,
-    estimatedReplies: 0,
+  // ── Data fetching ──────────────────────────────────────────────────────────
+  const { data, isLoading } = useDashboardStats();
+
+  // ── Onboarding redirect for brand-new users ────────────────────────────────
+  const { data: bots } = useBots();
+  React.useEffect(() => {
+    const alreadyDone = localStorage.getItem('onboarding_complete');
+    if (alreadyDone || bots === undefined) return;
+    if (bots.length === 0) router.replace('/dashboard/onboarding');
+  }, [bots, router]);
+
+  // ── First reply analytics tracking ────────────────────────────────────────
+  const hasTrackedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!hasTrackedRef.current && (data?.impact?.replies_handled_today ?? 0) > 0) {
+      analytics.track('bot_first_reply', { bot_id: 'unknown' });
+      hasTrackedRef.current = true;
+    }
+  }, [data?.impact?.replies_handled_today]);
+
+  // ── Notification mutations ─────────────────────────────────────────────────
+  const markAsReadMutation = useMutation({
+    mutationFn: (id: string) => notificationsApi.markAsRead(id),
+    onMutate: async (id) => {
+      qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          recent_activity: old.recent_activity.map((n) =>
+            n.id === id ? { ...n, status: 'read', read_at: new Date().toISOString() } : n
+          ),
+        };
+      });
+    },
+    onError: () => qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
   });
-  const [automations, setAutomations] = useState<Automation[]>([]);
-  const [todayReplies, setTodayReplies] = useState(0);
-  const [weeklyGrowth, setWeeklyGrowth] = useState(0);
-  const [totalLeads, setTotalLeads] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [performance, setPerformance] = useState<IPerformanceMetrics | null>(
-    null
-  );
-  const [impact, setImpact] = useState<DashboardImpact | null>(null);
-  const [hasTrackedFirstReply, setHasTrackedFirstReply] = useState(false);
 
-  // ─── Onboarding redirect for brand-new users ────────────────────────────────
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const alreadyDone = localStorage.getItem('onboarding_complete');
-        if (alreadyDone) return;
-        const botsRes = await IntelligenceApi.getBots();
-        if (botsRes.data.length === 0) {
-          router.replace('/dashboard/onboarding');
-        }
-      } catch {
-        // silent — if API fails, don't block dashboard
-      }
-    };
-    checkOnboarding();
-  }, []);
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => notificationsApi.markAllAsRead(),
+    onMutate: async () => {
+      qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          recent_activity: old.recent_activity.map((n) =>
+            n.status === 'unread'
+              ? { ...n, status: 'read', read_at: new Date().toISOString() }
+              : n
+          ),
+        };
+      });
+    },
+    onError: () => qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
+  });
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const dashboardResponse = await dashboardApi.getStats();
-        const data = dashboardResponse.data;
+  // ── Automation mutations ───────────────────────────────────────────────────
+  const deleteAutomationMutation = useMutation({
+    mutationFn: (id: string) => automationsApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      qc.invalidateQueries({ queryKey: queryKeys.automations.lists() });
+      toast({ title: 'Success', description: 'Automation deleted successfully' });
+    },
+    onError: (error) => {
+      const err = parseApiError(error);
+      toast({ title: err.title, description: err.message, variant: 'destructive' });
+    },
+  });
 
-        // Cast recent_activity to Notification[] since the backend now returns notifications
-        setNotifications(data.recent_activity as unknown as Notification[]);
-
-        if (data.connected_account) {
-          setConnectedAccount({
-            id: 'instagram_1',
-            platform: 'instagram',
-            username: data.connected_account.username,
-            isConnected: data.connected_account.status === 'connected',
-            lastSync: new Date(data.connected_account.last_sync),
-            profilePicture: data.connected_account.avatar_url,
-          });
-        }
-
-        setCredits({
-          remaining: data.overview.credits_remaining,
-          estimatedReplies: data.overview.credits_remaining,
-        });
-
-        setTodayReplies(data.overview.credits_used_today);
-        setWeeklyGrowth(data.overview.weekly_growth);
-        setTotalLeads(data.overview.total_leads);
-
-        if (data.performance) {
-          setPerformance(data.performance);
-        }
-
-        if (data.impact) {
-          setImpact(data.impact);
-          // Track first bot reply milestone
-          if (!hasTrackedFirstReply && data.impact.replies_handled_today > 0) {
-            analytics.track('bot_first_reply', { bot_id: 'unknown' });
-            setHasTrackedFirstReply(true);
-          }
-        }
-
-        setAutomations(
-          data.automations.map(a => ({
-            id: a.id,
-            name: a.name,
-            trigger: a.trigger as Automation['trigger'],
-            action: a.action as Automation['action'],
-            triggers: a.triggers,
-            actions: a.actions,
-            status: a.status === 'active' ? 'running' : 'paused',
-            creditCost: a.credit_cost,
-            handledCount: a.handled_count,
-            lastRun: new Date(a.last_active),
-            createdAt: new Date(a.created_at),
-          }))
-        );
-      } catch (_error) {
-        // Silent error
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await notificationsApi.markAsRead(id);
-      setNotifications(prev =>
-        prev.map(n =>
-          n.id === id
-            ? {
-                ...n,
-                status: 'read' as const,
-                read_at: new Date().toISOString(),
-              }
-            : n
-        )
-      );
-    } catch (_error) {
-      // Silent error
-    }
+  const handleToggleAutomation = (id: string) => {
+    // Optimistic local toggle — TODO: wire up actual toggle API
+    qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        automations: old.automations.map((a) =>
+          a.id === id
+            ? { ...a, status: a.status === 'active' ? 'inactive' : 'active' }
+            : a
+        ),
+      };
+    });
   };
 
-  const handleMarkAllAsRead = async () => {
-    try {
-      await notificationsApi.markAllAsRead();
-      setNotifications(prev =>
-        prev.map(n =>
-          n.status === 'unread'
-            ? {
-                ...n,
-                status: 'read' as const,
-                read_at: new Date().toISOString(),
-              }
-            : n
-        )
-      );
-    } catch (_error) {
-      // Silent error
-    }
+  // ── Derived display data ───────────────────────────────────────────────────
+  const connectedAccount: ConnectedAccount | null = data?.connected_account
+    ? {
+        id: 'instagram_1',
+        platform: 'instagram',
+        username: data.connected_account.username,
+        isConnected: data.connected_account.status === 'connected',
+        lastSync: new Date(data.connected_account.last_sync),
+        profilePicture: data.connected_account.avatar_url,
+      }
+    : null;
+
+  const credits = {
+    remaining: data?.overview.credits_remaining ?? 0,
+    estimatedReplies: data?.overview.credits_remaining ?? 0,
   };
 
-  const activeAutomationCount = automations.filter(
-    a => a.status === 'running'
-  ).length;
+  const automations: Automation[] = (data?.automations ?? []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    trigger: a.trigger as Automation['trigger'],
+    action: a.action as Automation['action'],
+    triggers: a.triggers,
+    actions: a.actions,
+    status: a.status === 'active' ? 'running' : 'paused',
+    creditCost: a.credit_cost,
+    handledCount: a.handled_count,
+    lastRun: new Date(a.last_active),
+    createdAt: new Date(a.created_at),
+  }));
+
+  const notifications = (data?.recent_activity ?? []) as unknown as Notification[];
+  const activeAutomationCount = automations.filter((a) => a.status === 'running').length;
   const lastActivity = notifications[0]?.created_at
     ? new Date(notifications[0].created_at)
     : undefined;
 
-  const handleToggleAutomation = async (id: string) => {
-    // TODO: Implement toggle API call
-    setAutomations(prev =>
-      prev.map(automation =>
-        automation.id === id
-          ? {
-              ...automation,
-              status: automation.status === 'running' ? 'paused' : 'running',
-            }
-          : automation
-      )
-    );
-  };
-
-  const handleDeleteAutomation = async (id: string) => {
-    try {
-      await automationsApi.delete(id);
-      setAutomations(prev => prev.filter(a => a.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Automation deleted successfully',
-      });
-    } catch (_error) {
-      const err = parseApiError(_error);
-      toast({
-        title: err.title,
-        description: err.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <main className='p-4 sm:p-6 lg:p-8 space-y-6'>
-      {/* System Health Bar - Instant reassurance */}
+      {/* System Health Bar */}
       <SystemHealthBar
         isConnected={connectedAccount?.isConnected ?? false}
         activeAutomations={activeAutomationCount}
@@ -221,37 +158,34 @@ export default function DashboardPage() {
         lastActivityTime={lastActivity}
       />
 
-      {/* Impact Card - Today's value at a glance */}
-      {impact && <ImpactCard impact={impact} />}
+      {/* Impact Card */}
+      {data?.impact && <ImpactCard impact={data.impact} />}
 
-      {/* Quick Insights - Key metrics at a glance */}
+      {/* Quick Insights */}
       <QuickInsights
         credits={credits}
-        todayReplies={todayReplies}
-        weeklyGrowth={weeklyGrowth}
-        totalLeads={totalLeads}
+        todayReplies={data?.overview.credits_used_today ?? 0}
+        weeklyGrowth={data?.overview.weekly_growth ?? 0}
+        totalLeads={data?.overview.total_leads ?? 0}
       />
 
       {/* Performance Metrics */}
-      {performance && <PerformanceMetrics metrics={performance} />}
+      {data?.performance && <PerformanceMetrics metrics={data.performance} />}
 
       {/* Main content grid */}
       <div className='grid gap-6 lg:grid-cols-5'>
-        {/* Live Activity Feed - Primary focus (takes more space) */}
         <div className='lg:col-span-3 space-y-6'>
           <RecentActivity
             notifications={notifications}
-            onMarkAsRead={handleMarkAsRead}
-            onMarkAllAsRead={handleMarkAllAsRead}
+            onMarkAsRead={(id) => markAsReadMutation.mutate(id)}
+            onMarkAllAsRead={() => markAllAsReadMutation.mutate()}
           />
         </div>
-
-        {/* Right column — Automation Summary */}
         <div className='lg:col-span-2 space-y-6'>
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}
-            onDelete={handleDeleteAutomation}
+            onDelete={(id) => deleteAutomationMutation.mutate(id)}
           />
         </div>
       </div>

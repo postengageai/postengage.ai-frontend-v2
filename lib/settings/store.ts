@@ -5,7 +5,7 @@ import {
   SocialAccount,
   ListSocialAccountsParams,
 } from '../api/social-accounts';
-import { useUserActions } from '../user/store';
+import { useUserStore } from '../user/store';
 
 interface SettingsState {
   // User profile
@@ -56,7 +56,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       try {
         const user = await UserApi.getProfile();
-        useUserActions().setUser(user.data);
+        useUserStore.getState().actions.setUser(user.data);
         set({ isProfileLoading: false });
       } catch (error) {
         const errorMessage =
@@ -71,7 +71,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       try {
         const response = await UserApi.updateProfile(updates);
-        useUserActions().setUser(response.data);
+        useUserStore.getState().actions.setUser(response.data);
         set({ isProfileLoading: false });
       } catch (error) {
         const errorMessage =
