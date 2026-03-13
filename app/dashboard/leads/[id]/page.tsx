@@ -334,7 +334,7 @@ export default function LeadDetailPage({
   }, [id]);
 
   const handleRemoveProfile = async (profile: LeadSocialProfile) => {
-    if (!lead || lead.social_profiles.length <= 1) {
+    if (!lead || (lead.social_profiles?.length ?? 0) <= 1) {
       toast.error("Can't remove the only linked profile");
       return;
     }
@@ -409,10 +409,11 @@ export default function LeadDetailPage({
     );
   }
 
+  const socialProfiles = lead.social_profiles ?? [];
   const primaryProfile =
-    lead.social_profiles.find(p => p.is_primary) ?? lead.social_profiles[0];
+    socialProfiles.find(p => p.is_primary) ?? socialProfiles[0];
   const capCfg = CAPTURE_CONFIG[lead.captured_from];
-  const existingPlatforms = lead.social_profiles.map(p => p.platform);
+  const existingPlatforms = socialProfiles.map(p => p.platform);
 
   return (
     <div className='flex flex-col gap-6 p-6'>
@@ -469,7 +470,7 @@ export default function LeadDetailPage({
           <h2 className='text-sm font-semibold'>
             Social Profiles
             <span className='ml-2 text-xs font-normal text-muted-foreground'>
-              ({lead.social_profiles.length})
+              ({socialProfiles.length})
             </span>
           </h2>
           <Button
@@ -483,7 +484,7 @@ export default function LeadDetailPage({
         </div>
 
         <div className='space-y-3'>
-          {lead.social_profiles.map(profile => {
+          {socialProfiles.map(profile => {
             const platCfg = PLATFORM_CONFIG[profile.platform];
             return (
               <div
@@ -551,7 +552,7 @@ export default function LeadDetailPage({
                     </Button>
                   )}
                   {/* Remove */}
-                  {lead.social_profiles.length > 1 && (
+                  {socialProfiles.length > 1 && (
                     <Button
                       variant='ghost'
                       size='icon'

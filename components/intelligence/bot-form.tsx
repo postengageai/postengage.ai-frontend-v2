@@ -65,7 +65,7 @@ export const botFormSchema = z.object({
   brand_voice_id: z.string().optional(),
   behavior: z
     .object({
-      auto_reply_enabled: z.boolean().default(true),
+      auto_reply_enabled: z.boolean(),
       max_replies_per_hour: z
         .number()
         .min(0)
@@ -84,8 +84,8 @@ export const botFormSchema = z.object({
         .max(3600, 'Delay must be less than 1 hour'),
       escalation_threshold: z.number().min(0).max(1),
       cta_aggressiveness: z.enum(['none', 'soft', 'moderate', 'aggressive']),
-      should_reply_to_spam: z.boolean().default(false),
-      stop_after_escalation: z.boolean().default(true),
+      should_reply_to_spam: z.boolean(),
+      stop_after_escalation: z.boolean(),
     })
     .refine(
       values =>
