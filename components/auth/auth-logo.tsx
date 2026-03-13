@@ -11,7 +11,9 @@ export function AuthLogo({ size = 'md' }: { size?: 'sm' | 'md' }) {
 
   return (
     <Link href='/' className='flex items-center gap-2.5 w-fit'>
-      <div className={`${iconSize} rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 shrink-0`}>
+      <div
+        className={`${iconSize} rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 shrink-0`}
+      >
         {/* Lightning bolt icon */}
         <svg viewBox='0 0 16 16' fill='none' className='h-4 w-4 text-white'>
           <path

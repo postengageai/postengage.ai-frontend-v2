@@ -198,11 +198,16 @@ function formatDuration(ms: number): string {
 function getTriggerTypeBadge(exec: AutomationExecution): string {
   if (exec.trigger_type) {
     switch (exec.trigger_type) {
-      case 'comment': return 'Comment';
-      case 'dm': return 'DM';
-      case 'story_reply': return 'Story Reply';
-      case 'mention': return 'Mention';
-      default: return exec.trigger_type;
+      case 'comment':
+        return 'Comment';
+      case 'dm':
+        return 'DM';
+      case 'story_reply':
+        return 'Story Reply';
+      case 'mention':
+        return 'Mention';
+      default:
+        return exec.trigger_type;
     }
   }
   // Fall back to inferring from trigger_data
@@ -243,9 +248,7 @@ function StatCard({
             <p className='text-xs uppercase tracking-wide text-muted-foreground'>
               {label}
             </p>
-            <p className={cn('mt-1 text-2xl font-bold', valueColor)}>
-              {value}
-            </p>
+            <p className={cn('mt-1 text-2xl font-bold', valueColor)}>{value}</p>
             {trend !== undefined ? (
               <div className='mt-1 flex items-center gap-1'>
                 {(trend.value ?? trend.change ?? 0) >= 0 ? (
@@ -306,7 +309,7 @@ function OverviewTab({ automation }: { automation: AutomationData }) {
         <p className='text-sm text-foreground'>
           {getTriggerLabel(automation.trigger.type, automation.trigger.scope)}
           {automation.trigger.scope === 'specific' &&
-            automation.trigger.content_count
+          automation.trigger.content_count
             ? ` · ${automation.trigger.content_count} post${automation.trigger.content_count !== 1 ? 's' : ''}`
             : ''}
           {automation.condition?.keywords?.length
@@ -322,8 +325,7 @@ function OverviewTab({ automation }: { automation: AutomationData }) {
             Conditions
           </p>
           <p className='text-sm text-foreground'>
-            Keywords:{' '}
-            {automation.condition.mode === 'any' ? 'any' : 'all'} of [
+            Keywords: {automation.condition.mode === 'any' ? 'any' : 'all'} of [
             {automation.condition.keywords.join(', ')}] in comment text
           </p>
         </div>
@@ -359,7 +361,9 @@ function OverviewTab({ automation }: { automation: AutomationData }) {
         <StatCard
           label='Success Rate'
           value={`${successRate}%`}
-          icon={<CheckCircle2 className='h-5 w-5 text-[color:var(--success,#22c55e)]' />}
+          icon={
+            <CheckCircle2 className='h-5 w-5 text-[color:var(--success,#22c55e)]' />
+          }
           iconBg='bg-[color:var(--success,#22c55e)]/10'
           sub={`+1.1% improvement`}
         />
@@ -406,7 +410,9 @@ function AnalyticsTab({
     const rows: string[] = [];
     // Summary section
     rows.push('SUMMARY');
-    rows.push(`Period,${period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : 'Last 90 days'}`);
+    rows.push(
+      `Period,${period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : 'Last 90 days'}`
+    );
     rows.push(`Total Executions,${stats.total_executions}`);
     rows.push(`Successful,${stats.successful}`);
     rows.push(`Failed,${stats.failed}`);
@@ -427,7 +433,9 @@ function AnalyticsTab({
       rows.push('ACTION PERFORMANCE');
       rows.push('Step,Action Type,Sent,Success,Rate (%),Avg Time (ms)');
       for (const a of stats.action_performance) {
-        rows.push(`${a.step},${a.action_type},${a.sent},${a.success},${a.rate},${a.avg_time_ms}`);
+        rows.push(
+          `${a.step},${a.action_type},${a.sent},${a.success},${a.rate},${a.avg_time_ms}`
+        );
       }
     }
     const csv = rows.join('\n');
@@ -461,7 +469,12 @@ function AnalyticsTab({
         skipped: 0,
         avg_duration_ms: 0,
         credits_used: automation.statistics.total_credits_used,
-        daily: labels.map(date => ({ date, successful: 0, failed: 0, skipped: 0 })),
+        daily: labels.map(date => ({
+          date,
+          successful: 0,
+          failed: 0,
+          skipped: 0,
+        })),
         action_performance: [],
         period,
       });
@@ -470,7 +483,9 @@ function AnalyticsTab({
     }
   }, [automationId, period, automation.statistics]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const successRate =
     stats && stats.total_executions > 0
@@ -551,16 +566,24 @@ function AnalyticsTab({
         <StatCard
           label='Successful'
           value={stats?.successful?.toLocaleString() ?? '—'}
-          icon={<CheckCircle2 className='h-5 w-5 text-[color:var(--success,#22c55e)]' />}
+          icon={
+            <CheckCircle2 className='h-5 w-5 text-[color:var(--success,#22c55e)]' />
+          }
           iconBg='bg-[color:var(--success,#22c55e)]/10'
           sub={`${successRate}% success rate`}
         />
         <StatCard
           label='Failed'
           value={stats?.failed?.toLocaleString() ?? '—'}
-          icon={<XCircle className='h-5 w-5 text-[color:var(--error,#ef4444)]' />}
+          icon={
+            <XCircle className='h-5 w-5 text-[color:var(--error,#ef4444)]' />
+          }
           iconBg='bg-[color:var(--error,#ef4444)]/10'
-          valueColor={(stats?.failed ?? 0) > 0 ? 'text-[color:var(--error,#ef4444)]' : undefined}
+          valueColor={
+            (stats?.failed ?? 0) > 0
+              ? 'text-[color:var(--error,#ef4444)]'
+              : undefined
+          }
           sub={`${failRate}% of total runs`}
         />
         <StatCard
@@ -601,7 +624,12 @@ function AnalyticsTab({
                   Executions Over Time
                 </CardTitle>
                 <p className='mt-0.5 text-xs text-muted-foreground'>
-                  Daily breakdown · last {period === '7d' ? '7 days' : period === '30d' ? '30 days' : '90 days'}
+                  Daily breakdown · last{' '}
+                  {period === '7d'
+                    ? '7 days'
+                    : period === '30d'
+                      ? '30 days'
+                      : '90 days'}
                 </p>
               </div>
               <div className='flex items-center gap-3 flex-wrap'>
@@ -612,7 +640,9 @@ function AnalyticsTab({
                 ].map(item => (
                   <div key={item.label} className='flex items-center gap-1'>
                     <div className={cn('h-2 w-2 rounded-sm', item.color)} />
-                    <span className='text-[10px] text-muted-foreground'>{item.label}</span>
+                    <span className='text-[10px] text-muted-foreground'>
+                      {item.label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -623,11 +653,16 @@ function AnalyticsTab({
               <div className='flex h-48 items-center justify-center'>
                 <RefreshCw className='h-5 w-5 animate-spin text-muted-foreground' />
               </div>
-            ) : !stats?.daily?.length || stats.daily.every(d => d.successful + d.failed + d.skipped === 0) ? (
+            ) : !stats?.daily?.length ||
+              stats.daily.every(
+                d => d.successful + d.failed + d.skipped === 0
+              ) ? (
               <div className='flex h-48 flex-col items-center justify-center gap-2 text-center text-muted-foreground'>
                 <BarChart3 className='h-8 w-8 opacity-30' />
                 <p className='text-sm'>No execution data for this period</p>
-                <p className='text-xs opacity-60'>Run the automation to see chart data</p>
+                <p className='text-xs opacity-60'>
+                  Run the automation to see chart data
+                </p>
               </div>
             ) : (
               <div className='h-52'>
@@ -644,12 +679,18 @@ function AnalyticsTab({
                     />
                     <XAxis
                       dataKey='date'
-                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{
+                        fontSize: 11,
+                        fill: 'hsl(var(--muted-foreground))',
+                      }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{
+                        fontSize: 11,
+                        fill: 'hsl(var(--muted-foreground))',
+                      }}
                       axisLine={false}
                       tickLine={false}
                       allowDecimals={false}
@@ -662,9 +703,27 @@ function AnalyticsTab({
                         fontSize: '12px',
                       }}
                     />
-                    <Bar dataKey='successful' stackId='a' name='Successful' fill='#6366f1' radius={[0, 0, 0, 0]} />
-                    <Bar dataKey='skipped' stackId='a' name='Skipped' fill='#f59e0b' radius={[0, 0, 0, 0]} />
-                    <Bar dataKey='failed' stackId='a' name='Failed' fill='#ef4444' radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey='successful'
+                      stackId='a'
+                      name='Successful'
+                      fill='#6366f1'
+                      radius={[0, 0, 0, 0]}
+                    />
+                    <Bar
+                      dataKey='skipped'
+                      stackId='a'
+                      name='Skipped'
+                      fill='#f59e0b'
+                      radius={[0, 0, 0, 0]}
+                    />
+                    <Bar
+                      dataKey='failed'
+                      stackId='a'
+                      name='Failed'
+                      fill='#ef4444'
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -684,8 +743,12 @@ function AnalyticsTab({
             {/* Success/fail bar */}
             <div>
               <div className='mb-1 flex justify-between text-xs'>
-                <span className='text-[color:var(--success,#22c55e)]'>{successRate}% success</span>
-                <span className='text-[color:var(--error,#ef4444)]'>{failRate}% fail</span>
+                <span className='text-[color:var(--success,#22c55e)]'>
+                  {successRate}% success
+                </span>
+                <span className='text-[color:var(--error,#ef4444)]'>
+                  {failRate}% fail
+                </span>
               </div>
               <div className='h-2 w-full overflow-hidden rounded-full bg-[color:var(--error,#ef4444)]/30'>
                 <div
@@ -701,14 +764,18 @@ function AnalyticsTab({
                   <div className='h-2.5 w-2.5 rounded-sm bg-indigo-500' />
                   <span className='text-muted-foreground'>Successful</span>
                 </div>
-                <span className='font-semibold'>{stats?.successful?.toLocaleString() ?? 0}</span>
+                <span className='font-semibold'>
+                  {stats?.successful?.toLocaleString() ?? 0}
+                </span>
               </div>
               <div className='flex items-center justify-between'>
                 <div className='flex items-center gap-2'>
                   <div className='h-2.5 w-2.5 rounded-sm bg-amber-400' />
                   <span className='text-muted-foreground'>Skipped</span>
                 </div>
-                <span className='font-semibold'>{stats?.skipped?.toLocaleString() ?? 0}</span>
+                <span className='font-semibold'>
+                  {stats?.skipped?.toLocaleString() ?? 0}
+                </span>
               </div>
               <div className='flex items-center justify-between'>
                 <div className='flex items-center gap-2'>
@@ -743,7 +810,12 @@ function AnalyticsTab({
               <Zap className='h-4 w-4 text-muted-foreground' />
               Action Performance
               <span className='text-xs font-normal text-muted-foreground'>
-                Per action step · {period === '7d' ? '7 days' : period === '30d' ? '30 days' : '90 days'}
+                Per action step ·{' '}
+                {period === '7d'
+                  ? '7 days'
+                  : period === '30d'
+                    ? '30 days'
+                    : '90 days'}
               </span>
             </CardTitle>
           </CardHeader>
@@ -752,26 +824,33 @@ function AnalyticsTab({
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-border bg-muted/30'>
-                    {['Action', 'Sent', 'Success', 'Rate', 'Avg time'].map(h => (
-                      <th
-                        key={h}
-                        className='px-4 py-2.5 text-left text-xs font-medium text-muted-foreground'
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    {['Action', 'Sent', 'Success', 'Rate', 'Avg time'].map(
+                      h => (
+                        <th
+                          key={h}
+                          className='px-4 py-2.5 text-left text-xs font-medium text-muted-foreground'
+                        >
+                          {h}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {stats.action_performance.map((row, i) => (
-                    <tr key={i} className='border-b border-border/50 last:border-0'>
+                    <tr
+                      key={i}
+                      className='border-b border-border/50 last:border-0'
+                    >
                       <td className='px-4 py-3'>
                         <div className='flex items-center gap-2'>
                           <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground'>
                             {row.step}
                           </span>
                           <div>
-                            <p className='font-medium'>{getActionLabel(row.action_type)}</p>
+                            <p className='font-medium'>
+                              {getActionLabel(row.action_type)}
+                            </p>
                             <p className='text-[10px] text-muted-foreground capitalize'>
                               Step {row.step} · {row.timing}
                             </p>
@@ -814,7 +893,9 @@ function AnalyticsTab({
           <CardTitle className='flex items-center gap-2 text-sm font-medium'>
             <Clock className='h-4 w-4 text-orange-400' />
             Peak Activity Hours
-            <span className='text-xs font-normal text-muted-foreground'>This week</span>
+            <span className='text-xs font-normal text-muted-foreground'>
+              This week
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -823,7 +904,10 @@ function AnalyticsTab({
             <div className='grid grid-cols-6 gap-1'>
               <div />
               {['Mon-Tue', 'Wed-Thu', 'Fri-Sat', 'Sun'].map(col => (
-                <div key={col} className='text-center text-[10px] text-muted-foreground'>
+                <div
+                  key={col}
+                  className='text-center text-[10px] text-muted-foreground'
+                >
                   {col}
                 </div>
               ))}
@@ -834,7 +918,9 @@ function AnalyticsTab({
               const cols = ['Mon', 'Wed', 'Fri', 'Sun'];
               return (
                 <div key={row} className='grid grid-cols-6 items-center gap-1'>
-                  <div className='text-right text-[10px] text-muted-foreground pr-1'>{row}</div>
+                  <div className='text-right text-[10px] text-muted-foreground pr-1'>
+                    {row}
+                  </div>
                   {cols.map(col => {
                     const val = rowData[col] ?? 0;
                     const maxVal = 50;
@@ -844,9 +930,10 @@ function AnalyticsTab({
                         key={col}
                         className='h-6 rounded-sm'
                         style={{
-                          background: intensity > 0
-                            ? `rgba(99, 102, 241, ${0.15 + intensity * 0.85})`
-                            : 'hsl(var(--muted))',
+                          background:
+                            intensity > 0
+                              ? `rgba(99, 102, 241, ${0.15 + intensity * 0.85})`
+                              : 'hsl(var(--muted))',
                         }}
                         title={`${row} ${col}: ${val} executions`}
                       />
@@ -932,7 +1019,9 @@ function HistoryTab({
     }
   }, [automationId, page, filter]);
 
-  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   // Client-side text search on top of server-side status filter
   const filtered = executions.filter(e => {
@@ -974,11 +1063,16 @@ function HistoryTab({
 
   function getStatusLabel(status: string) {
     switch (status) {
-      case 'success': return 'Success';
-      case 'failed': return 'Failed';
-      case 'partial_success': return 'Partial';
-      case 'skipped': return 'Skipped';
-      default: return status;
+      case 'success':
+        return 'Success';
+      case 'failed':
+        return 'Failed';
+      case 'partial_success':
+        return 'Partial';
+      case 'skipped':
+        return 'Skipped';
+      default:
+        return status;
     }
   }
 
@@ -1004,7 +1098,10 @@ function HistoryTab({
           {LOG_FILTERS.map(f => (
             <button
               key={f.value}
-              onClick={() => { setFilter(f.value); setPage(1); }}
+              onClick={() => {
+                setFilter(f.value);
+                setPage(1);
+              }}
               className={cn(
                 'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                 filter === f.value
@@ -1040,13 +1137,21 @@ function HistoryTab({
           className='ml-auto h-8 gap-1.5 text-xs'
           disabled={executions.length === 0 || isLoading}
           onClick={() => {
-            const rows = ['Time,User,Trigger Type,Trigger Text,Actions Run,Status,Duration (ms),Credits'];
+            const rows = [
+              'Time,User,Trigger Type,Trigger Text,Actions Run,Status,Duration (ms),Credits',
+            ];
             for (const e of executions) {
-              const actionsStr = (e.actions_run ?? []).map(a => getActionLabel(a)).join('; ');
+              const actionsStr = (e.actions_run ?? [])
+                .map(a => getActionLabel(a))
+                .join('; ');
               const text = (e.trigger_data?.text ?? '').replace(/"/g, '""');
-              rows.push(`"${formatDate(e.executed_at)}","${e.trigger_data?.username ?? ''}","${getTriggerTypeBadge(e)}","${text}","${actionsStr}","${e.status}",${e.duration_ms ?? 0},${e.credits_used ?? 0}`);
+              rows.push(
+                `"${formatDate(e.executed_at)}","${e.trigger_data?.username ?? ''}","${getTriggerTypeBadge(e)}","${text}","${actionsStr}","${e.status}",${e.duration_ms ?? 0},${e.credits_used ?? 0}`
+              );
             }
-            const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob([rows.join('\n')], {
+              type: 'text/csv;charset=utf-8;',
+            });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -1069,7 +1174,9 @@ function HistoryTab({
         ) : filtered.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-12'>
             <Clock className='mb-3 h-8 w-8 text-muted-foreground/40' />
-            <p className='text-sm font-medium text-muted-foreground'>No executions found</p>
+            <p className='text-sm font-medium text-muted-foreground'>
+              No executions found
+            </p>
             <p className='mt-1 text-xs text-muted-foreground/70'>
               {filter !== 'all'
                 ? 'Try changing the filter'
@@ -1089,10 +1196,19 @@ function HistoryTab({
                   : ['—'];
 
                 return (
-                  <div key={exec._id} className={cn(isFailed && isExpanded && 'bg-[color:var(--error,#ef4444)]/5')}>
+                  <div
+                    key={exec._id}
+                    className={cn(
+                      isFailed &&
+                        isExpanded &&
+                        'bg-[color:var(--error,#ef4444)]/5'
+                    )}
+                  >
                     <div
                       className='cursor-pointer px-4 py-3 transition-colors hover:bg-muted/20'
-                      onClick={() => setExpandedId(isExpanded ? null : exec._id)}
+                      onClick={() =>
+                        setExpandedId(isExpanded ? null : exec._id)
+                      }
                     >
                       {/* Row: avatar + username + status + chevron */}
                       <div className='flex items-start gap-2'>
@@ -1102,24 +1218,46 @@ function HistoryTab({
                         <div className='flex-1 min-w-0'>
                           <div className='flex items-center justify-between gap-2'>
                             <div className='flex items-center gap-1.5 min-w-0'>
-                              <span className='text-xs font-medium truncate'>@{exec.trigger_data?.username ?? 'instagram_user'}</span>
-                              <span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0'>{triggerBadge}</span>
+                              <span className='text-xs font-medium truncate'>
+                                @
+                                {exec.trigger_data?.username ??
+                                  'instagram_user'}
+                              </span>
+                              <span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0'>
+                                {triggerBadge}
+                              </span>
                             </div>
                             <div className='flex items-center gap-2 shrink-0'>
-                              <span className={cn('inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium', getStatusBadgeStyle(exec.status))}>
+                              <span
+                                className={cn(
+                                  'inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                                  getStatusBadgeStyle(exec.status)
+                                )}
+                              >
                                 {getStatusLabel(exec.status)}
                               </span>
-                              {isExpanded ? <ChevronUp className='h-3.5 w-3.5 text-muted-foreground' /> : <ChevronDown className='h-3.5 w-3.5 text-muted-foreground' />}
+                              {isExpanded ? (
+                                <ChevronUp className='h-3.5 w-3.5 text-muted-foreground' />
+                              ) : (
+                                <ChevronDown className='h-3.5 w-3.5 text-muted-foreground' />
+                              )}
                             </div>
                           </div>
                           {exec.trigger_data?.text && (
-                            <p className='mt-0.5 text-[11px] text-muted-foreground line-clamp-1'>&ldquo;{exec.trigger_data.text}&rdquo;</p>
+                            <p className='mt-0.5 text-[11px] text-muted-foreground line-clamp-1'>
+                              &ldquo;{exec.trigger_data.text}&rdquo;
+                            </p>
                           )}
                           <div className='mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground'>
                             <span>{formatTimeAgo(exec.executed_at)}</span>
                             <span>·</span>
-                            <span className='flex items-center gap-0.5'><Zap className='h-2.5 w-2.5' />{exec.credits_used ?? 0} credits</span>
-                            {actionsRun[0] !== '—' && <span>· {actionsRun.join(', ')}</span>}
+                            <span className='flex items-center gap-0.5'>
+                              <Zap className='h-2.5 w-2.5' />
+                              {exec.credits_used ?? 0} credits
+                            </span>
+                            {actionsRun[0] !== '—' && (
+                              <span>· {actionsRun.join(', ')}</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1133,26 +1271,58 @@ function HistoryTab({
                           <div className='rounded-lg border border-[color:var(--error,#ef4444)]/30 bg-[color:var(--error,#ef4444)]/5 p-4'>
                             <div className='mb-3 flex items-center gap-2'>
                               <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)]' />
-                              <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>Execution Failed</span>
-                              <span className='ml-auto text-xs text-muted-foreground'>{formatDate(exec.executed_at)}</span>
+                              <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>
+                                Execution Failed
+                              </span>
+                              <span className='ml-auto text-xs text-muted-foreground'>
+                                {formatDate(exec.executed_at)}
+                              </span>
                             </div>
                             <div className='mb-3 grid gap-3 grid-cols-1 sm:grid-cols-2'>
                               <div className='rounded-md border border-border/50 bg-background/60 p-3'>
-                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Code</p>
-                                <p className='font-mono text-sm'>{exec.error_code ?? 'UNKNOWN_ERROR'}</p>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
+                                  Error Code
+                                </p>
+                                <p className='font-mono text-sm'>
+                                  {exec.error_code ?? 'UNKNOWN_ERROR'}
+                                </p>
                               </div>
                               <div className='rounded-md border border-border/50 bg-background/60 p-3'>
-                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Message</p>
-                                <p className='text-sm'>{exec.error_message ?? 'An unexpected error occurred.'}</p>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
+                                  Error Message
+                                </p>
+                                <p className='text-sm'>
+                                  {exec.error_message ??
+                                    'An unexpected error occurred.'}
+                                </p>
                               </div>
                             </div>
                             <div className='flex flex-wrap gap-2'>
-                              <Button size='sm' className='h-8 gap-1.5 text-xs' disabled={retryingId === exec._id} onClick={e => { e.stopPropagation(); handleRetry(exec); }}>
-                                <RotateCcw className={cn('h-3.5 w-3.5', retryingId === exec._id && 'animate-spin')} />
+                              <Button
+                                size='sm'
+                                className='h-8 gap-1.5 text-xs'
+                                disabled={retryingId === exec._id}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleRetry(exec);
+                                }}
+                              >
+                                <RotateCcw
+                                  className={cn(
+                                    'h-3.5 w-3.5',
+                                    retryingId === exec._id && 'animate-spin'
+                                  )}
+                                />
                                 Retry
                               </Button>
-                              <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' onClick={e => e.stopPropagation()}>
-                                <FileText className='h-3.5 w-3.5' />View Log
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                className='h-8 gap-1.5 text-xs'
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <FileText className='h-3.5 w-3.5' />
+                                View Log
                               </Button>
                             </div>
                           </div>
@@ -1160,16 +1330,26 @@ function HistoryTab({
                           <div className='rounded-lg border border-border/50 bg-muted/10 p-3'>
                             <div className='grid gap-3 grid-cols-3 text-sm'>
                               <div>
-                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Trigger</p>
+                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>
+                                  Trigger
+                                </p>
                                 <p className='font-medium'>{triggerBadge}</p>
                               </div>
                               <div>
-                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Duration</p>
-                                <p className='font-medium'>{formatDuration(exec.duration_ms)}</p>
+                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>
+                                  Duration
+                                </p>
+                                <p className='font-medium'>
+                                  {formatDuration(exec.duration_ms)}
+                                </p>
                               </div>
                               <div>
-                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>Credits</p>
-                                <p className='font-medium'>{exec.credits_used ?? 0}</p>
+                                <p className='mb-0.5 text-[10px] text-muted-foreground uppercase tracking-wide'>
+                                  Credits
+                                </p>
+                                <p className='font-medium'>
+                                  {exec.credits_used ?? 0}
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -1185,8 +1365,21 @@ function HistoryTab({
             <div className='hidden sm:block overflow-x-auto'>
               {/* Table header */}
               <div className='grid min-w-[780px] grid-cols-[140px_1fr_130px_90px_80px_70px_32px] gap-3 border-b border-border bg-muted/20 px-4 py-2.5'>
-                {['TIME', 'TRIGGER EVENT', 'ACTIONS RUN', 'STATUS', 'DURATION', 'CREDITS', ''].map(h => (
-                  <div key={h} className='text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>{h}</div>
+                {[
+                  'TIME',
+                  'TRIGGER EVENT',
+                  'ACTIONS RUN',
+                  'STATUS',
+                  'DURATION',
+                  'CREDITS',
+                  '',
+                ].map(h => (
+                  <div
+                    key={h}
+                    className='text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'
+                  >
+                    {h}
+                  </div>
                 ))}
               </div>
 
@@ -1200,15 +1393,29 @@ function HistoryTab({
                   : null;
 
                 return (
-                  <div key={`dt-${exec._id}`} className={cn('border-b border-border/50 last:border-0', isFailed && isExpanded && 'bg-[color:var(--error,#ef4444)]/5')}>
+                  <div
+                    key={`dt-${exec._id}`}
+                    className={cn(
+                      'border-b border-border/50 last:border-0',
+                      isFailed &&
+                        isExpanded &&
+                        'bg-[color:var(--error,#ef4444)]/5'
+                    )}
+                  >
                     <div
                       className='grid min-w-[780px] cursor-pointer grid-cols-[140px_1fr_130px_90px_80px_70px_32px] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/20'
-                      onClick={() => setExpandedId(isExpanded ? null : exec._id)}
+                      onClick={() =>
+                        setExpandedId(isExpanded ? null : exec._id)
+                      }
                     >
                       {/* Time — fixed width so it never wraps */}
                       <div className='min-w-0'>
-                        <p className='whitespace-nowrap text-xs font-medium'>{formatDate(exec.executed_at)}</p>
-                        <p className='mt-0.5 text-[10px] text-muted-foreground'>{formatTimeAgo(exec.executed_at)}</p>
+                        <p className='whitespace-nowrap text-xs font-medium'>
+                          {formatDate(exec.executed_at)}
+                        </p>
+                        <p className='mt-0.5 text-[10px] text-muted-foreground'>
+                          {formatTimeAgo(exec.executed_at)}
+                        </p>
                       </div>
                       {/* Trigger event */}
                       <div className='flex min-w-0 items-center gap-2'>
@@ -1238,25 +1445,43 @@ function HistoryTab({
                             {actionsRun.slice(0, 2).map((a, i) => (
                               <div key={i} className='flex items-center gap-1'>
                                 <Zap className='h-3 w-3 shrink-0 text-muted-foreground' />
-                                <span className='truncate text-[11px] text-muted-foreground'>{a}</span>
+                                <span className='truncate text-[11px] text-muted-foreground'>
+                                  {a}
+                                </span>
                               </div>
                             ))}
                             {actionsRun.length > 2 && (
-                              <p className='text-[10px] text-muted-foreground'>+{actionsRun.length - 2} more</p>
+                              <p className='text-[10px] text-muted-foreground'>
+                                +{actionsRun.length - 2} more
+                              </p>
                             )}
                           </div>
                         ) : (
-                          <span className='text-xs text-muted-foreground/40'>—</span>
+                          <span className='text-xs text-muted-foreground/40'>
+                            —
+                          </span>
                         )}
                       </div>
                       {/* Status */}
                       <div>
-                        <span className={cn('inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-medium', getStatusBadgeStyle(exec.status))}>
+                        <span
+                          className={cn(
+                            'inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-medium',
+                            getStatusBadgeStyle(exec.status)
+                          )}
+                        >
                           {getStatusLabel(exec.status)}
                         </span>
                       </div>
                       {/* Duration */}
-                      <div className={cn('text-xs font-medium tabular-nums', exec.status === 'failed' ? 'text-[color:var(--error,#ef4444)]' : 'text-muted-foreground')}>
+                      <div
+                        className={cn(
+                          'text-xs font-medium tabular-nums',
+                          exec.status === 'failed'
+                            ? 'text-[color:var(--error,#ef4444)]'
+                            : 'text-muted-foreground'
+                        )}
+                      >
                         {formatDuration(exec.duration_ms)}
                       </div>
                       {/* Credits */}
@@ -1266,7 +1491,11 @@ function HistoryTab({
                       </div>
                       {/* Chevron */}
                       <div className='flex justify-center text-muted-foreground'>
-                        {isExpanded ? <ChevronUp className='h-3.5 w-3.5' /> : <ChevronDown className='h-3.5 w-3.5' />}
+                        {isExpanded ? (
+                          <ChevronUp className='h-3.5 w-3.5' />
+                        ) : (
+                          <ChevronDown className='h-3.5 w-3.5' />
+                        )}
                       </div>
                     </div>
 
@@ -1277,25 +1506,55 @@ function HistoryTab({
                           <div className='flex flex-col gap-3'>
                             <div className='flex items-center gap-2'>
                               <AlertTriangle className='h-4 w-4 text-[color:var(--error,#ef4444)]' />
-                              <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>Execution Failed</span>
+                              <span className='text-sm font-semibold text-[color:var(--error,#ef4444)]'>
+                                Execution Failed
+                              </span>
                             </div>
                             <div className='grid gap-3 sm:grid-cols-2'>
                               <div className='rounded-md border border-border/50 bg-background/60 p-3'>
-                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Code</p>
-                                <p className='font-mono text-sm'>{exec.error_code ?? 'UNKNOWN_ERROR'}</p>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
+                                  Error Code
+                                </p>
+                                <p className='font-mono text-sm'>
+                                  {exec.error_code ?? 'UNKNOWN_ERROR'}
+                                </p>
                               </div>
                               <div className='rounded-md border border-border/50 bg-background/60 p-3'>
-                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Error Message</p>
-                                <p className='text-sm'>{exec.error_message ?? 'An unexpected error occurred.'}</p>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
+                                  Error Message
+                                </p>
+                                <p className='text-sm'>
+                                  {exec.error_message ??
+                                    'An unexpected error occurred.'}
+                                </p>
                               </div>
                             </div>
                             <div className='flex gap-2'>
-                              <Button size='sm' className='h-7 gap-1.5 text-xs' disabled={retryingId === exec._id} onClick={e => { e.stopPropagation(); handleRetry(exec); }}>
-                                <RotateCcw className={cn('h-3 w-3', retryingId === exec._id && 'animate-spin')} />
+                              <Button
+                                size='sm'
+                                className='h-7 gap-1.5 text-xs'
+                                disabled={retryingId === exec._id}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleRetry(exec);
+                                }}
+                              >
+                                <RotateCcw
+                                  className={cn(
+                                    'h-3 w-3',
+                                    retryingId === exec._id && 'animate-spin'
+                                  )}
+                                />
                                 Retry
                               </Button>
-                              <Button variant='outline' size='sm' className='h-7 gap-1.5 text-xs' onClick={e => e.stopPropagation()}>
-                                <FileText className='h-3 w-3' />View Log
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                className='h-7 gap-1.5 text-xs'
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <FileText className='h-3 w-3' />
+                                View Log
                               </Button>
                             </div>
                           </div>
@@ -1304,7 +1563,9 @@ function HistoryTab({
                             {/* Full trigger text */}
                             {exec.trigger_data?.text && (
                               <div>
-                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>Trigger Message</p>
+                                <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
+                                  Trigger Message
+                                </p>
                                 <p className='rounded-md border border-border/40 bg-background/50 px-3 py-2 text-sm text-foreground/90'>
                                   &ldquo;{exec.trigger_data.text}&rdquo;
                                 </p>
@@ -1319,10 +1580,13 @@ function HistoryTab({
                                 </div>
                               )}
                               <span>·</span>
-                              <span>{formatDuration(exec.duration_ms)} duration</span>
+                              <span>
+                                {formatDuration(exec.duration_ms)} duration
+                              </span>
                               <span>·</span>
                               <span className='flex items-center gap-0.5'>
-                                <Zap className='h-3 w-3 text-amber-400' />{exec.credits_used ?? 0} credits used
+                                <Zap className='h-3 w-3 text-amber-400' />
+                                {exec.credits_used ?? 0} credits used
                               </span>
                               <span>·</span>
                               <span>{formatDate(exec.executed_at)}</span>
@@ -1345,7 +1609,9 @@ function HistoryTab({
           Showing {filtered.length} of {total.toLocaleString()} executions
         </span>
         <div className='flex items-center gap-2'>
-          <span>Page {page} of {pages} · {PAGE_SIZE} per page</span>
+          <span>
+            Page {page} of {pages} · {PAGE_SIZE} per page
+          </span>
           <div className='flex items-center gap-1'>
             <Button
               variant='outline'
@@ -1356,17 +1622,19 @@ function HistoryTab({
             >
               <ChevronUp className='h-3.5 w-3.5 rotate-270' />
             </Button>
-            {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map(p => (
-              <Button
-                key={p}
-                variant={page === p ? 'default' : 'outline'}
-                size='icon'
-                className='h-7 w-7 text-xs'
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </Button>
-            ))}
+            {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map(
+              p => (
+                <Button
+                  key={p}
+                  variant={page === p ? 'default' : 'outline'}
+                  size='icon'
+                  className='h-7 w-7 text-xs'
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </Button>
+              )
+            )}
             {pages > 5 && (
               <>
                 <span>...</span>
@@ -1441,7 +1709,10 @@ export function AutomationDetail({
         <div className='mx-auto max-w-6xl'>
           {/* Breadcrumb */}
           <div className='mb-3 flex items-center gap-1.5 text-sm text-muted-foreground'>
-            <Link href='/dashboard/automations' className='hover:text-foreground'>
+            <Link
+              href='/dashboard/automations'
+              className='hover:text-foreground'
+            >
               Automations
             </Link>
             <ArrowRight className='h-3.5 w-3.5' />
@@ -1491,7 +1762,9 @@ export function AutomationDetail({
                   {automation.last_executed_at && (
                     <>
                       <span className='text-muted-foreground/30'>·</span>
-                      <span>Last run {formatTimeAgo(automation.last_executed_at)}</span>
+                      <span>
+                        Last run {formatTimeAgo(automation.last_executed_at)}
+                      </span>
                     </>
                   )}
                 </div>
@@ -1500,7 +1773,12 @@ export function AutomationDetail({
 
             {/* Action buttons — matching design: Edit / Deactivate / Delete */}
             <div className='flex shrink-0 items-center gap-2'>
-              <Button asChild variant='outline' size='sm' className='h-8 gap-1.5'>
+              <Button
+                asChild
+                variant='outline'
+                size='sm'
+                className='h-8 gap-1.5'
+              >
                 <Link href={`/dashboard/automations/${automation.id}/edit`}>
                   <Edit className='h-3.5 w-3.5' />
                   Edit
@@ -1574,9 +1852,7 @@ export function AutomationDetail({
           </div>
 
           {/* Tab content */}
-          {activeTab === 'Overview' && (
-            <OverviewTab automation={automation} />
-          )}
+          {activeTab === 'Overview' && <OverviewTab automation={automation} />}
           {activeTab === 'Analytics' && (
             <AnalyticsTab
               automationId={automation.id}
@@ -1606,10 +1882,11 @@ export function AutomationDetail({
                 </p>
                 {automation.statistics.total_executions > 0 && (
                   <div className='mt-3 rounded-lg border border-[color:var(--error,#ef4444)]/20 bg-[color:var(--error,#ef4444)]/5 p-3 text-sm text-[color:var(--error,#ef4444)]'>
-                    <AlertCircle className='mb-1 inline h-4 w-4' />{' '}
-                    This automation has run{' '}
+                    <AlertCircle className='mb-1 inline h-4 w-4' /> This
+                    automation has run{' '}
                     <strong>{automation.statistics.total_executions}</strong>{' '}
-                    time{automation.statistics.total_executions !== 1 ? 's' : ''}.
+                    time
+                    {automation.statistics.total_executions !== 1 ? 's' : ''}.
                     All execution history will be permanently lost.
                   </div>
                 )}

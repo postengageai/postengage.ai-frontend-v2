@@ -19,7 +19,6 @@ import type {
   PerformanceMetrics as IPerformanceMetrics,
 } from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
-import { HotLeadsSection } from '@/components/dashboard/hot-leads-section';
 import { ImpactCard } from '@/components/dashboard/impact-card';
 import type { Notification } from '@/lib/types/notifications';
 import type { DashboardImpact } from '@/lib/api/dashboard';
@@ -247,14 +246,13 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Right column — Automation Summary + Hot Leads */}
+        {/* Right column — Automation Summary */}
         <div className='lg:col-span-2 space-y-6'>
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}
             onDelete={handleDeleteAutomation}
           />
-          <HotLeadsSection />
         </div>
       </div>
     </main>

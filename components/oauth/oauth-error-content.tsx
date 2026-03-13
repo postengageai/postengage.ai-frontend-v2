@@ -121,24 +121,39 @@ export function OAuthErrorContent() {
   return (
     <div className='min-h-screen bg-background flex items-center justify-center px-4 py-12'>
       <div className='w-full max-w-[440px] rounded-2xl border border-error/25 bg-[#1a0f0f] p-12 text-center shadow-xl shadow-black/40'>
-
         {/* Broken plug icon */}
         <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-error/30 bg-error/15 flex items-center justify-center'>
           {/* Instagram "broken link" concept — unplug icon */}
-          <svg className='h-7 w-7 text-error' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' strokeLinejoin='round'>
-            <path d='M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71'/>
-            <path d='M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71'/>
-            <line x1='2' y1='2' x2='22' y2='22'/>
+          <svg
+            className='h-7 w-7 text-error'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='1.75'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          >
+            <path d='M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71' />
+            <path d='M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71' />
+            <line x1='2' y1='2' x2='22' y2='22' />
           </svg>
         </div>
 
         {/* Instagram badge */}
         <div className='inline-flex items-center gap-2 rounded-full border border-error/20 bg-error/10 px-3 py-1 text-xs text-error mb-4'>
           {/* Instagram icon (simplified gradient-ish) */}
-          <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
-            <rect x='2' y='2' width='20' height='20' rx='5' ry='5'/>
-            <circle cx='12' cy='12' r='4'/>
-            <circle cx='17.5' cy='6.5' r='0.5' fill='currentColor'/>
+          <svg
+            className='h-3.5 w-3.5'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          >
+            <rect x='2' y='2' width='20' height='20' rx='5' ry='5' />
+            <circle cx='12' cy='12' r='4' />
+            <circle cx='17.5' cy='6.5' r='0.5' fill='currentColor' />
           </svg>
           Instagram
         </div>
@@ -151,13 +166,26 @@ export function OAuthErrorContent() {
         {/* Error detail box */}
         <div className='mt-6 rounded-xl border border-border bg-card p-4 text-left'>
           <div className='flex items-start gap-3'>
-            <svg className='h-4 w-4 text-muted-foreground shrink-0 mt-0.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
-              <circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/>
+            <svg
+              className='h-4 w-4 text-muted-foreground shrink-0 mt-0.5'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <circle cx='12' cy='12' r='10' />
+              <line x1='12' y1='8' x2='12' y2='12' />
+              <line x1='12' y1='16' x2='12.01' y2='16' />
             </svg>
             <div className='min-w-0'>
-              <p className='text-xs font-medium text-foreground'>No changes were made</p>
+              <p className='text-xs font-medium text-foreground'>
+                No changes were made
+              </p>
               <p className='text-xs text-muted-foreground mt-0.5 leading-relaxed'>
-                Allow all requested permissions to enable automations. You can safely try connecting again.
+                Allow all requested permissions to enable automations. You can
+                safely try connecting again.
               </p>
             </div>
           </div>
@@ -192,13 +220,19 @@ export function OAuthErrorContent() {
         {/* State badge */}
         <div className='mt-5 flex justify-center'>
           <span className='inline-flex items-center gap-1.5 rounded-full border border-error/30 bg-error/10 px-3 py-1 text-xs text-error'>
-            <svg className='h-3 w-3' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
-              <circle cx='12' cy='12' r='10'/><line x1='4.93' y1='4.93' x2='19.07' y2='19.07'/>
+            <svg
+              className='h-3 w-3'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+            >
+              <circle cx='12' cy='12' r='10' />
+              <line x1='4.93' y1='4.93' x2='19.07' y2='19.07' />
             </svg>
             Connection Failed
           </span>
         </div>
-
       </div>
     </div>
   );

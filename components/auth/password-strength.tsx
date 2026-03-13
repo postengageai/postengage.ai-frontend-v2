@@ -7,31 +7,41 @@ interface PasswordStrengthProps {
 }
 
 const requirements = [
-  { label: 'At least 8 characters',             test: (p: string) => p.length >= 8 },
-  { label: 'At least one uppercase letter',      test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'At least one number',                test: (p: string) => /[0-9]/.test(p) },
-  { label: 'At least one special character (@$!%*?&)', test: (p: string) => /[@$!%*?&]/.test(p) },
+  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
+  {
+    label: 'At least one uppercase letter',
+    test: (p: string) => /[A-Z]/.test(p),
+  },
+  { label: 'At least one number', test: (p: string) => /[0-9]/.test(p) },
+  {
+    label: 'At least one special character (@$!%*?&)',
+    test: (p: string) => /[@$!%*?&]/.test(p),
+  },
 ];
 
 type Strength = 'weak' | 'fair' | 'strong';
 
-function getStrength(password: string): { level: Strength; label: string; score: number } {
+function getStrength(password: string): {
+  level: Strength;
+  label: string;
+  score: number;
+} {
   const score = requirements.filter(r => r.test(password)).length;
-  if (score <= 1) return { level: 'weak',   label: 'Weak',   score };
-  if (score <= 2) return { level: 'fair',   label: 'Fair',   score };
-  if (score <= 3) return { level: 'fair',   label: 'Fair',   score };
-  return               { level: 'strong', label: 'Strong', score };
+  if (score <= 1) return { level: 'weak', label: 'Weak', score };
+  if (score <= 2) return { level: 'fair', label: 'Fair', score };
+  if (score <= 3) return { level: 'fair', label: 'Fair', score };
+  return { level: 'strong', label: 'Strong', score };
 }
 
 const segmentColors: Record<Strength, string> = {
-  weak:   'bg-destructive',
-  fair:   'bg-warning',
+  weak: 'bg-destructive',
+  fair: 'bg-warning',
   strong: 'bg-success',
 };
 
 const labelColors: Record<Strength, string> = {
-  weak:   'text-destructive',
-  fair:   'text-warning',
+  weak: 'text-destructive',
+  fair: 'text-warning',
   strong: 'text-success',
 };
 
@@ -50,9 +60,10 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
     .filter(r => !r.test(password))
     .map(r => r.label.replace('At least one ', '').replace('At least ', ''))
     .slice(0, 2);
-  const hintText = failedLabels.length > 0
-    ? `${label} — Add ${failedLabels.join(' & ')}`
-    : label;
+  const hintText =
+    failedLabels.length > 0
+      ? `${label} — Add ${failedLabels.join(' & ')}`
+      : label;
 
   return (
     <div className='space-y-1.5'>
@@ -88,20 +99,41 @@ export function PasswordRequirements({ password }: { password: string }) {
         Requirements
       </p>
       <ul className='space-y-2'>
-        {requirements.map((req) => {
+        {requirements.map(req => {
           const passed = req.test(password);
           return (
             <li key={req.label} className='flex items-center gap-2.5 text-sm'>
               {passed ? (
-                <svg className='h-4 w-4 shrink-0 text-success' viewBox='0 0 16 16' fill='none'>
-                  <path d='M3 8l3.5 3.5L13 5' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' strokeLinejoin='round' />
+                <svg
+                  className='h-4 w-4 shrink-0 text-success'
+                  viewBox='0 0 16 16'
+                  fill='none'
+                >
+                  <path
+                    d='M3 8l3.5 3.5L13 5'
+                    stroke='currentColor'
+                    strokeWidth='1.75'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  />
                 </svg>
               ) : (
-                <svg className='h-4 w-4 shrink-0 text-destructive' viewBox='0 0 16 16' fill='none'>
-                  <path d='M5 5l6 6M11 5l-6 6' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' />
+                <svg
+                  className='h-4 w-4 shrink-0 text-destructive'
+                  viewBox='0 0 16 16'
+                  fill='none'
+                >
+                  <path
+                    d='M5 5l6 6M11 5l-6 6'
+                    stroke='currentColor'
+                    strokeWidth='1.75'
+                    strokeLinecap='round'
+                  />
                 </svg>
               )}
-              <span className={passed ? 'text-foreground/80' : 'text-destructive'}>
+              <span
+                className={passed ? 'text-foreground/80' : 'text-destructive'}
+              >
                 {req.label}
               </span>
             </li>

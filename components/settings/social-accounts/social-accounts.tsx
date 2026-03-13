@@ -357,7 +357,10 @@ export function SocialAccounts() {
                         {account.username}
                       </span>
                       {account.is_primary && (
-                        <Badge variant='outline' className='gap-1 text-xs shrink-0'>
+                        <Badge
+                          variant='outline'
+                          className='gap-1 text-xs shrink-0'
+                        >
                           <Star className='h-3 w-3 fill-current' />
                           Primary
                         </Badge>

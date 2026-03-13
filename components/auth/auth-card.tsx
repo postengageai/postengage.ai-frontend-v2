@@ -11,7 +11,7 @@ interface AuthCardProps {
 const variantStyles = {
   default: 'bg-card border-border',
   success: 'bg-[#0d1f14] border-[#22C55E]/25',
-  error:   'bg-[#1a0f0f] border-[#EF4444]/25',
+  error: 'bg-[#1a0f0f] border-[#EF4444]/25',
   warning: 'bg-[#1a150a] border-[#F59E0B]/25',
 };
 
@@ -20,7 +20,11 @@ const variantStyles = {
  * Used on: forgot-password, reset-password, verify-email,
  *          resend-verification, account-locked, account-suspended, oauth-error.
  */
-export function AuthCard({ children, className, variant = 'default' }: AuthCardProps) {
+export function AuthCard({
+  children,
+  className,
+  variant = 'default',
+}: AuthCardProps) {
   return (
     <div
       className={cn(
@@ -42,7 +46,9 @@ interface AuthCardHeaderProps {
 export function AuthCardHeader({ title, description }: AuthCardHeaderProps) {
   return (
     <div className='mb-6'>
-      <h1 className='text-2xl font-bold text-foreground tracking-tight'>{title}</h1>
+      <h1 className='text-2xl font-bold text-foreground tracking-tight'>
+        {title}
+      </h1>
       {description && (
         <p className='mt-1.5 text-sm text-muted-foreground'>{description}</p>
       )}
@@ -57,7 +63,12 @@ interface AuthCardFooterProps {
 
 export function AuthCardFooter({ children, className }: AuthCardFooterProps) {
   return (
-    <div className={cn('mt-6 text-sm text-center text-muted-foreground', className)}>
+    <div
+      className={cn(
+        'mt-6 text-sm text-center text-muted-foreground',
+        className
+      )}
+    >
       {children}
     </div>
   );

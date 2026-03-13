@@ -11,7 +11,11 @@ import { Label } from '@/components/ui/label';
 import { AuthLogo } from '@/components/auth/auth-logo';
 import { AuthApi } from '@/lib/api/auth';
 import { parseApiError } from '@/lib/http/errors';
-import { PasswordStrength, PasswordRequirements, isPasswordValid } from '@/components/auth/password-strength';
+import {
+  PasswordStrength,
+  PasswordRequirements,
+  isPasswordValid,
+} from '@/components/auth/password-strength';
 
 type ResetState = 'form' | 'success' | 'error';
 
@@ -37,19 +41,27 @@ export function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<{ title: string; message: string } | null>(null);
+  const [errorMsg, setErrorMsg] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!token) {
       setErrorMsg({
         title: 'Invalid link',
-        message: 'This password reset link is invalid. Please request a new one.',
+        message:
+          'This password reset link is invalid. Please request a new one.',
       });
     }
   }, [token]);
 
-  const passwordsMatch = confirmPassword.length === 0 || password === confirmPassword;
-  const isFormValid = isPasswordValid(password) && password === confirmPassword && confirmPassword.length > 0;
+  const passwordsMatch =
+    confirmPassword.length === 0 || password === confirmPassword;
+  const isFormValid =
+    isPasswordValid(password) &&
+    password === confirmPassword &&
+    confirmPassword.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,17 +89,38 @@ export function ResetPasswordForm() {
       <CenteredShell>
         <div className='w-full max-w-[440px] rounded-2xl border border-error/25 bg-[#1a0f0f] p-12 text-center shadow-xl shadow-black/40'>
           <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-error/30 bg-error/15 flex items-center justify-center'>
-            <svg className='h-7 w-7 text-error' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' strokeLinejoin='round'>
-              <circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/>
+            <svg
+              className='h-7 w-7 text-error'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='1.75'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <circle cx='12' cy='12' r='10' />
+              <line x1='12' y1='8' x2='12' y2='12' />
+              <line x1='12' y1='16' x2='12.01' y2='16' />
             </svg>
           </div>
-          <h1 className='text-2xl font-bold text-foreground'>{errorMsg?.title ?? 'Something went wrong'}</h1>
-          <p className='mt-2 text-sm text-muted-foreground'>{errorMsg?.message ?? 'Please try again.'}</p>
+          <h1 className='text-2xl font-bold text-foreground'>
+            {errorMsg?.title ?? 'Something went wrong'}
+          </h1>
+          <p className='mt-2 text-sm text-muted-foreground'>
+            {errorMsg?.message ?? 'Please try again.'}
+          </p>
           <div className='mt-8 space-y-3'>
-            <Button asChild className='w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'>
+            <Button
+              asChild
+              className='w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
+            >
               <Link href='/forgot-password'>Request new reset link</Link>
             </Button>
-            <Button asChild variant='outline' className='w-full h-10 bg-transparent rounded-[--radius-md]'>
+            <Button
+              asChild
+              variant='outline'
+              className='w-full h-10 bg-transparent rounded-[--radius-md]'
+            >
               <Link href='/login'>Back to login</Link>
             </Button>
           </div>
@@ -102,22 +135,41 @@ export function ResetPasswordForm() {
       <CenteredShell>
         <div className='w-full max-w-[440px] rounded-2xl border border-success/25 bg-[#0d1f14] p-12 text-center shadow-xl shadow-black/40'>
           <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-success/30 bg-success/15 flex items-center justify-center'>
-            <svg className='h-7 w-7 text-success' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
+            <svg
+              className='h-7 w-7 text-success'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
               <path d='M20 6L9 17l-5-5' />
             </svg>
           </div>
-          <h1 className='text-2xl font-bold text-foreground'>Password Updated!</h1>
-          <p className='mt-2 text-sm text-muted-foreground'>Your password has been reset successfully.</p>
+          <h1 className='text-2xl font-bold text-foreground'>
+            Password Updated!
+          </h1>
+          <p className='mt-2 text-sm text-muted-foreground'>
+            Your password has been reset successfully.
+          </p>
 
           <div className='mt-6 flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left'>
             <ShieldCheck className='h-5 w-5 text-primary shrink-0 mt-0.5' />
             <div>
-              <p className='text-sm font-medium text-foreground'>All sessions terminated</p>
-              <p className='text-xs text-muted-foreground mt-0.5'>For your security, you&apos;ve been logged out of all devices.</p>
+              <p className='text-sm font-medium text-foreground'>
+                All sessions terminated
+              </p>
+              <p className='text-xs text-muted-foreground mt-0.5'>
+                For your security, you&apos;ve been logged out of all devices.
+              </p>
             </div>
           </div>
 
-          <Button asChild className='mt-6 w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'>
+          <Button
+            asChild
+            className='mt-6 w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
+          >
             <Link href='/login'>Log in with new password</Link>
           </Button>
         </div>
@@ -132,11 +184,22 @@ export function ResetPasswordForm() {
         {/* Lock icon */}
         <div className='text-center mb-8'>
           <div className='mx-auto mb-6 h-16 w-16 rounded-full border-2 border-primary/25 bg-primary/15 flex items-center justify-center'>
-            <svg className='h-7 w-7 text-primary' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.75' strokeLinecap='round' strokeLinejoin='round'>
-              <rect x='3' y='11' width='18' height='11' rx='2' ry='2'/><path d='M7 11V7a5 5 0 0110 0v4'/>
+            <svg
+              className='h-7 w-7 text-primary'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='1.75'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <rect x='3' y='11' width='18' height='11' rx='2' ry='2' />
+              <path d='M7 11V7a5 5 0 0110 0v4' />
             </svg>
           </div>
-          <h1 className='text-2xl font-bold text-foreground'>Create new password</h1>
+          <h1 className='text-2xl font-bold text-foreground'>
+            Create new password
+          </h1>
           <p className='mt-2 text-sm text-muted-foreground'>
             Make it strong. Mix uppercase, numbers and special characters.
           </p>
@@ -168,10 +231,14 @@ export function ResetPasswordForm() {
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder='Confirm new password'
               disabled={isSubmitting}
-              className={confirmPassword && !passwordsMatch ? 'border-destructive' : ''}
+              className={
+                confirmPassword && !passwordsMatch ? 'border-destructive' : ''
+              }
             />
             {confirmPassword && !passwordsMatch && (
-              <p className='text-xs text-destructive'>Passwords don&apos;t match</p>
+              <p className='text-xs text-destructive'>
+                Passwords don&apos;t match
+              </p>
             )}
           </div>
 
@@ -184,7 +251,10 @@ export function ResetPasswordForm() {
             disabled={!isFormValid || isSubmitting}
           >
             {isSubmitting ? (
-              <><Loader2 className='mr-2 h-4 w-4 animate-spin' />Resetting...</>
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                Resetting...
+              </>
             ) : (
               'Reset Password'
             )}
@@ -194,8 +264,17 @@ export function ResetPasswordForm() {
         {/* State badge */}
         <div className='mt-6 flex justify-center'>
           <span className='inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary'>
-            <svg className='h-3 w-3' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
-              <rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0110 0v4'/>
+            <svg
+              className='h-3 w-3'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <rect x='3' y='11' width='18' height='11' rx='2' />
+              <path d='M7 11V7a5 5 0 0110 0v4' />
             </svg>
             From reset link
           </span>
