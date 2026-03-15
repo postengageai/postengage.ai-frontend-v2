@@ -93,8 +93,12 @@ export function useTour() {
         } else {
           void markTourStatus(pageKey, 'skipped');
         }
-        // Do NOT call driverObj.destroy() here — Driver.js calls this callback
-        // as part of its own destroy sequence; calling it again causes a loop.
+        // In Driver.js v1.4, onDestroyStarted is a PRE-DESTROY hook.
+        // When this callback is defined, Driver.js calls it and RETURNS without
+        // continuing the destroy sequence — the tour stays open until YOU call
+        // destroy() explicitly. driverObj.destroy() maps to g(false) internally
+        // which skips re-triggering this callback, so there is no loop.
+        driverObj.destroy();
       },
     });
 

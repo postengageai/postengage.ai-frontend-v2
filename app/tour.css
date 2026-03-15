@@ -2,8 +2,13 @@
 @import 'driver.js/dist/driver.css';
 
 /* PostEngageAI Tour Styles - Override Driver.js defaults for dark theme */
-.driver-overlay {
-  background: rgba(0, 0, 0, 0.65) !important;
+
+/* Driver.js v1 renders the overlay as a SINGLE SVG element — not a div.
+   The dimming fill/opacity are inline styles on its <path> child element.
+   Targeting .driver-overlay { background } has zero effect on SVG.
+   We must target the path with !important to override the inline styles. */
+svg.driver-overlay path {
+  opacity: 0.78 !important;
 }
 
 .postengage-tour-popover.driver-popover {
@@ -95,11 +100,15 @@
   border-top-color: var(--card) !important;
 }
 
-/* Highlighted element ring */
+/* Highlighted element ring — thick outline + glow so it's unmissable against
+   the dark overlay, especially for small elements like toggles or buttons. */
 .driver-active-element {
-  outline: 2px solid var(--primary) !important;
-  outline-offset: 2px !important;
+  outline: 2.5px solid var(--primary) !important;
+  outline-offset: 4px !important;
   border-radius: 6px !important;
+  box-shadow:
+    0 0 0 6px rgb(108 71 255 / 0.20),
+    0 0 24px 4px rgb(108 71 255 / 0.30) !important;
 }
 
 /* Subtle pulse animation for unseen tours */
