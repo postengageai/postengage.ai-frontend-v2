@@ -19,6 +19,7 @@ export default function IntelligenceError({
   const router = useRouter();
 
   useEffect(() => {
+    // eslint-disable-next-line no-console
     console.error('[IntelligenceError]', error.digest ?? '', error);
   }, [error]);
 

@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   Loader2,
   Zap,
@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { AuthLogo } from '@/components/auth/auth-logo';
 import { StepProgress } from '@/components/auth/step-progress';
 import { AuthApi } from '@/lib/api/auth';
-import { parseApiError } from '@/lib/http/errors';
 
 const STEPS = ['Check email', 'Verify email', 'Start automating'];
 
@@ -36,7 +35,6 @@ function CenteredShell({ children }: { children: React.ReactNode }) {
 
 /* ─── Inner content (reads search params) ───────────────────────────────── */
 function VerifyEmailContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get('email') || '';
   const tokenFromUrl = searchParams.get('token');
@@ -305,7 +303,6 @@ function LinkExpiredCard({ emailFromUrl }: { emailFromUrl: string }) {
 
 /* ─── Auto-verify via token in URL ──────────────────────────────────────── */
 function AutoVerify({ token, email }: { token: string; email: string }) {
-  const router = useRouter();
   const [result, setResult] = useState<'verifying' | 'success' | 'error'>(
     'verifying'
   );

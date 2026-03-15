@@ -68,7 +68,8 @@ export class LeadsApi {
     const pageSize = params?.limit ?? params?.per_page;
     if (pageSize !== undefined) q.limit = pageSize;
     if (params?.search) q.search = params.search;
-    if (params?.platform && params.platform !== 'all') q.platform = params.platform;
+    if (params?.platform && params.platform !== 'all')
+      q.platform = params.platform;
     if (params?.tags?.length) q.tags = params.tags.join(',');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

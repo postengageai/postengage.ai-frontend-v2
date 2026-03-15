@@ -29,7 +29,7 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: (updates: UpdateUserRequest) => UserApi.updateProfile(updates),
-    onSuccess: (res) => {
+    onSuccess: res => {
       const user = res.data;
       setUser(user);
       queryClient.setQueryData(queryKeys.user.profile(), user);

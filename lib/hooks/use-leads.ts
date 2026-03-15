@@ -22,7 +22,7 @@ export function useLeads(params: GetLeadsParams = {}) {
     // Keep showing old page data while the next page loads (no blank flash)
     placeholderData: keepPreviousData,
     staleTime: 30 * 1_000,
-    select: (res) => res.data,
+    select: res => res.data,
   });
 }
 
@@ -33,7 +33,7 @@ export function useLead(id: string) {
     queryKey: queryKeys.leads.detail(id),
     queryFn: () => LeadsApi.getLead(id),
     enabled: Boolean(id),
-    select: (res) => res.data,
+    select: res => res.data,
   });
 }
 
@@ -44,7 +44,7 @@ export function useLeadTags() {
     queryKey: queryKeys.leads.tags(),
     queryFn: () => LeadsApi.getLeadTags(),
     staleTime: 5 * 60 * 1_000,
-    select: (res) => res.data,
+    select: res => res.data,
   });
 }
 

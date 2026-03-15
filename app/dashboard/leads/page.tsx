@@ -174,8 +174,8 @@ export default function LeadsPage() {
   };
 
   const toggleTag = (tag: string) => {
-    setActiveTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    setActiveTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
     setPage(1);
   };
@@ -232,7 +232,7 @@ export default function LeadsPage() {
               className='pl-9'
               placeholder='Search by name or username…'
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
             />
           </div>
 
@@ -283,7 +283,7 @@ export default function LeadsPage() {
             ))}
             {allTags.length > 8 && (
               <button
-                onClick={() => setShowMoreTags((v) => !v)}
+                onClick={() => setShowMoreTags(v => !v)}
                 className='text-xs text-muted-foreground hover:text-foreground'
               >
                 {showMoreTags ? 'Show less' : `+ ${allTags.length - 8} more`}
@@ -377,9 +377,9 @@ export default function LeadsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              leads.map((lead) => {
+              leads.map(lead => {
                 const primaryProfile =
-                  lead.social_profiles?.find((p) => p.is_primary) ??
+                  lead.social_profiles?.find(p => p.is_primary) ??
                   lead.social_profiles?.[0];
                 const displayPlatform =
                   lead.platform ?? primaryProfile?.platform;
@@ -442,7 +442,7 @@ export default function LeadsPage() {
                             —
                           </span>
                         ) : (
-                          lead.tags.slice(0, 3).map((tag) => (
+                          lead.tags.slice(0, 3).map(tag => (
                             <Badge
                               key={tag}
                               variant='outline'
@@ -487,7 +487,7 @@ export default function LeadsPage() {
               variant='outline'
               size='icon'
               className='h-8 w-8'
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1 || isFetching}
             >
               <ChevronLeft className='h-4 w-4' />
@@ -499,7 +499,7 @@ export default function LeadsPage() {
               variant='outline'
               size='icon'
               className='h-8 w-8'
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages || isFetching}
             >
               <ChevronRight className='h-4 w-4' />

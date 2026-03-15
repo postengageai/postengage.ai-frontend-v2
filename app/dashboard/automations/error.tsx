@@ -19,6 +19,7 @@ export default function AutomationsError({
   const router = useRouter();
 
   useEffect(() => {
+    // eslint-disable-next-line no-console
     console.error('[AutomationsError]', error.digest ?? '', error);
   }, [error]);
 

@@ -19,6 +19,7 @@ export default function RootError({
   useEffect(() => {
     // Report to your error monitoring service (Sentry, etc.) here.
     // digest is Next.js's server-side error hash — useful for log correlation.
+    // eslint-disable-next-line no-console
     console.error('[RootError]', error.digest ?? '', error);
   }, [error]);
 

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 
 /**
  * PostEngage.ai logo — used at the top of auth pages.

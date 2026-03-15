@@ -4,12 +4,10 @@ import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   Play,
   Edit,
   Trash2,
   Instagram,
-  MessageCircle,
   Clock,
   Zap,
   TrendingUp,
@@ -25,7 +23,6 @@ import {
   Search,
   AlertCircle,
   Pause,
-  Filter,
   Download,
   AlertTriangle,
   RotateCcw,
@@ -34,7 +31,6 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -512,7 +508,7 @@ function AnalyticsTab({
     : 0;
 
   // Peak activity hours heatmap columns/rows
-  const HEAT_COLS = ['Mon', 'Tue', 'Wed-Thu', 'Fri-Sat', 'Sun'];
+  const _HEAT_COLS = ['Mon', 'Tue', 'Wed-Thu', 'Fri-Sat', 'Sun'];
   const HEAT_ROWS = ['Morning', 'Afternoon', 'Evening'];
   const peakHours = stats?.peak_activity_hours ?? {};
 
@@ -1041,7 +1037,7 @@ function HistoryTab({
     { label: 'Skipped', value: 'skipped' },
   ];
 
-  const filterCounts: Record<LogFilter, number> = {
+  const _filterCounts: Record<LogFilter, number> = {
     all: total,
     success: 0,
     failed: 0,
@@ -1675,7 +1671,7 @@ export function AutomationDetail({
   const [activeTab, setActiveTab] = useState<ActiveTab>('Overview');
   const isActive = automation.status === 'active';
 
-  const successRate =
+  const _successRate =
     automation.statistics.total_executions > 0
       ? Math.round(
           (automation.statistics.successful_executions /

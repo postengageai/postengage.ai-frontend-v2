@@ -74,8 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initAuth();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
   }, []); // intentionally empty — run once on mount
 
   return (

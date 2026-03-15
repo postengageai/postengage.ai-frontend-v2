@@ -39,7 +39,10 @@ export default function DashboardPage() {
   // ── First reply analytics tracking ────────────────────────────────────────
   const hasTrackedRef = React.useRef(false);
   React.useEffect(() => {
-    if (!hasTrackedRef.current && (data?.impact?.replies_handled_today ?? 0) > 0) {
+    if (
+      !hasTrackedRef.current &&
+      (data?.impact?.replies_handled_today ?? 0) > 0
+    ) {
       analytics.track('bot_first_reply', { bot_id: 'unknown' });
       hasTrackedRef.current = true;
     }
@@ -48,36 +51,46 @@ export default function DashboardPage() {
   // ── Notification mutations ─────────────────────────────────────────────────
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markAsRead(id),
-    onMutate: async (id) => {
-      qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          recent_activity: old.recent_activity.map((n) =>
-            n.id === id ? { ...n, status: 'read', read_at: new Date().toISOString() } : n
-          ),
-        };
-      });
+    onMutate: async id => {
+      qc.setQueryData<DashboardStatsResponse>(
+        queryKeys.dashboard.stats(),
+        old => {
+          if (!old) return old;
+          return {
+            ...old,
+            recent_activity: old.recent_activity.map(n =>
+              n.id === id
+                ? { ...n, status: 'read', read_at: new Date().toISOString() }
+                : n
+            ),
+          };
+        }
+      );
     },
-    onError: () => qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
+    onError: () =>
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
   });
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationsApi.markAllAsRead(),
     onMutate: async () => {
-      qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          recent_activity: old.recent_activity.map((n) =>
-            n.status === 'unread'
-              ? { ...n, status: 'read', read_at: new Date().toISOString() }
-              : n
-          ),
-        };
-      });
+      qc.setQueryData<DashboardStatsResponse>(
+        queryKeys.dashboard.stats(),
+        old => {
+          if (!old) return old;
+          return {
+            ...old,
+            recent_activity: old.recent_activity.map(n =>
+              n.status === 'unread'
+                ? { ...n, status: 'read', read_at: new Date().toISOString() }
+                : n
+            ),
+          };
+        }
+      );
     },
-    onError: () => qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
+    onError: () =>
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
   });
 
   // ── Automation mutations ───────────────────────────────────────────────────
@@ -86,39 +99,56 @@ export default function DashboardPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
       qc.invalidateQueries({ queryKey: queryKeys.automations.lists() });
-      toast({ title: 'Success', description: 'Automation deleted successfully' });
+      toast({
+        title: 'Success',
+        description: 'Automation deleted successfully',
+      });
     },
-    onError: (error) => {
+    onError: error => {
       const err = parseApiError(error);
-      toast({ title: err.title, description: err.message, variant: 'destructive' });
+      toast({
+        title: err.title,
+        description: err.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const toggleAutomationMutation = useMutation({
     mutationFn: async (id: string) => {
-      const current = data?.automations.find((a) => a.id === id);
+      const current = data?.automations.find(a => a.id === id);
       if (!current) throw new Error('Automation not found');
       return current.status === 'active'
         ? automationsApi.deactivate(id)
         : automationsApi.activate(id);
     },
-    onMutate: async (id) => {
-      qc.setQueryData<DashboardStatsResponse>(queryKeys.dashboard.stats(), (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          automations: old.automations.map((a) =>
-            a.id === id
-              ? { ...a, status: a.status === 'active' ? 'inactive' : 'active' }
-              : a
-          ),
-        };
-      });
+    onMutate: async id => {
+      qc.setQueryData<DashboardStatsResponse>(
+        queryKeys.dashboard.stats(),
+        old => {
+          if (!old) return old;
+          return {
+            ...old,
+            automations: old.automations.map(a =>
+              a.id === id
+                ? {
+                    ...a,
+                    status: a.status === 'active' ? 'inactive' : 'active',
+                  }
+                : a
+            ),
+          };
+        }
+      );
     },
-    onError: (error) => {
+    onError: error => {
       qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
       const err = parseApiError(error);
-      toast({ title: err.title, description: err.message, variant: 'destructive' });
+      toast({
+        title: err.title,
+        description: err.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -143,7 +173,7 @@ export default function DashboardPage() {
     estimatedReplies: data?.overview.credits_remaining ?? 0,
   };
 
-  const automations: Automation[] = (data?.automations ?? []).map((a) => ({
+  const automations: Automation[] = (data?.automations ?? []).map(a => ({
     id: a.id,
     name: a.name,
     trigger: a.trigger as Automation['trigger'],
@@ -157,8 +187,11 @@ export default function DashboardPage() {
     createdAt: new Date(a.created_at),
   }));
 
-  const notifications = (data?.recent_activity ?? []) as unknown as Notification[];
-  const activeAutomationCount = automations.filter((a) => a.status === 'running').length;
+  const notifications = (data?.recent_activity ??
+    []) as unknown as Notification[];
+  const activeAutomationCount = automations.filter(
+    a => a.status === 'running'
+  ).length;
   const lastActivity = notifications[0]?.created_at
     ? new Date(notifications[0].created_at)
     : undefined;
@@ -194,7 +227,7 @@ export default function DashboardPage() {
         <div className='lg:col-span-3 space-y-6'>
           <RecentActivity
             notifications={notifications}
-            onMarkAsRead={(id) => markAsReadMutation.mutate(id)}
+            onMarkAsRead={id => markAsReadMutation.mutate(id)}
             onMarkAllAsRead={() => markAllAsReadMutation.mutate()}
           />
         </div>
@@ -202,7 +235,7 @@ export default function DashboardPage() {
           <AutomationSummary
             automations={automations}
             onToggle={handleToggleAutomation}
-            onDelete={(id) => deleteAutomationMutation.mutate(id)}
+            onDelete={id => deleteAutomationMutation.mutate(id)}
           />
         </div>
       </div>
