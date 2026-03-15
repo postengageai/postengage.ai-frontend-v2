@@ -78,7 +78,8 @@ export function useTour() {
         } else {
           void markTourStatus(pageKey, 'skipped');
         }
-        driverObj.destroy();
+        // Do NOT call driverObj.destroy() here — Driver.js calls this callback
+        // as part of its own destroy sequence; calling it again causes a loop.
       },
     });
 
