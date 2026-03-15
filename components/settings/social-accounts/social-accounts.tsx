@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -333,7 +332,7 @@ export function SocialAccounts() {
                   {/* Avatar & Platform */}
                   <div className='relative shrink-0'>
                     {account.avatar?.url ? (
-                      <Image
+                      <img
                         src={account.avatar.url || '/placeholder.svg'}
                         alt={account.username}
                         width={48}
