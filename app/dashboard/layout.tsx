@@ -4,7 +4,7 @@ import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { LowCreditBanner } from '@/components/app/low-credit-banner';
 import { MobileHeader } from '@/components/app/mobile-header';
-import { TourButton } from '@/components/ui/tour-button';
+// import { TourButton } from '@/components/ui/tour-button';
 
 export const metadata: Metadata = {
   title: 'Dashboard | PostEngageAI',
@@ -25,7 +25,7 @@ export default function DashboardLayout({
         <LowCreditBanner />
         <main className='flex-1 min-w-0 overflow-x-hidden'>{children}</main>
       </SidebarInset>
-      <TourButton />
+      {/* <TourButton /> */}
     </SidebarProvider>
   );
 }

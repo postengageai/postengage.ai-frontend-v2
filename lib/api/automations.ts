@@ -2,7 +2,6 @@ import { httpClient, SuccessResponse } from '../http/client';
 import {
   AutomationPlatformType,
   AutomationStatusType,
-  AutomationExecutionModeType,
   AutomationTriggerTypeType,
   AutomationTriggerSourceType,
   AutomationTriggerScopeType,
@@ -17,7 +16,6 @@ const AUTOMATIONS_BASE_URL = '/api/v1/automations';
 
 export type AutomationPlatform = AutomationPlatformType;
 export type AutomationStatus = AutomationStatusType;
-export type AutomationExecutionMode = AutomationExecutionModeType;
 
 export type AutomationTriggerType = AutomationTriggerTypeType;
 export type AutomationTriggerSource = AutomationTriggerSourceType;
@@ -88,8 +86,6 @@ export type SendDmPayload = SendDmTextPayload | SendDmMediaPayload;
 
 export interface ReplyCommentPayload {
   text: string;
-  variations?: string[];
-  hide_comment?: boolean;
   use_ai_reply?: boolean;
 }
 
@@ -149,7 +145,6 @@ export interface CreateAutomationRequest {
   bot_id?: string;
   platform: AutomationPlatform;
   status?: AutomationStatus;
-  execution_mode: AutomationExecutionMode;
   trigger: AutomationTrigger;
   conditions: AutomationCondition[];
   actions: AutomationAction[];
@@ -200,11 +195,8 @@ export interface Automation {
   labels?: string[];
   platform: AutomationPlatform;
   status: AutomationStatus;
-  execution_mode: AutomationExecutionMode;
   bot_id?: string;
   paused_reason?: string | null;
-  scheduled_time?: string | null;
-  delayed_minutes?: number | null;
   execution_count: number;
   success_count: number;
   failure_count: number;

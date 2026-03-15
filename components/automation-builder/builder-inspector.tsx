@@ -632,24 +632,6 @@ function ActionInspector({
             </>
           )}
 
-          {/* Add tag settings */}
-          {action.type === 'add_tag' && (
-            <div className='space-y-2'>
-              <Label className='text-xs text-muted-foreground uppercase tracking-wide'>
-                Tag Name
-              </Label>
-              <Input
-                value={action.config.tagName || ''}
-                onChange={e => updateConfig({ tagName: e.target.value })}
-                placeholder='e.g., interested, hot-lead, customer'
-                className='bg-background/50'
-              />
-              <p className='text-xs text-muted-foreground'>
-                Tags help you organize and segment users
-              </p>
-            </div>
-          )}
-
           {/* Delay settings (common to all actions) */}
           <div className='space-y-3 pt-4 border-t border-border'>
             <div className='flex items-center justify-between'>

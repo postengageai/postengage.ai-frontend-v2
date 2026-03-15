@@ -154,17 +154,9 @@ export function BuilderCanvas({
                   <span className='w-2 h-2 rounded-full bg-purple-500 mr-2' />
                   Send DM
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddAction('like_comment')}>
-                  <span className='w-2 h-2 rounded-full bg-pink-500 mr-2' />
-                  Like Comment
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddAction('hide_comment')}>
+                <DropdownMenuItem onClick={() => onAddAction('private_reply')}>
                   <span className='w-2 h-2 rounded-full bg-slate-500 mr-2' />
-                  Hide Comment
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddAction('add_tag')}>
-                  <span className='w-2 h-2 rounded-full bg-blue-500 mr-2' />
-                  Add Tag
+                  Private Reply
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

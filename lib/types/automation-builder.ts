@@ -22,14 +22,7 @@ export type ConditionOperator =
   | 'ends_with'
   | 'regex';
 
-export type ActionType =
-  | 'reply_comment'
-  | 'send_dm'
-  | 'like_comment'
-  | 'hide_comment'
-  | 'add_tag';
-
-export type ExecutionMode = 'real_time' | 'delayed' | 'scheduled';
+export type ActionType = 'reply_comment' | 'send_dm' | 'private_reply';
 
 export type AutomationStatus = 'active' | 'paused' | 'draft' | 'error';
 
@@ -87,12 +80,6 @@ export interface ActionConfig {
     // For send_dm
     dmTemplates?: DmTemplate[];
     sendOnlyOnce?: boolean;
-
-    // For hide_comment
-    hideReason?: string;
-
-    // For add_tag
-    tagName?: string;
   };
 }
 
@@ -124,9 +111,6 @@ export interface AutomationBuilder {
   platform: Platform;
   status: AutomationStatus;
   pausedReason?: string;
-  executionMode: ExecutionMode;
-  scheduledTime?: string; // For scheduled mode
-  delaySeconds?: number; // For delayed mode
 
   trigger: TriggerConfig;
   conditions: ConditionsConfig;

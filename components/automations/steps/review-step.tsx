@@ -15,9 +15,6 @@ import {
   ImageIcon,
   AtSign,
   UserPlus,
-  Zap,
-  Calendar,
-  Clock,
   Bot as BotIcon,
   Tag,
 } from 'lucide-react';
@@ -27,7 +24,6 @@ import {
   AutomationTriggerType,
   AutomationStatus,
   AutomationTriggerScope,
-  AutomationExecutionMode,
   AutomationActionType,
 } from '@/lib/constants/automations';
 import { IntelligenceApi } from '@/lib/api/intelligence';
@@ -80,32 +76,6 @@ function getTriggerIcon(type?: string) {
       return UserPlus;
     default:
       return MessageCircle;
-  }
-}
-
-function getExecutionModeLabel(mode?: string) {
-  switch (mode) {
-    case AutomationExecutionMode.REAL_TIME:
-      return 'Instant';
-    case AutomationExecutionMode.SCHEDULED:
-      return 'Scheduled';
-    case AutomationExecutionMode.DELAYED:
-      return 'Delayed';
-    default:
-      return 'Instant';
-  }
-}
-
-function getExecutionModeIcon(mode?: string) {
-  switch (mode) {
-    case AutomationExecutionMode.REAL_TIME:
-      return Zap;
-    case AutomationExecutionMode.SCHEDULED:
-      return Calendar;
-    case AutomationExecutionMode.DELAYED:
-      return Clock;
-    default:
-      return Zap;
   }
 }
 
@@ -207,7 +177,6 @@ export function ReviewStep({
     0
   );
   const TriggerIcon = getTriggerIcon(formData.trigger_type);
-  const ExecutionIcon = getExecutionModeIcon(formData.execution_mode);
 
   const allValid =
     formData.name?.trim() &&
@@ -252,12 +221,6 @@ export function ReviewStep({
                     @{formData.social_account_name}
                   </span>
                 )}
-                <div className='flex items-center gap-1.5'>
-                  <ExecutionIcon className='h-3.5 w-3.5 text-muted-foreground' />
-                  <span className='text-muted-foreground'>
-                    {getExecutionModeLabel(formData.execution_mode)}
-                  </span>
-                </div>
               </div>
             </SummarySection>
           )}

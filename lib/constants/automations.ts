@@ -59,15 +59,6 @@ export const AutomationStatus = {
 export type AutomationStatusType =
   (typeof AutomationStatus)[keyof typeof AutomationStatus];
 
-export const AutomationExecutionMode = {
-  REAL_TIME: 'real_time',
-  SCHEDULED: 'scheduled',
-  DELAYED: 'delayed',
-} as const;
-
-export type AutomationExecutionModeType =
-  (typeof AutomationExecutionMode)[keyof typeof AutomationExecutionMode];
-
 export const AutomationConditionType = {
   KEYWORD: 'keyword',
   USER_FILTER: 'user_filter',

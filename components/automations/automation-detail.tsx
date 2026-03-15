@@ -23,7 +23,7 @@ import {
   Search,
   AlertCircle,
   Pause,
-  Download,
+  // Download,
   AlertTriangle,
   RotateCcw,
   FileText,
@@ -52,7 +52,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { cn } from '@/lib/utils';
-import { ExperimentPanel } from './experiment-panel';
+// import { ExperimentPanel } from './experiment-panel';
 import type {
   ExperimentConfig,
   AutomationStatsResponse,
@@ -380,10 +380,10 @@ function OverviewTab({ automation }: { automation: AutomationData }) {
       </div>
 
       {/* A/B Experiment Panel */}
-      <ExperimentPanel
+      {/* <ExperimentPanel
         automationId={automation.id}
         currentExperimentConfig={automation.experiment_config}
-      />
+      /> */}
     </div>
   );
 }
@@ -401,48 +401,48 @@ function AnalyticsTab({
   const [stats, setStats] = useState<AutomationStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const handleExport = useCallback(() => {
-    if (!stats) return;
-    const rows: string[] = [];
-    // Summary section
-    rows.push('SUMMARY');
-    rows.push(
-      `Period,${period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : 'Last 90 days'}`
-    );
-    rows.push(`Total Executions,${stats.total_executions}`);
-    rows.push(`Successful,${stats.successful}`);
-    rows.push(`Failed,${stats.failed}`);
-    rows.push(`Skipped,${stats.skipped}`);
-    rows.push(`Avg Duration (ms),${stats.avg_duration_ms}`);
-    rows.push(`Credits Used,${stats.credits_used}`);
-    rows.push('');
-    // Daily breakdown
-    rows.push('DAILY BREAKDOWN');
-    rows.push('Date,Successful,Failed,Skipped,Total');
-    for (const d of stats.daily ?? []) {
-      const total = d.successful + d.failed + d.skipped;
-      rows.push(`${d.date},${d.successful},${d.failed},${d.skipped},${total}`);
-    }
-    // Action performance
-    if (stats.action_performance && stats.action_performance.length > 0) {
-      rows.push('');
-      rows.push('ACTION PERFORMANCE');
-      rows.push('Step,Action Type,Sent,Success,Rate (%),Avg Time (ms)');
-      for (const a of stats.action_performance) {
-        rows.push(
-          `${a.step},${a.action_type},${a.sent},${a.success},${a.rate},${a.avg_time_ms}`
-        );
-      }
-    }
-    const csv = rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `automation-analytics-${automationId}-${period}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [stats, period, automationId]);
+  // const handleExport = useCallback(() => {
+  //   if (!stats) return;
+  //   const rows: string[] = [];
+  //   // Summary section
+  //   rows.push('SUMMARY');
+  //   rows.push(
+  //     `Period,${period === '7d' ? 'Last 7 days' : period === '30d' ? 'Last 30 days' : 'Last 90 days'}`
+  //   );
+  //   rows.push(`Total Executions,${stats.total_executions}`);
+  //   rows.push(`Successful,${stats.successful}`);
+  //   rows.push(`Failed,${stats.failed}`);
+  //   rows.push(`Skipped,${stats.skipped}`);
+  //   rows.push(`Avg Duration (ms),${stats.avg_duration_ms}`);
+  //   rows.push(`Credits Used,${stats.credits_used}`);
+  //   rows.push('');
+  //   // Daily breakdown
+  //   rows.push('DAILY BREAKDOWN');
+  //   rows.push('Date,Successful,Failed,Skipped,Total');
+  //   for (const d of stats.daily ?? []) {
+  //     const total = d.successful + d.failed + d.skipped;
+  //     rows.push(`${d.date},${d.successful},${d.failed},${d.skipped},${total}`);
+  //   }
+  //   // Action performance
+  //   if (stats.action_performance && stats.action_performance.length > 0) {
+  //     rows.push('');
+  //     rows.push('ACTION PERFORMANCE');
+  //     rows.push('Step,Action Type,Sent,Success,Rate (%),Avg Time (ms)');
+  //     for (const a of stats.action_performance) {
+  //       rows.push(
+  //         `${a.step},${a.action_type},${a.sent},${a.success},${a.rate},${a.avg_time_ms}`
+  //       );
+  //     }
+  //   }
+  //   const csv = rows.join('\n');
+  //   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  //   const url = URL.createObjectURL(blob);
+  //   const link = document.createElement('a');
+  //   link.href = url;
+  //   link.download = `automation-analytics-${automationId}-${period}.csv`;
+  //   link.click();
+  //   URL.revokeObjectURL(url);
+  // }, [stats, period, automationId]);
 
   const fetchStats = useCallback(async () => {
     setIsLoading(true);
@@ -538,7 +538,7 @@ function AnalyticsTab({
             </button>
           ))}
         </div>
-        <Button
+        {/* <Button
           variant='outline'
           size='sm'
           className='h-8 gap-1.5 text-xs'
@@ -547,7 +547,7 @@ function AnalyticsTab({
         >
           <Download className='h-3.5 w-3.5' />
           Export CSV
-        </Button>
+        </Button> */}
       </div>
 
       {/* 6-card stat grid */}
@@ -1127,7 +1127,7 @@ function HistoryTab({
         </div>
 
         {/* Export */}
-        <Button
+        {/* <Button
           variant='outline'
           size='sm'
           className='ml-auto h-8 gap-1.5 text-xs'
@@ -1158,7 +1158,7 @@ function HistoryTab({
         >
           <Download className='h-3.5 w-3.5' />
           Export CSV
-        </Button>
+        </Button> */}
       </div>
 
       {/* Table */}

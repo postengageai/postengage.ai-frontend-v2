@@ -4,17 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import {
-  Instagram,
-  Check,
-  Loader2,
-  ChevronLeft,
-  Zap,
-  Calendar,
-  Clock,
-  Plus,
-} from 'lucide-react';
+import { Instagram, Check, Loader2, ChevronLeft, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AutomationFormData } from '../automation-wizard';
 import {
@@ -23,11 +13,7 @@ import {
 } from '@/lib/api/social-accounts';
 import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  AutomationPlatform,
-  AutomationExecutionMode,
-  type AutomationExecutionModeType,
-} from '@/lib/constants/automations';
+import { AutomationPlatform } from '@/lib/constants/automations';
 
 interface BasicsStepProps {
   formData: AutomationFormData;
@@ -35,30 +21,6 @@ interface BasicsStepProps {
   nextStep: () => void;
   prevStep: () => void;
 }
-
-const EXECUTION_MODES = [
-  {
-    value: AutomationExecutionMode.REAL_TIME,
-    label: 'Instant',
-    icon: Zap,
-    description: 'Responds the moment a trigger fires',
-    badge: 'Recommended',
-  },
-  {
-    value: AutomationExecutionMode.SCHEDULED,
-    label: 'Scheduled',
-    icon: Calendar,
-    description: 'Runs on a fixed schedule or time window',
-    badge: null,
-  },
-  {
-    value: AutomationExecutionMode.DELAYED,
-    label: 'Delayed',
-    icon: Clock,
-    description: 'Waits a set time before responding',
-    badge: null,
-  },
-] as const;
 
 export function BasicsStep({
   formData,
@@ -71,10 +33,6 @@ export function BasicsStep({
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
     formData.social_account_id || null
   );
-  const [executionMode, setExecutionMode] =
-    useState<AutomationExecutionModeType>(
-      formData.execution_mode || AutomationExecutionMode.REAL_TIME
-    );
   const { toast } = useToast();
 
   useEffect(() => {
@@ -110,7 +68,6 @@ export function BasicsStep({
 
   const handleNext = () => {
     if (!selectedAccountId) return;
-    updateFormData({ execution_mode: executionMode });
     nextStep();
   };
 
@@ -126,7 +83,7 @@ export function BasicsStep({
     <div>
       <h2 className='mb-2 text-2xl font-bold text-foreground'>Basics</h2>
       <p className='mb-8 text-muted-foreground'>
-        Choose your connected account and how this automation runs
+        Choose your connected account for this automation
       </p>
 
       {/* Account Selection */}
@@ -199,7 +156,9 @@ export function BasicsStep({
             ))}
 
             <button
-              onClick={() => (window.location.href = '/dashboard/settings')}
+              onClick={() =>
+                (window.location.href = '/dashboard/settings/social-accounts')
+              }
               className='flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground'
             >
               <Plus className='h-4 w-4' />
@@ -207,56 +166,6 @@ export function BasicsStep({
             </button>
           </div>
         )}
-      </div>
-
-      {/* Execution Mode */}
-      <div className='mb-8'>
-        <h3 className='mb-3 text-sm font-semibold text-foreground'>
-          Execution Mode
-        </h3>
-        <div className='grid gap-3 sm:grid-cols-3'>
-          {EXECUTION_MODES.map(mode => {
-            const Icon = mode.icon;
-            const isSelected = executionMode === mode.value;
-            return (
-              <Card
-                key={mode.value}
-                onClick={() => setExecutionMode(mode.value)}
-                className={cn(
-                  'cursor-pointer p-4 transition-all hover:border-primary/60',
-                  isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-card'
-                )}
-              >
-                <div className='mb-3 flex items-center justify-between'>
-                  <div
-                    className={cn(
-                      'flex h-9 w-9 items-center justify-center rounded-lg',
-                      isSelected ? 'bg-primary text-white' : 'bg-muted'
-                    )}
-                  >
-                    <Icon className='h-4 w-4' />
-                  </div>
-                  {mode.badge && (
-                    <Badge className='bg-primary/10 text-xs text-primary'>
-                      {mode.badge}
-                    </Badge>
-                  )}
-                  {isSelected && !mode.badge && (
-                    <div className='flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white'>
-                      <Check className='h-3 w-3' />
-                    </div>
-                  )}
-                </div>
-                <p className='font-semibold text-foreground'>{mode.label}</p>
-                <p className='mt-1 text-xs text-muted-foreground'>
-                  {mode.description}
-                </p>
-              </Card>
-            );
-          })}
-        </div>
       </div>
 
       <div className='flex flex-col gap-3 sm:flex-row sm:justify-between'>

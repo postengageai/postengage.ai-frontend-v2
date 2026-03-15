@@ -15,13 +15,10 @@ import {
   MessageCircle,
   Mail,
   ChevronLeft,
-  ImageIcon,
   Plus,
   X,
   Check,
   Loader2,
-  AtSign,
-  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaSelectorModal } from '../media-selector-modal';
@@ -57,27 +54,6 @@ const TRIGGERS = [
     label: 'Direct Message',
     icon: Mail,
     description: 'Someone sends you a direct message',
-    badge: null,
-  },
-  {
-    type: AutomationTriggerType.STORY_REPLY,
-    label: 'Story Reply',
-    icon: ImageIcon,
-    description: 'Someone replies to your story',
-    badge: null,
-  },
-  {
-    type: AutomationTriggerType.MENTION,
-    label: 'Mention',
-    icon: AtSign,
-    description: 'Someone mentions your account in a post',
-    badge: null,
-  },
-  {
-    type: AutomationTriggerType.NEW_FOLLOWER,
-    label: 'New Follower',
-    icon: UserPlus,
-    description: 'Someone starts following your account',
     badge: null,
   },
 ] as const;

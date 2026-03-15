@@ -32,13 +32,11 @@ import {
   type AutomationConditionKeywordModeType,
   AutomationConditionSource,
   type AutomationConditionSourceType,
-  AutomationExecutionMode,
-  type AutomationExecutionModeType,
 } from '@/lib/constants/automations';
 
 const CREATE_STEPS = [
   { id: 1, name: 'Platform', description: 'Choose platform' },
-  { id: 2, name: 'Basics', description: 'Account & mode' },
+  { id: 2, name: 'Basics', description: 'Account setup' },
   { id: 3, name: 'Trigger', description: 'When to run' },
   { id: 4, name: 'Conditions', description: 'Filter keywords' },
   { id: 5, name: 'Actions', description: 'What happens' },
@@ -72,9 +70,6 @@ export interface AutomationFormData extends Partial<
   platform: AutomationPlatformType;
   social_account_id: string;
   social_account_name?: string;
-
-  // Step 2 – execution mode
-  execution_mode?: AutomationExecutionModeType;
 
   // Step 3
   trigger_type?: AutomationTriggerTypeType;
@@ -132,7 +127,6 @@ export function AutomationWizard({
       platform: AutomationPlatform.INSTAGRAM,
       social_account_id: '',
       actions: [],
-      execution_mode: AutomationExecutionMode.REAL_TIME,
     }
   );
 
@@ -179,7 +173,6 @@ export function AutomationWizard({
           platform: data.platform,
           social_account_id: '',
           actions: [],
-          execution_mode: AutomationExecutionMode.REAL_TIME,
         };
       }
 
@@ -225,8 +218,6 @@ export function AutomationWizard({
       social_account_id: formData.social_account_id,
       platform: formData.platform,
       status: isDraft ? AutomationStatus.DRAFT : AutomationStatus.ACTIVE,
-      execution_mode:
-        formData.execution_mode || AutomationExecutionMode.REAL_TIME,
       trigger: {
         trigger_type: formData.trigger_type,
         trigger_source:

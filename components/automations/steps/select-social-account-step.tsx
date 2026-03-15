@@ -104,7 +104,9 @@ export function SelectSocialAccountStep({
           <Button
             size='sm'
             className='sm:size-default'
-            onClick={() => (window.location.href = '/dashboard/settings')}
+            onClick={() =>
+              (window.location.href = '/dashboard/settings/social-accounts')
+            }
           >
             Connect Account
           </Button>
