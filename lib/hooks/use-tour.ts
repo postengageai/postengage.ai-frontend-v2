@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useUser, useUserActions } from '@/lib/user/store';
+import { useUser, useUserActions, useUserStore } from '@/lib/user/store';
 import { UserApi } from '@/lib/api/user';
 import { PAGE_TOURS, getPageKeyFromPath } from '@/lib/tour/tours';
 import type { TourPageKey } from '@/lib/tour/tours';
@@ -26,11 +26,26 @@ export function useTour() {
 
   const markTourStatus = useCallback(
     async (page: TourPageKey, action: 'seen' | 'skipped') => {
+      // Optimistically update local state BEFORE the API call so that
+      // isFirstVisit flips to false immediately. Without this, if the API call
+      // fails (e.g. 429), tours_seen is never updated in the store, the tour
+      // keeps re-triggering on every remount, and each dismiss fires another
+      // API call — creating a self-reinforcing flood.
+      const currentUser = useUserStore.getState().user;
+      const currentSeen = currentUser?.tours_seen ?? [];
+      const currentSkipped = currentUser?.tours_skipped ?? [];
+      userActions.updateUser({
+        tours_seen: action === 'seen' ? [...currentSeen, page] : currentSeen,
+        tours_skipped:
+          action === 'skipped' ? [...currentSkipped, page] : currentSkipped,
+      });
+
       try {
         const updated = await UserApi.updateTourStatus({
           tour_page: page,
           action,
         });
+        // Reconcile with server response to stay in sync
         if (updated?.data) {
           userActions.updateUser({
             tours_seen: updated.data.tours_seen,
@@ -38,7 +53,7 @@ export function useTour() {
           });
         }
       } catch {
-        // fail silently — tour tracking shouldn't break the app
+        // fail silently — local state already updated optimistically above
       }
     },
     [userActions]

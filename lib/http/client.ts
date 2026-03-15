@@ -180,12 +180,13 @@ export class HttpClient {
     } catch (error) {
       const axiosError = error as AxiosError;
 
-      // Don't retry on client errors (4xx) except 429 (Too Many Requests)
+      // Don't retry on client errors (4xx).
+      // 429 (Too Many Requests) must NOT be retried — retrying a rate-limited
+      // request immediately makes the problem worse and creates a flood cascade.
       if (
         axiosError.response &&
         axiosError.response.status >= 400 &&
-        axiosError.response.status < 500 &&
-        axiosError.response.status !== 429
+        axiosError.response.status < 500
       ) {
         throw error;
       }
