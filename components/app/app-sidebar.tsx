@@ -52,7 +52,8 @@ import { cn } from '@/lib/utils';
 import { useUser, useUserActions } from '@/lib/user/store';
 import { CreditsApi } from '@/lib/api/credits';
 import { AuthApi } from '@/lib/api/auth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
@@ -60,21 +61,25 @@ const navItems = [
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    tourId: 'sidebar-dashboard',
   },
   {
     title: 'Automations',
     href: '/dashboard/automations',
     icon: Zap,
+    tourId: 'sidebar-automations',
   },
   {
     title: 'Leads',
     href: '/dashboard/leads',
     icon: Users,
+    tourId: 'sidebar-leads',
   },
   {
     title: 'Media',
     href: '/dashboard/media',
     icon: Sparkles,
+    tourId: 'sidebar-media',
   },
 ];
 
@@ -134,7 +139,12 @@ export function AppSidebar() {
   const router = useRouter();
   const user = useUser();
   const { setUser } = useUserActions();
+  const { isMobile, setOpenMobile } = useSidebar();
   const [credits, setCredits] = useState({ remaining: 0 });
+
+  const closeMobileSidebar = useCallback(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
   const isCreditsActive = pathname.startsWith('/dashboard/credits');
   const isIntelligenceActive = pathname.startsWith('/dashboard/intelligence');
@@ -184,7 +194,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className='px-2'>
+      <SidebarContent className='px-2' data-tour='sidebar-nav'>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -199,7 +209,7 @@ export function AppSidebar() {
                   item.href === '/dashboard' ? isExactDashboard : isActive;
 
                 return (
-                  <SidebarMenuItem key={item.href}>
+                  <SidebarMenuItem key={item.href} data-tour={item.tourId}>
                     <SidebarMenuButton
                       asChild
                       isActive={finalActive}
@@ -209,7 +219,7 @@ export function AppSidebar() {
                           'bg-primary/10 text-primary font-medium shadow-sm'
                       )}
                     >
-                      <Link href={item.href}>
+                      <Link href={item.href} onClick={closeMobileSidebar}>
                         <item.icon
                           className={cn(
                             'h-4 w-4',
@@ -225,7 +235,7 @@ export function AppSidebar() {
 
               {/* Intelligence Section */}
               <Collapsible asChild defaultOpen={isIntelligenceActive}>
-                <SidebarMenuItem>
+                <SidebarMenuItem data-tour='sidebar-intelligence'>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       isActive={isIntelligenceActive}
@@ -265,7 +275,10 @@ export function AppSidebar() {
                                   'bg-primary/10 text-primary font-medium'
                               )}
                             >
-                              <Link href={subItem.href}>
+                              <Link
+                                href={subItem.href}
+                                onClick={closeMobileSidebar}
+                              >
                                 <subItem.icon className='h-4 w-4 mr-2' />
                                 <span>{subItem.title}</span>
                               </Link>
@@ -280,7 +293,7 @@ export function AppSidebar() {
 
               {/* Credits Section */}
               <Collapsible asChild defaultOpen={isCreditsActive}>
-                <SidebarMenuItem>
+                <SidebarMenuItem data-tour='sidebar-credits'>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       isActive={isCreditsActive}
@@ -320,7 +333,10 @@ export function AppSidebar() {
                                   'bg-primary/10 text-primary font-medium'
                               )}
                             >
-                              <Link href={subItem.href}>
+                              <Link
+                                href={subItem.href}
+                                onClick={closeMobileSidebar}
+                              >
                                 <subItem.icon className='h-4 w-4 mr-2' />
                                 <span>{subItem.title}</span>
                               </Link>
@@ -374,7 +390,10 @@ export function AppSidebar() {
                                   'bg-primary/10 text-primary font-medium'
                               )}
                             >
-                              <Link href={subItem.href}>
+                              <Link
+                                href={subItem.href}
+                                onClick={closeMobileSidebar}
+                              >
                                 <subItem.icon className='h-3.5 w-3.5' />
                                 <span>{subItem.title}</span>
                               </Link>
@@ -396,6 +415,7 @@ export function AppSidebar() {
         {/* Credits Card */}
         <Link
           href='/dashboard/credits'
+          onClick={closeMobileSidebar}
           className='block rounded-xl bg-secondary/50 border border-border/50 p-3 hover:bg-secondary/70 transition-colors'
         >
           <div className='flex items-center justify-between mb-2'>
@@ -462,6 +482,7 @@ export function AppSidebar() {
             <DropdownMenuItem asChild>
               <Link
                 href='/dashboard/settings'
+                onClick={closeMobileSidebar}
                 className='flex items-center gap-2'
               >
                 <Settings className='h-4 w-4' />
@@ -471,6 +492,7 @@ export function AppSidebar() {
             <DropdownMenuItem asChild>
               <Link
                 href='/dashboard/credits'
+                onClick={closeMobileSidebar}
                 className='flex items-center gap-2'
               >
                 <CreditCard className='h-4 w-4' />
@@ -478,7 +500,11 @@ export function AppSidebar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href='/dashboard/help' className='flex items-center gap-2'>
+              <Link
+                href='/dashboard/help'
+                onClick={closeMobileSidebar}
+                className='flex items-center gap-2'
+              >
                 <HelpCircle className='h-4 w-4' />
                 Help & Support
               </Link>

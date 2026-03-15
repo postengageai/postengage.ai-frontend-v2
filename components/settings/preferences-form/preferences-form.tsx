@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Check, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser, useUserActions } from '@/lib/user/store';
@@ -54,6 +55,7 @@ export function PreferencesForm() {
   const userActions = useUserActions();
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('America/Los_Angeles');
+  const [tourEnabled, setTourEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -74,6 +76,9 @@ export function PreferencesForm() {
           if (user.timezone) {
             setTimezone(user.timezone);
           }
+          if (user.tour_enabled !== undefined) {
+            setTourEnabled(user.tour_enabled);
+          }
         }
       } catch (_err) {
         setError(
@@ -91,6 +96,22 @@ export function PreferencesForm() {
     setHasChanges(true);
     setIsSaved(false);
     setError(null);
+  };
+
+  const handleTourToggle = async (enabled: boolean) => {
+    setTourEnabled(enabled);
+    try {
+      const updated = await UserApi.updateTourStatus({ tour_enabled: enabled });
+      if (updated?.data) {
+        userActions.updateUser({
+          tour_enabled: updated.data.tour_enabled,
+        });
+      }
+    } catch (_err) {
+      // revert on error
+      setTourEnabled(!enabled);
+      setError('Failed to update tour preference. Please try again.');
+    }
   };
 
   const handleSave = async () => {
@@ -190,6 +211,33 @@ export function PreferencesForm() {
                 Used for timestamps and scheduled reports
               </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Product Tours */}
+      <Card data-tour="tour-toggle">
+        <CardHeader>
+          <CardTitle>Product Tours</CardTitle>
+          <CardDescription>
+            Show guided tours to help you learn about features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className='flex items-center justify-between'>
+            <div className='space-y-0.5'>
+              <Label htmlFor='tour-enabled' className='text-base'>
+                Enable product tours
+              </Label>
+              <p className='text-sm text-muted-foreground'>
+                Show a &ldquo;Take a tour&rdquo; button on each page. Tours auto-start the first time you visit a page.
+              </p>
+            </div>
+            <Switch
+              id='tour-enabled'
+              checked={tourEnabled}
+              onCheckedChange={handleTourToggle}
+            />
           </div>
         </CardContent>
       </Card>

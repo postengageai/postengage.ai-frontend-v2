@@ -25,6 +25,9 @@ export const UserSchema = z.object({
   timezone: z.string().nullable(),
   language: z.string(),
   role: z.string(),
+  tour_enabled: z.boolean().optional().default(true),
+  tours_seen: z.array(z.string()).optional().default([]),
+  tours_skipped: z.array(z.string()).optional().default([]),
   created_at: z.string(),
   updated_at: z.string(),
 });

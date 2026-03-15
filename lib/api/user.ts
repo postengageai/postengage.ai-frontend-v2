@@ -11,6 +11,12 @@ export interface UpdateUserRequest {
   language?: string;
 }
 
+export interface UpdateTourRequest {
+  tour_enabled?: boolean;
+  tour_page?: string;
+  action?: 'seen' | 'skipped';
+}
+
 export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
@@ -78,6 +84,17 @@ export class UserApi {
 
     return response.data!;
   }
+
+  // Update tour status
+  static async updateTourStatus(
+    request: UpdateTourRequest
+  ): Promise<SuccessResponse<User>> {
+    const response = await httpClient.put<User>(
+      `${USERS_BASE_URL}/tour`,
+      request
+    );
+    return response.data!;
+  }
 }
 
 // Hook-friendly API functions
@@ -86,4 +103,5 @@ export const userApi = {
   updateProfile: UserApi.updateProfile,
   changePassword: UserApi.changePassword,
   uploadAvatar: UserApi.uploadAvatar,
+  updateTourStatus: UserApi.updateTourStatus,
 };

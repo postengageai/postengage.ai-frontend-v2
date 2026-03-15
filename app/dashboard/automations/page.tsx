@@ -569,7 +569,7 @@ export default function AutomationsPage() {
   return (
     <div className='flex h-full flex-col'>
       {/* ── Header ── */}
-      <div className='flex-none border-b border-border px-4 py-4 sm:px-6 sm:py-5'>
+      <div className='flex-none border-b border-border px-4 py-4 sm:px-6 sm:py-5' data-tour="automations-header">
         {/* Title row — stacks on mobile */}
         <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
           <div className='min-w-0'>
@@ -605,7 +605,7 @@ export default function AutomationsPage() {
                 </span>
               </Link>
             </Button>
-            <Button asChild size='sm' className='h-9 shrink-0 gap-1.5'>
+            <Button asChild size='sm' className='h-9 shrink-0 gap-1.5' data-tour="create-automation-btn">
               <Link href='/dashboard/automations/new'>
                 <Plus className='h-4 w-4' />
                 <span className='hidden sm:inline'>New Automation</span>
@@ -670,7 +670,7 @@ export default function AutomationsPage() {
       </div>
 
       {/* ── List ── */}
-      <div className='flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'>
+      <div className='flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5' data-tour="automations-list">
         {isLoading ? (
           <div className='space-y-3'>
             {[0, 1, 2].map(i => (

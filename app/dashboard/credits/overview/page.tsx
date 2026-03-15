@@ -351,7 +351,9 @@ function CreditsPageContent() {
         </Link>
       </div>
 
-      <CreditBalanceCard balance={displayBalance} isLoading={isLoading} />
+      <div data-tour="credits-balance">
+        <CreditBalanceCard balance={displayBalance} isLoading={isLoading} />
+      </div>
 
       <UsageSummaryCards
         consumed={Math.abs(displayUsage.totals.consumption)}

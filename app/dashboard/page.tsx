@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
@@ -17,24 +16,15 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { ImpactCard } from '@/components/dashboard/impact-card';
 import type { Notification } from '@/lib/types/notifications';
 import { analytics } from '@/lib/analytics';
-import { useDashboardStats, useBots, queryKeys } from '@/lib/hooks';
+import { useDashboardStats, queryKeys } from '@/lib/hooks';
 import type { DashboardStatsResponse } from '@/lib/api/dashboard';
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const qc = useQueryClient();
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useDashboardStats();
-
-  // ── Onboarding redirect for brand-new users ────────────────────────────────
-  const { data: bots } = useBots();
-  React.useEffect(() => {
-    const alreadyDone = localStorage.getItem('onboarding_complete');
-    if (alreadyDone || bots === undefined) return;
-    if (bots.length === 0) router.replace('/dashboard/onboarding');
-  }, [bots, router]);
 
   // ── First reply analytics tracking ────────────────────────────────────────
   const hasTrackedRef = React.useRef(false);
@@ -199,7 +189,7 @@ export default function DashboardPage() {
   if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <main className='p-4 sm:p-6 lg:p-8 space-y-6'>
+    <main className='p-4 sm:p-6 lg:p-8 space-y-6' data-tour='dashboard-stats'>
       {/* System Health Bar */}
       <SystemHealthBar
         isConnected={connectedAccount?.isConnected ?? false}

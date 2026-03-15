@@ -136,7 +136,7 @@ export default function BrandVoicesPage() {
   return (
     <div className='h-full flex flex-col overflow-x-hidden'>
       {/* Header Section */}
-      <div className='flex flex-col gap-3 p-4 sm:p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10'>
+      <div className='flex flex-col gap-3 p-4 sm:p-6 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10' data-tour="brand-voices-header">
         <div className='flex items-center justify-between gap-2'>
           <div className='min-w-0'>
             <h2 className='text-xl sm:text-2xl font-bold tracking-tight'>
@@ -149,6 +149,7 @@ export default function BrandVoicesPage() {
           <Link
             href='/dashboard/intelligence/brand-voices/new'
             className='shrink-0'
+            data-tour="create-brand-voice-btn"
           >
             <Button>
               <Plus className='mr-2 h-4 w-4' />

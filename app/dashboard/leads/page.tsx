@@ -200,7 +200,7 @@ export default function LeadsPage() {
   return (
     <div className='flex h-full flex-col gap-6 p-6'>
       {/* Header */}
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between' data-tour="leads-header">
         <div>
           <h1 className='text-2xl font-semibold tracking-tight'>Leads</h1>
           <p className='text-sm text-muted-foreground'>
@@ -299,6 +299,7 @@ export default function LeadsPage() {
           'flex-1 overflow-auto rounded-lg border transition-opacity',
           isFetching && !showSkeleton ? 'opacity-70' : 'opacity-100'
         )}
+        data-tour="leads-table"
       >
         <Table>
           <TableHeader>

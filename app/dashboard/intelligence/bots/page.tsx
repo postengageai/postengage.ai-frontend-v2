@@ -147,7 +147,7 @@ export default function BotsPage() {
 
   return (
     <div className='p-4 sm:p-6 space-y-6'>
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4' data-tour="bots-header">
         <div className='min-w-0'>
           <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
             AI Bots
@@ -159,6 +159,7 @@ export default function BotsPage() {
         <Link
           href='/dashboard/intelligence/bots/new'
           className='shrink-0 self-start sm:self-auto'
+          data-tour="create-bot-btn"
         >
           <Button>
             <Plus className='mr-2 h-4 w-4' />
@@ -181,7 +182,7 @@ export default function BotsPage() {
           </Link>
         </div>
       ) : (
-        <div className='grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3' data-tour="bots-list">
           {bots.map(bot => (
             <Card key={bot._id}>
               <CardHeader className='flex flex-row items-start justify-between space-y-0 pb-2'>
