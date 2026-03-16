@@ -204,15 +204,9 @@ export function SelectTriggerStep({
       updateFormData({
         trigger_type: selectedTrigger,
         trigger_source:
-          selectedTrigger === AutomationTriggerType.NEW_COMMENT
-            ? AutomationTriggerSource.POST
-            : selectedTrigger === AutomationTriggerType.DM_RECEIVED
-              ? AutomationTriggerSource.DIRECT_MESSAGE
-              : selectedTrigger === AutomationTriggerType.STORY_REPLY
-                ? AutomationTriggerSource.STORY
-                : selectedTrigger === AutomationTriggerType.NEW_FOLLOWER
-                  ? AutomationTriggerSource.PROFILE
-                  : AutomationTriggerSource.POST,
+          selectedTrigger === AutomationTriggerType.DM_RECEIVED
+            ? AutomationTriggerSource.DIRECT_MESSAGE
+            : AutomationTriggerSource.POST,
         ...(isCommentTrigger && {
           trigger_scope: scope,
           content_ids: selectedMediaIds,

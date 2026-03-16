@@ -227,11 +227,7 @@ export function AutomationWizard({
           formData.trigger_source ||
           (formData.trigger_type === AutomationTriggerType.DM_RECEIVED
             ? AutomationTriggerSource.DIRECT_MESSAGE
-            : formData.trigger_type === AutomationTriggerType.STORY_REPLY
-              ? AutomationTriggerSource.STORY
-              : formData.trigger_type === AutomationTriggerType.NEW_FOLLOWER
-                ? AutomationTriggerSource.PROFILE
-                : AutomationTriggerSource.POST),
+            : AutomationTriggerSource.POST),
         ...(formData.trigger_type === AutomationTriggerType.NEW_COMMENT
           ? {
               trigger_scope:

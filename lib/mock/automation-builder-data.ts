@@ -184,10 +184,7 @@ export const mockBuilderUIState: BuilderUIState = {
 export function getTriggerTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     new_comment: 'New Comment',
-    keyword_mention: 'Keyword Mention',
     new_dm: 'New DM',
-    story_reply: 'Story Reply',
-    new_follower: 'New Follower',
   };
   return labels[type] || type;
 }

@@ -194,24 +194,6 @@ function TriggerInspector({
         </>
       )}
 
-      {trigger.type === 'keyword_mention' && (
-        <div className='space-y-4'>
-          <div className='space-y-2'>
-            <Label className='text-xs text-muted-foreground uppercase tracking-wide'>
-              Keywords to Monitor
-            </Label>
-            <Textarea
-              placeholder='Enter keywords, one per line...'
-              className='bg-background/50 resize-none text-sm'
-              rows={4}
-            />
-            <p className='text-xs text-muted-foreground'>
-              The automation triggers when any of these keywords appear
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Scope settings */}
       <div className='space-y-2'>
         <Label className='text-xs text-muted-foreground uppercase tracking-wide'>

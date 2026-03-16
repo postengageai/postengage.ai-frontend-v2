@@ -51,12 +51,6 @@ function getTriggerLabel(type?: string) {
       return 'New Comment';
     case AutomationTriggerType.DM_RECEIVED:
       return 'DM Received';
-    case AutomationTriggerType.STORY_REPLY:
-      return 'Story Reply';
-    case AutomationTriggerType.MENTION:
-      return 'Mention';
-    case AutomationTriggerType.NEW_FOLLOWER:
-      return 'New Follower';
     default:
       return type || '—';
   }
@@ -68,12 +62,6 @@ function getTriggerIcon(type?: string) {
       return MessageCircle;
     case AutomationTriggerType.DM_RECEIVED:
       return Mail;
-    case AutomationTriggerType.STORY_REPLY:
-      return ImageIcon;
-    case AutomationTriggerType.MENTION:
-      return AtSign;
-    case AutomationTriggerType.NEW_FOLLOWER:
-      return UserPlus;
     default:
       return MessageCircle;
   }

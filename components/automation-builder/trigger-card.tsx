@@ -42,10 +42,7 @@ interface TriggerCardProps {
 
 const triggerIcons: Record<TriggerType, React.ReactNode> = {
   new_comment: <MessageCircle className='h-4 w-4' />,
-  keyword_mention: <Hash className='h-4 w-4' />,
-  new_dm: <Mail className='h-4 w-4' />,
-  story_reply: <MessageSquare className='h-4 w-4' />,
-  new_follower: <UserPlus className='h-4 w-4' />,
+  dm_received: <Mail className='h-4 w-4' />,
 };
 
 const postTypeIcons = {
@@ -115,28 +112,10 @@ export function TriggerCard({
                     <span>New Comment</span>
                   </div>
                 </SelectItem>
-                <SelectItem value='keyword_mention'>
-                  <div className='flex items-center gap-2'>
-                    <Hash className='h-4 w-4' />
-                    <span>Keyword Mention</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value='new_dm'>
+                <SelectItem value='dm_received'>
                   <div className='flex items-center gap-2'>
                     <Mail className='h-4 w-4' />
-                    <span>New DM</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value='story_reply'>
-                  <div className='flex items-center gap-2'>
-                    <MessageSquare className='h-4 w-4' />
-                    <span>Story Reply</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value='new_follower'>
-                  <div className='flex items-center gap-2'>
-                    <UserPlus className='h-4 w-4' />
-                    <span>New Follower</span>
+                    <span>Direct Message</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -144,8 +123,7 @@ export function TriggerCard({
           </div>
 
           {/* Scope Selector (only for comment/story triggers) */}
-          {(trigger.type === 'new_comment' ||
-            trigger.type === 'story_reply') && (
+          {trigger.type === 'new_comment' && (
             <div className='space-y-1.5'>
               <label className='text-xs text-muted-foreground'>Apply To</label>
               <Select
