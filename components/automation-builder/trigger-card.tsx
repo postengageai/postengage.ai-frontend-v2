@@ -5,10 +5,7 @@ import Image from 'next/image';
 
 import {
   MessageCircle,
-  Hash,
   Mail,
-  MessageSquare,
-  UserPlus,
   ImageIcon,
   Video,
   Film,
@@ -173,6 +170,7 @@ export function TriggerCard({
                         alt=''
                         fill
                         className='object-cover'
+                        unoptimized
                       />
                       <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
                         {postTypeIcons[post.postType]}

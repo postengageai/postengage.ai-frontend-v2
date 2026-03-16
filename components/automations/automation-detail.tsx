@@ -1753,6 +1753,7 @@ export function AutomationDetail({
                     width={14}
                     height={14}
                     className='h-3.5 w-3.5 rounded-full'
+                    unoptimized
                   />
                   <span>@{automation.social_account.username}</span>
                   {automation.last_executed_at && (

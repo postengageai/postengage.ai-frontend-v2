@@ -147,6 +147,7 @@ export function ProfileForm() {
                     alt='Profile'
                     fill
                     className='object-cover'
+                    unoptimized
                   />
                 ) : (
                   <span className='flex h-full w-full items-center justify-center text-xl font-medium text-muted-foreground'>

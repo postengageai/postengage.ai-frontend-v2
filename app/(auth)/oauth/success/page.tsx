@@ -166,6 +166,7 @@ function OAuthSuccessContent() {
                 width={48}
                 height={48}
                 className='rounded-full border-2 border-border'
+                unoptimized
               />
             ) : (
               <div className='h-12 w-12 rounded-full border-2 border-border bg-primary/20 flex items-center justify-center text-primary font-bold text-lg'>

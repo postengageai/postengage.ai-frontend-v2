@@ -1,4 +1,4 @@
-import { httpClient, SuccessResponse } from '../http/client';
+import { httpClient } from '../http/client';
 
 const BASE = '/api/v1/affiliates';
 
@@ -22,13 +22,12 @@ export interface JoinAffiliateDto {
 export const AffiliateApi = {
   /** POST /affiliates/join — opt into the affiliate program */
   join: (dto: JoinAffiliateDto = {}) =>
-    httpClient.post<SuccessResponse<Affiliate>>(`${BASE}/join`, dto),
+    httpClient.post<Affiliate>(`${BASE}/join`, dto),
 
   /** GET /affiliates/me — get caller's affiliate stats */
-  getMyAffiliate: () =>
-    httpClient.get<SuccessResponse<Affiliate>>(`${BASE}/me`),
+  getMyAffiliate: () => httpClient.get<Affiliate>(`${BASE}/me`),
 
   /** POST /affiliates/track/:code — record a referral link click (public) */
   trackClick: (code: string) =>
-    httpClient.post<SuccessResponse<{ code: string }>>(`${BASE}/track/${code}`, {}),
+    httpClient.post<{ code: string }>(`${BASE}/track/${code}`, {}),
 };
