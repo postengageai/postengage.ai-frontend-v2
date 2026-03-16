@@ -38,7 +38,10 @@ import type {
   SocialAccountConnectionStatus,
 } from '@/lib/types/settings';
 import { SocialAccountsSkeleton } from './social-accounts-skeleton';
-import { WhatsAppWaitlistCard } from './whatsapp-waitlist-card';
+import {
+  PlatformWaitlistCard,
+  WAITLIST_PLATFORMS,
+} from './platform-waitlist-card';
 
 const statusConfig: Record<
   SocialAccountConnectionStatus,
@@ -284,7 +287,14 @@ export function SocialAccounts() {
             </Button>
           </CardContent>
         </Card>
-        <WhatsAppWaitlistCard />
+        <div className='space-y-4'>
+          <h3 className='text-sm font-medium text-muted-foreground'>More platforms coming soon</h3>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            {WAITLIST_PLATFORMS.map(cfg => (
+              <PlatformWaitlistCard key={cfg.platform} config={cfg} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -472,8 +482,15 @@ export function SocialAccounts() {
         </CardContent>
       </Card>
 
-      {/* WhatsApp Coming Soon */}
-      <WhatsAppWaitlistCard />
+      {/* More platforms coming soon */}
+      <div className='space-y-4'>
+        <h3 className='text-sm font-medium text-muted-foreground'>More platforms coming soon</h3>
+        <div className='grid gap-4 sm:grid-cols-2'>
+          {WAITLIST_PLATFORMS.map(cfg => (
+            <PlatformWaitlistCard key={cfg.platform} config={cfg} />
+          ))}
+        </div>
+      </div>
 
       {/* Disconnect Confirmation */}
       <AlertDialog
