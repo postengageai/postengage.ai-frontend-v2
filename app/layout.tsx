@@ -47,10 +47,10 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/logo.jpeg',
+        url: '/og-default.png',
         width: 1200,
         height: 630,
-        alt: 'PostEngage.ai Dashboard',
+        alt: 'PostEngage.ai — AI Instagram Automation & DM Replies',
       },
     ],
   },
@@ -77,13 +77,19 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/logo.jpeg',
-    shortcut: '/logo.jpeg',
-    apple: '/logo.jpeg',
-    other: {
-      rel: 'apple-touch-icon-precomposed',
-      url: '/logo.jpeg',
-    },
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon-32x32.png',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      { rel: 'manifest', url: '/site.webmanifest' },
+    ],
   },
 };
 
