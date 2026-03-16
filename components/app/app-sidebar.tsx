@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { AppLogo } from '@/components/app/app-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -189,14 +190,13 @@ export function AppSidebar() {
     <Sidebar className='border-r border-border/50'>
       {/* Header with Logo */}
       <SidebarHeader className='p-5 pb-4'>
-        <Link href='/dashboard' className='flex items-center gap-3'>
-          <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20'>
-            <Sparkles className='h-5 w-5 text-primary-foreground' />
-          </div>
-          <span className='text-lg font-semibold tracking-tight'>
-            PostEngageAI
-          </span>
-        </Link>
+        <AppLogo
+          variant='wordmark'
+          colorScheme='auto'
+          height={28}
+          href='/dashboard'
+          priority
+        />
       </SidebarHeader>
 
       {/* Navigation */}

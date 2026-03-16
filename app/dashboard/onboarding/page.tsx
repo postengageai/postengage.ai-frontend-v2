@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AppLogo } from '@/components/app/app-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,9 +44,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 // ─── Step definitions ─────────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: 'connect',   label: 'Connect',   icon: Instagram },
-  { id: 'automate',  label: 'Automate',  icon: Zap },
-  { id: 'launch',    label: 'Launch',    icon: Rocket },
+  { id: 'connect', label: 'Connect', icon: Instagram },
+  { id: 'automate', label: 'Automate', icon: Zap },
+  { id: 'launch', label: 'Launch', icon: Rocket },
 ] as const;
 
 type StepId = (typeof STEPS)[number]['id'];
@@ -57,30 +58,44 @@ function StepIndicator({ current }: { current: StepId }) {
   return (
     <div className='flex items-center justify-center gap-0 mb-10'>
       {STEPS.map((step, idx) => {
-        const done    = idx < currentIdx;
-        const active  = idx === currentIdx;
-        const Icon    = step.icon;
+        const done = idx < currentIdx;
+        const active = idx === currentIdx;
+        const Icon = step.icon;
         return (
           <div key={step.id} className='flex items-center'>
             <div className='flex flex-col items-center gap-1.5'>
-              <div className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all duration-300',
-                done   ? 'bg-primary border-primary text-primary-foreground' :
-                active ? 'bg-primary/10 border-primary text-primary' :
-                         'bg-muted border-border text-muted-foreground'
-              )}>
-                {done ? <CheckCircle2 className='h-4.5 w-4.5' /> : <Icon className='h-4 w-4' />}
+              <div
+                className={cn(
+                  'h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all duration-300',
+                  done
+                    ? 'bg-primary border-primary text-primary-foreground'
+                    : active
+                      ? 'bg-primary/10 border-primary text-primary'
+                      : 'bg-muted border-border text-muted-foreground'
+                )}
+              >
+                {done ? (
+                  <CheckCircle2 className='h-4.5 w-4.5' />
+                ) : (
+                  <Icon className='h-4 w-4' />
+                )}
               </div>
-              <span className={cn(
-                'text-[11px] font-medium hidden sm:block',
-                active ? 'text-foreground' : 'text-muted-foreground'
-              )}>{step.label}</span>
+              <span
+                className={cn(
+                  'text-[11px] font-medium hidden sm:block',
+                  active ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {step.label}
+              </span>
             </div>
             {idx < STEPS.length - 1 && (
-              <div className={cn(
-                'h-0.5 w-16 sm:w-24 mx-2 mt-[-18px] sm:mt-[-20px] transition-all',
-                idx < currentIdx ? 'bg-primary' : 'bg-border'
-              )} />
+              <div
+                className={cn(
+                  'h-0.5 w-16 sm:w-24 mx-2 mt-[-18px] sm:mt-[-20px] transition-all',
+                  idx < currentIdx ? 'bg-primary' : 'bg-border'
+                )}
+              />
             )}
           </div>
         );
@@ -94,21 +109,21 @@ function StepIndicator({ current }: { current: StepId }) {
 type TriggerChoice = 'comment' | 'dm';
 
 interface AutomationDraft {
-  name:        string;
-  trigger:     TriggerChoice;
-  replyText:   string;
-  keywords:    string[];   // optional keyword filter
-  sendDmToo:   boolean;    // for comment trigger: also send a DM
-  dmText:      string;
+  name: string;
+  trigger: TriggerChoice;
+  replyText: string;
+  keywords: string[]; // optional keyword filter
+  sendDmToo: boolean; // for comment trigger: also send a DM
+  dmText: string;
 }
 
 const DEFAULT_DRAFT: AutomationDraft = {
-  name:      'My First Automation',
-  trigger:   'comment',
+  name: 'My First Automation',
+  trigger: 'comment',
   replyText: '',
-  keywords:  [],
+  keywords: [],
   sendDmToo: false,
-  dmText:    '',
+  dmText: '',
 };
 
 // ─── Step 2: Automate ─────────────────────────────────────────────────────────
@@ -127,11 +142,13 @@ function AutomateStep({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (patch: Partial<AutomationDraft>) => setDraft(d => ({ ...d, ...patch }));
+  const set = (patch: Partial<AutomationDraft>) =>
+    setDraft(d => ({ ...d, ...patch }));
 
   const addKeyword = () => {
     const kw = keyword.trim().toLowerCase();
-    if (kw && !draft.keywords.includes(kw)) set({ keywords: [...draft.keywords, kw] });
+    if (kw && !draft.keywords.includes(kw))
+      set({ keywords: [...draft.keywords, kw] });
     setKeyword('');
   };
 
@@ -149,7 +166,8 @@ function AutomateStep({
     try {
       const isComment = draft.trigger === 'comment';
 
-      const actions: Parameters<typeof automationsApi.create>[0]['actions'] = [];
+      const actions: Parameters<typeof automationsApi.create>[0]['actions'] =
+        [];
 
       // Primary action
       if (isComment) {
@@ -180,7 +198,9 @@ function AutomateStep({
       }
 
       // Keyword conditions
-      const conditions: Parameters<typeof automationsApi.create>[0]['conditions'] = [];
+      const conditions: Parameters<
+        typeof automationsApi.create
+      >[0]['conditions'] = [];
       if (draft.keywords.length > 0) {
         conditions.push({
           condition_type: AutomationConditionType.KEYWORD,
@@ -191,13 +211,17 @@ function AutomateStep({
       }
 
       await automationsApi.create({
-        name:             draft.name,
+        name: draft.name,
         social_account_id: socialAccount.id,
-        platform:         'instagram',
-        status:           'active',
+        platform: 'instagram',
+        status: 'active',
         trigger: {
-          trigger_type:   isComment ? AutomationTriggerType.NEW_COMMENT : AutomationTriggerType.DM_RECEIVED,
-          trigger_source: isComment ? AutomationTriggerSource.POST     : AutomationTriggerSource.DIRECT_MESSAGE,
+          trigger_type: isComment
+            ? AutomationTriggerType.NEW_COMMENT
+            : AutomationTriggerType.DM_RECEIVED,
+          trigger_source: isComment
+            ? AutomationTriggerSource.POST
+            : AutomationTriggerSource.DIRECT_MESSAGE,
           ...(isComment && { trigger_scope: AutomationTriggerScope.ALL }),
         },
         conditions,
@@ -209,7 +233,7 @@ function AutomateStep({
     } catch (e: unknown) {
       setError(
         (e instanceof Error ? e.message : null) ??
-        'Failed to create automation. You can set it up later from the Automations page.'
+          'Failed to create automation. You can set it up later from the Automations page.'
       );
     } finally {
       setSaving(false);
@@ -224,10 +248,20 @@ function AutomateStep({
           When should this run?
         </Label>
         <div className='grid grid-cols-2 gap-3'>
-          {([
-            { value: 'comment' as const, icon: MessageCircle, label: 'New Comment', desc: 'Reply when someone comments on your posts' },
-            { value: 'dm' as const,      icon: Mail,          label: 'Direct Message', desc: 'Reply when someone sends you a DM' },
-          ]).map(opt => (
+          {[
+            {
+              value: 'comment' as const,
+              icon: MessageCircle,
+              label: 'New Comment',
+              desc: 'Reply when someone comments on your posts',
+            },
+            {
+              value: 'dm' as const,
+              icon: Mail,
+              label: 'Direct Message',
+              desc: 'Reply when someone sends you a DM',
+            },
+          ].map(opt => (
             <button
               key={opt.value}
               onClick={() => set({ trigger: opt.value })}
@@ -238,15 +272,21 @@ function AutomateStep({
                   : 'border-border bg-card hover:border-primary/40'
               )}
             >
-              <div className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-lg',
-                draft.trigger === opt.value ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-              )}>
+              <div
+                className={cn(
+                  'flex h-8 w-8 items-center justify-center rounded-lg',
+                  draft.trigger === opt.value
+                    ? 'bg-primary text-white'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
                 <opt.icon className='h-4 w-4' />
               </div>
               <div>
                 <p className='text-sm font-semibold'>{opt.label}</p>
-                <p className='text-xs text-muted-foreground mt-0.5 leading-snug'>{opt.desc}</p>
+                <p className='text-xs text-muted-foreground mt-0.5 leading-snug'>
+                  {opt.desc}
+                </p>
               </div>
               {draft.trigger === opt.value && (
                 <div className='absolute top-3 right-3 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white'>
@@ -261,7 +301,10 @@ function AutomateStep({
       {/* Section: Reply message */}
       <div>
         <div className='flex items-center justify-between mb-2'>
-          <Label htmlFor='reply-text' className='text-sm font-semibold text-foreground'>
+          <Label
+            htmlFor='reply-text'
+            className='text-sm font-semibold text-foreground'
+          >
             {draft.trigger === 'comment' ? 'Comment reply' : 'DM reply'}
           </Label>
           <span className='text-[11px] text-success font-medium flex items-center gap-1'>
@@ -291,7 +334,9 @@ function AutomateStep({
           <div className='flex items-center justify-between'>
             <div>
               <p className='text-sm font-medium'>Also send a DM?</p>
-              <p className='text-xs text-muted-foreground'>Slide into their DMs after replying to the comment</p>
+              <p className='text-xs text-muted-foreground'>
+                Slide into their DMs after replying to the comment
+              </p>
             </div>
             <button
               onClick={() => set({ sendDmToo: !draft.sendDmToo })}
@@ -300,10 +345,12 @@ function AutomateStep({
                 draft.sendDmToo ? 'bg-primary' : 'bg-muted-foreground/30'
               )}
             >
-              <span className={cn(
-                'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all',
-                draft.sendDmToo ? 'left-[22px]' : 'left-0.5'
-              )} />
+              <span
+                className={cn(
+                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all',
+                  draft.sendDmToo ? 'left-[22px]' : 'left-0.5'
+                )}
+              />
             </button>
           </div>
           {draft.sendDmToo && (
@@ -322,11 +369,15 @@ function AutomateStep({
       <div>
         <div className='flex items-center justify-between mb-2'>
           <Label className='text-sm font-semibold text-foreground'>
-            Keyword filter <span className='font-normal text-muted-foreground'>(optional)</span>
+            Keyword filter{' '}
+            <span className='font-normal text-muted-foreground'>
+              (optional)
+            </span>
           </Label>
         </div>
         <p className='text-xs text-muted-foreground mb-3'>
-          Only trigger when the message contains one of these keywords. Leave empty to trigger on everything.
+          Only trigger when the message contains one of these keywords. Leave
+          empty to trigger on everything.
         </p>
         <div className='flex gap-2'>
           <div className='flex-1 relative'>
@@ -335,20 +386,38 @@ function AutomateStep({
               placeholder='e.g. price, link, info'
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addKeyword();
+                }
+              }}
               className='pl-8 h-9 text-sm'
             />
           </div>
-          <Button size='sm' variant='outline' onClick={addKeyword} disabled={!keyword.trim()} className='h-9'>
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={addKeyword}
+            disabled={!keyword.trim()}
+            className='h-9'
+          >
             Add
           </Button>
         </div>
         {draft.keywords.length > 0 && (
           <div className='flex flex-wrap gap-1.5 mt-3'>
             {draft.keywords.map(kw => (
-              <Badge key={kw} variant='secondary' className='gap-1 pr-1.5 text-xs'>
+              <Badge
+                key={kw}
+                variant='secondary'
+                className='gap-1 pr-1.5 text-xs'
+              >
                 {kw}
-                <button onClick={() => removeKeyword(kw)} className='ml-0.5 hover:text-destructive transition-colors'>
+                <button
+                  onClick={() => removeKeyword(kw)}
+                  className='ml-0.5 hover:text-destructive transition-colors'
+                >
                   <X className='h-3 w-3' />
                 </button>
               </Badge>
@@ -359,7 +428,10 @@ function AutomateStep({
 
       {/* Section: Name */}
       <div>
-        <Label htmlFor='auto-name' className='text-sm font-semibold text-foreground mb-2 block'>
+        <Label
+          htmlFor='auto-name'
+          className='text-sm font-semibold text-foreground mb-2 block'
+        >
           Automation name
         </Label>
         <Input
@@ -373,7 +445,9 @@ function AutomateStep({
 
       {/* Error */}
       {error && (
-        <p className='text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2'>{error}</p>
+        <p className='text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2'>
+          {error}
+        </p>
       )}
 
       {/* Actions */}
@@ -383,12 +457,25 @@ function AutomateStep({
         </Button>
         <div className='flex gap-3'>
           {error && (
-            <Button variant='ghost' size='sm' onClick={onComplete} disabled={saving}>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={onComplete}
+              disabled={saving}
+            >
               Skip for now
             </Button>
           )}
-          <Button onClick={handleCreate} disabled={!isValid || saving} className='gap-2'>
-            {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : <Zap className='h-4 w-4' />}
+          <Button
+            onClick={handleCreate}
+            disabled={!isValid || saving}
+            className='gap-2'
+          >
+            {saving ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <Zap className='h-4 w-4' />
+            )}
             {saving ? 'Creating…' : 'Create & Launch →'}
           </Button>
         </div>
@@ -419,7 +506,9 @@ function LaunchStep({
       <div className='text-6xl animate-bounce'>🚀</div>
 
       <div>
-        <h2 className='text-2xl font-bold text-foreground'>You&apos;re live!</h2>
+        <h2 className='text-2xl font-bold text-foreground'>
+          You&apos;re live!
+        </h2>
         {accountUsername && (
           <p className='text-sm text-muted-foreground mt-1'>
             @{accountUsername} is now on autopilot
@@ -440,7 +529,8 @@ function LaunchStep({
       {/* What's next hint */}
       <div className='rounded-xl border border-primary/20 bg-primary/5 p-4 max-w-sm mx-auto'>
         <p className='text-xs text-primary/80 font-medium'>
-          💡 Want smarter replies? Add an AI bot from your dashboard to handle complex questions automatically.
+          💡 Want smarter replies? Add an AI bot from your dashboard to handle
+          complex questions automatically.
         </p>
       </div>
 
@@ -515,9 +605,15 @@ export default function OnboardingPage() {
   const primaryAccount = accounts[0];
 
   const stepTitles: Record<StepId, { title: string; sub: string }> = {
-    connect:  { title: 'Connect your Instagram', sub: 'Link your account to start automating' },
-    automate: { title: 'Set up your first automation', sub: 'Takes 30 seconds · 100% free · no AI credits needed' },
-    launch:   { title: "You're all set!", sub: '' },
+    connect: {
+      title: 'Connect your Instagram',
+      sub: 'Link your account to start automating',
+    },
+    automate: {
+      title: 'Set up your first automation',
+      sub: 'Takes 30 seconds · 100% free · no AI credits needed',
+    },
+    launch: { title: "You're all set!", sub: '' },
   };
 
   const { title, sub } = stepTitles[step];
@@ -526,11 +622,13 @@ export default function OnboardingPage() {
     <div className='min-h-screen bg-background flex flex-col items-center justify-start p-4 sm:p-8 pt-10'>
       <div className='w-full max-w-2xl'>
         {/* Brand mark */}
-        <div className='flex items-center justify-center gap-2 mb-8'>
-          <div className='h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center'>
-            <Sparkles className='h-4 w-4 text-white' />
-          </div>
-          <span className='font-semibold text-sm text-muted-foreground'>PostEngage.ai</span>
+        <div className='flex items-center justify-center mb-8'>
+          <AppLogo
+            variant='wordmark'
+            colorScheme='auto'
+            height={26}
+            href={false}
+          />
         </div>
 
         {/* Step indicator */}
@@ -542,7 +640,9 @@ export default function OnboardingPage() {
           {step !== 'launch' && (
             <div className='border-b border-border bg-muted/20 px-6 sm:px-8 py-5'>
               <h1 className='text-lg font-bold text-foreground'>{title}</h1>
-              {sub && <p className='text-sm text-muted-foreground mt-0.5'>{sub}</p>}
+              {sub && (
+                <p className='text-sm text-muted-foreground mt-0.5'>{sub}</p>
+              )}
             </div>
           )}
 
