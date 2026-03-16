@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useUser, useUserActions } from '@/lib/user/store';
+import { useAuthStore } from '@/lib/auth/store';
 import { CreditsApi } from '@/lib/api/credits';
 import { AuthApi } from '@/lib/api/auth';
 import { useEffect, useState, useCallback } from 'react';
@@ -146,6 +147,7 @@ export function AppSidebar() {
   const router = useRouter();
   const user = useUser();
   const { setUser } = useUserActions();
+  const { actions: authActions } = useAuthStore();
   const { isMobile, setOpenMobile } = useSidebar();
   const [credits, setCredits] = useState({ remaining: 0 });
 
@@ -160,10 +162,15 @@ export function AppSidebar() {
     try {
       await AuthApi.logout();
     } catch (_error) {
-      // console.error('Logout failed:', error);
+      // ignore — even if the API call fails, clear local state and redirect
     } finally {
+      // Clear all client-side auth state
       setUser(null);
-      router.push('/login');
+      authActions.clearAuth();
+      // Use a full page navigation so the browser sends the cleared cookie
+      // to the middleware — router.push() is client-side and can race against
+      // the Set-Cookie header from the logout response.
+      window.location.href = '/login';
     }
   };
 
