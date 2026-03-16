@@ -767,6 +767,12 @@ export default function OnboardingPage() {
     router.refresh();
   };
 
+  // Don't render anything while we know the user has completed onboarding —
+  // the useEffect redirect will fire, but returning null prevents any content flash.
+  if (user?.onboarding_completed_at) {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className='min-h-screen flex items-center justify-center p-6'>
