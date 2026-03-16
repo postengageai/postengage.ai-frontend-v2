@@ -59,6 +59,8 @@ export const SignupRequestSchema = z.object({
       /[^A-Za-z0-9]/,
       'Password must contain at least one special character'
     ),
+  /** Optional referral code from an affiliate link */
+  ref: z.string().max(20).optional(),
 });
 
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;

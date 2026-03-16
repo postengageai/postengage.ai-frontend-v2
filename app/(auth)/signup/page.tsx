@@ -1,9 +1,9 @@
 'use client';
 
 import type React from 'react';
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   MessageCircle,
@@ -23,6 +23,7 @@ import {
 } from '@/components/auth/password-strength';
 import { FormError } from '@/components/auth/form-error';
 import { AuthApi } from '@/lib/api/auth';
+import { AffiliateApi } from '@/lib/api/affiliate';
 import { parseApiError } from '@/lib/http/errors';
 
 /* ─── Feature bullet ───────────────────────────────────────────────────── */
@@ -93,13 +94,30 @@ function SocialProof() {
 }
 
 /* ─── Main page ─────────────────────────────────────────────────────────── */
-export default function SignupPage() {
+function SignupPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ title: string; message: string } | null>(
     null
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Persist the ?ref= code in sessionStorage so it survives any redirects
+  // within the auth flow (e.g. email verify → back to login → signup again).
+  const [refCode, setRefCode] = useState<string | null>(null);
+  useEffect(() => {
+    const param = searchParams.get('ref');
+    if (param) {
+      sessionStorage.setItem('affiliate_ref', param);
+      setRefCode(param);
+      // Fire click tracking — best-effort, non-blocking
+      void AffiliateApi.trackClick(param).catch(() => void 0);
+    } else {
+      const stored = sessionStorage.getItem('affiliate_ref');
+      if (stored) setRefCode(stored);
+    }
+  }, [searchParams]);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -142,7 +160,10 @@ export default function SignupPage() {
         first_name: formData.firstName,
         last_name: formData.lastName,
         password: formData.password,
+        ...(refCode ? { ref: refCode } : {}),
       });
+      // Clear the stored ref once successfully used
+      sessionStorage.removeItem('affiliate_ref');
       router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (err: unknown) {
       const parsed = parseApiError(err, { title: 'Signup failed' });
@@ -377,5 +398,13 @@ export default function SignupPage() {
         </footer>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupPageInner />
+    </Suspense>
   );
 }

@@ -43,6 +43,7 @@ import {
   ChevronUp,
   Dna,
   Users,
+  Gift,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -82,6 +83,12 @@ const navItems = [
     href: '/dashboard/media',
     icon: Sparkles,
     tourId: 'sidebar-media',
+  },
+  {
+    title: 'Affiliate',
+    href: '/dashboard/affiliate',
+    icon: Gift,
+    tourId: 'sidebar-affiliate',
   },
   {
     title: 'Help',
