@@ -1,9 +1,6 @@
 export const AutomationTriggerType = {
   NEW_COMMENT: 'new_comment',
-  STORY_REPLY: 'story_reply',
   DM_RECEIVED: 'dm_received',
-  MENTION: 'mention',
-  NEW_FOLLOWER: 'new_follower',
 } as const;
 
 export type AutomationTriggerTypeType =

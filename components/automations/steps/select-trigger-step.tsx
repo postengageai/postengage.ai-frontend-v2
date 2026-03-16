@@ -142,14 +142,10 @@ export function SelectTriggerStep({
     setSelectedMediaIds([]);
     setSelectedMedia([]);
 
-    let source: AutomationTriggerSourceType = AutomationTriggerSource.POST;
-    if (trigger === AutomationTriggerType.DM_RECEIVED) {
-      source = AutomationTriggerSource.DIRECT_MESSAGE;
-    } else if (trigger === AutomationTriggerType.STORY_REPLY) {
-      source = AutomationTriggerSource.STORY;
-    } else if (trigger === AutomationTriggerType.NEW_FOLLOWER) {
-      source = AutomationTriggerSource.PROFILE;
-    }
+    const source: AutomationTriggerSourceType =
+      trigger === AutomationTriggerType.DM_RECEIVED
+        ? AutomationTriggerSource.DIRECT_MESSAGE
+        : AutomationTriggerSource.POST;
 
     updateFormData({
       trigger_type: trigger,

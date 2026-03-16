@@ -4,10 +4,7 @@ export type Platform = 'instagram' | 'facebook' | 'twitter' | 'linkedin';
 
 export type TriggerType =
   | 'new_comment'
-  | 'keyword_mention'
-  | 'new_dm'
-  | 'story_reply'
-  | 'new_follower';
+  | 'dm_received';
 
 export type TriggerScope =
   | 'all_posts'
