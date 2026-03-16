@@ -280,10 +280,10 @@ export default function HelpSupportPage() {
                       <div>
                         <p className='font-medium'>Email Support</p>
                         <a
-                          href='mailto:postengage.ai@gmail.com'
+                          href='mailto:support@postengage.ai'
                           className='text-sm text-primary hover:underline'
                         >
-                          postengage.ai@gmail.com
+                          support@postengage.ai
                         </a>
                       </div>
                     </div>

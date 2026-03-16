@@ -67,6 +67,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get('session') === 'expired';
+  const justVerified = searchParams.get('verified') === 'true';
   const redirectTo = searchParams.get('redirect') ?? '/dashboard';
 
   const { actions, errors: authErrors } = useAuthStore();
@@ -100,10 +101,15 @@ function LoginContent() {
 
     try {
       const response = await AuthApi.login(values);
-      userActions.setUser(response.data.user);
+      const user = response.data.user;
+      userActions.setUser(user);
       actions.setIsAuthenticated(true);
-      // router.refresh() syncs the middleware cookie state
-      router.push(redirectTo);
+      // If onboarding not completed, redirect to onboarding wizard
+      if (!user.onboarding_completed_at) {
+        router.push('/dashboard/onboarding');
+      } else {
+        router.push(redirectTo);
+      }
       router.refresh();
     } catch (error: unknown) {
       if (error instanceof ApiError) {
@@ -205,6 +211,13 @@ function LoginContent() {
               <div className='mb-6 flex items-center gap-2.5 rounded-lg border border-warning/40 bg-warning-muted px-4 py-3 text-sm text-warning'>
                 <Clock className='h-4 w-4 shrink-0' />
                 Your session has expired. Please log in again.
+              </div>
+            )}
+
+            {justVerified && (
+              <div className='mb-6 flex items-center gap-2.5 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success'>
+                <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M20 6L9 17l-5-5'/></svg>
+                Email verified! Sign in to start automating.
               </div>
             )}
 

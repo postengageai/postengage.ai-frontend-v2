@@ -81,6 +81,12 @@ const navItems = [
     icon: Sparkles,
     tourId: 'sidebar-media',
   },
+  {
+    title: 'Help',
+    href: '/dashboard/help',
+    icon: HelpCircle,
+    tourId: 'sidebar-help',
+  },
 ];
 
 const intelligenceSubItems = [

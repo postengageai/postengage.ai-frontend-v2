@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Loader2,
   Zap,
@@ -153,7 +153,7 @@ function CheckInboxCard({ email }: { email: string }) {
 }
 
 /* ─── State 2: Email Verified success ───────────────────────────────────── */
-function EmailVerifiedCard() {
+function EmailVerifiedCard({ countdown }: { countdown?: number }) {
   return (
     <div className='w-full max-w-[480px] rounded-2xl border border-success/25 bg-[#0d1f14] p-5 sm:p-12 text-center shadow-xl shadow-black/40'>
       {/* Green checkmark */}
@@ -220,9 +220,11 @@ function EmailVerifiedCard() {
         asChild
         className='mt-6 w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
       >
-        <Link href='/login'>
+        <Link href='/login?verified=true'>
           <ArrowRight className='mr-2 h-4 w-4' />
-          Continue to Login
+          {countdown !== undefined && countdown > 0
+            ? `Continuing to login in ${countdown}s...`
+            : 'Continue to Login'}
         </Link>
       </Button>
 
@@ -303,9 +305,9 @@ function LinkExpiredCard({ emailFromUrl }: { emailFromUrl: string }) {
 
 /* ─── Auto-verify via token in URL ──────────────────────────────────────── */
 function AutoVerify({ token, email }: { token: string; email: string }) {
-  const [result, setResult] = useState<'verifying' | 'success' | 'error'>(
-    'verifying'
-  );
+  const router = useRouter();
+  const [result, setResult] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,10 +323,26 @@ function AutoVerify({ token, email }: { token: string; email: string }) {
     };
   }, [token]);
 
+  // Auto-redirect to login after 3 seconds on success
+  useEffect(() => {
+    if (result !== 'success') return;
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          router.push('/login?verified=true');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [result, router]);
+
   if (result === 'success') {
     return (
       <CenteredShell>
-        <EmailVerifiedCard />
+        <EmailVerifiedCard countdown={countdown} />
       </CenteredShell>
     );
   }

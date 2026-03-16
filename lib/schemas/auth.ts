@@ -28,6 +28,8 @@ export const UserSchema = z.object({
   tour_enabled: z.boolean().optional().default(true),
   tours_seen: z.array(z.string()).optional().default([]),
   tours_skipped: z.array(z.string()).optional().default([]),
+  onboarding_completed_at: z.string().nullable().optional().default(null),
+  sound_notifications_enabled: z.boolean().optional().default(false),
   created_at: z.string(),
   updated_at: z.string(),
 });
