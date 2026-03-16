@@ -16,7 +16,10 @@ import {
   Check,
   Tag,
   X,
+  Plus,
+  Images,
 } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { AppLogo } from '@/components/app/app-logo';
 import { Button } from '@/components/ui/button';
@@ -24,6 +27,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { MediaSelectorModal } from '@/components/automations/media-selector-modal';
+import type { Media } from '@/lib/api/media';
 import { SocialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
 import { OnboardingConnectStep } from '@/components/onboarding/onboarding-connect-step';
 import { automationsApi } from '@/lib/api/automations';
@@ -141,6 +153,10 @@ function AutomateStep({
   const [keyword, setKeyword] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Post scope (comment trigger only)
+  const [scope, setScope] = useState<'all' | 'specific'>('all');
+  const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
 
   const set = (patch: Partial<AutomationDraft>) =>
     setDraft(d => ({ ...d, ...patch }));
@@ -157,7 +173,8 @@ function AutomateStep({
 
   const isValid =
     draft.replyText.trim().length >= 2 &&
-    (!draft.sendDmToo || draft.dmText.trim().length >= 2);
+    (!draft.sendDmToo || draft.dmText.trim().length >= 2) &&
+    (draft.trigger !== 'comment' || scope === 'all' || selectedMedia.length > 0);
 
   const handleCreate = async () => {
     if (!isValid) return;
@@ -222,7 +239,15 @@ function AutomateStep({
           trigger_source: isComment
             ? AutomationTriggerSource.POST
             : AutomationTriggerSource.DIRECT_MESSAGE,
-          ...(isComment && { trigger_scope: AutomationTriggerScope.ALL }),
+          ...(isComment && {
+            trigger_scope:
+              scope === 'specific'
+                ? AutomationTriggerScope.SPECIFIC
+                : AutomationTriggerScope.ALL,
+            ...(scope === 'specific' && selectedMedia.length > 0 && {
+              content_ids: selectedMedia.map(m => m.id),
+            }),
+          }),
         },
         conditions,
         actions,
@@ -264,7 +289,13 @@ function AutomateStep({
           ].map(opt => (
             <button
               key={opt.value}
-              onClick={() => set({ trigger: opt.value })}
+              onClick={() => {
+                set({ trigger: opt.value });
+                if (opt.value === 'dm') {
+                  setScope('all');
+                  setSelectedMedia([]);
+                }
+              }}
               className={cn(
                 'relative flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition-all',
                 draft.trigger === opt.value
@@ -297,6 +328,100 @@ function AutomateStep({
           ))}
         </div>
       </div>
+
+      {/* Section: Apply to (comment trigger only) */}
+      {draft.trigger === 'comment' && (
+        <div>
+          <div className='flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4'>
+            <Label className='text-sm font-semibold text-foreground min-w-[68px]'>
+              Apply to
+            </Label>
+            <Select
+              value={scope}
+              onValueChange={v => {
+                const next = v as 'all' | 'specific';
+                setScope(next);
+                if (next === 'all') setSelectedMedia([]);
+              }}
+            >
+              <SelectTrigger className='sm:w-52'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>All posts &amp; reels</SelectItem>
+                <SelectItem value='specific'>Specific posts</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Specific posts picker */}
+          {scope === 'specific' && (
+            <div className='mt-3 rounded-xl border border-border bg-card/50 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm font-medium text-foreground'>
+                    {selectedMedia.length === 0
+                      ? 'No posts selected yet'
+                      : `${selectedMedia.length} post${selectedMedia.length !== 1 ? 's' : ''} selected`}
+                  </p>
+                  <p className='text-xs text-muted-foreground mt-0.5'>
+                    Pick which posts this automation monitors
+                  </p>
+                </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setMediaModalOpen(true)}
+                  className='gap-1.5 shrink-0'
+                >
+                  <Plus className='h-3.5 w-3.5' />
+                  Select Posts
+                </Button>
+              </div>
+
+              {selectedMedia.length > 0 && (
+                <div className='mt-3 flex flex-wrap gap-2'>
+                  {selectedMedia.map(media => (
+                    <div
+                      key={media.id}
+                      className='group relative h-16 w-16 overflow-hidden rounded-lg border border-border'
+                    >
+                      <Image
+                        src={media.thumbnail_url || media.url}
+                        alt='Selected post'
+                        width={64}
+                        height={64}
+                        className='h-full w-full object-cover'
+                        unoptimized
+                      />
+                      <button
+                        onClick={() =>
+                          setSelectedMedia(prev => prev.filter(m => m.id !== media.id))
+                        }
+                        className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100'
+                      >
+                        <X className='h-3 w-3' />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selectedMedia.length === 0 && (
+                <div
+                  className='mt-3 flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border py-6 cursor-pointer hover:border-primary/50 transition-colors'
+                  onClick={() => setMediaModalOpen(true)}
+                >
+                  <Images className='h-8 w-8 text-muted-foreground/40' />
+                  <p className='text-xs text-amber-500 font-medium'>
+                    Select at least one post to continue
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section: Reply message */}
       <div>
@@ -480,6 +605,16 @@ function AutomateStep({
           </Button>
         </div>
       </div>
+
+      {/* Media picker modal (specific posts) */}
+      <MediaSelectorModal
+        open={mediaModalOpen}
+        onOpenChange={setMediaModalOpen}
+        selectedIds={selectedMedia.map(m => m.id)}
+        initialMedia={selectedMedia}
+        onSelect={setSelectedMedia}
+        socialAccountId={socialAccount.id}
+      />
     </div>
   );
 }
@@ -494,16 +629,20 @@ function LaunchStep({
   accountUsername?: string;
 }) {
   const perks = [
-    { icon: '⚡', text: 'Your automation is active and running' },
-    { icon: '💬', text: 'Replies go out instantly — 24/7' },
-    { icon: '🎁', text: '500 free credits to power AI replies later' },
-    { icon: '📊', text: 'Track performance in your dashboard' },
+    { icon: Zap,           iconClass: 'text-yellow-500',  text: 'Your automation is active and running' },
+    { icon: MessageCircle, iconClass: 'text-blue-400',    text: 'Replies go out instantly — 24/7' },
+    { icon: Sparkles,      iconClass: 'text-violet-400',  text: '500 free credits to power AI replies later' },
+    { icon: ArrowRight,    iconClass: 'text-primary',     text: 'Track performance in your dashboard' },
   ];
 
   return (
     <div className='text-center py-4 space-y-6'>
-      {/* Big emoji celebration */}
-      <div className='text-6xl animate-bounce'>🚀</div>
+      {/* Rocket icon — animated */}
+      <div className='flex items-center justify-center'>
+        <div className='animate-bounce flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10'>
+          <Rocket className='h-8 w-8 text-primary' />
+        </div>
+      </div>
 
       <div>
         <h2 className='text-2xl font-bold text-foreground'>
@@ -519,8 +658,10 @@ function LaunchStep({
       {/* What's set up */}
       <div className='rounded-xl border border-border bg-card/50 p-5 text-left space-y-3 max-w-sm mx-auto'>
         {perks.map((p, i) => (
-          <div key={i} className='flex items-start gap-3'>
-            <span className='text-base mt-0.5'>{p.icon}</span>
+          <div key={i} className='flex items-center gap-3'>
+            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted ${p.iconClass}`}>
+              <p.icon className='h-3.5 w-3.5' />
+            </div>
             <p className='text-sm text-foreground'>{p.text}</p>
           </div>
         ))}
@@ -528,10 +669,13 @@ function LaunchStep({
 
       {/* What's next hint */}
       <div className='rounded-xl border border-primary/20 bg-primary/5 p-4 max-w-sm mx-auto'>
-        <p className='text-xs text-primary/80 font-medium'>
-          💡 Want smarter replies? Add an AI bot from your dashboard to handle
-          complex questions automatically.
-        </p>
+        <div className='flex items-start gap-2.5'>
+          <Sparkles className='h-4 w-4 text-primary/70 shrink-0 mt-0.5' />
+          <p className='text-xs text-primary/80 font-medium text-left'>
+            Want smarter replies? Add an AI bot from your dashboard to handle
+            complex questions automatically.
+          </p>
+        </div>
       </div>
 
       <Button onClick={onFinish} size='lg' className='gap-2 px-8'>
