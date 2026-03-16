@@ -198,7 +198,10 @@ export function AutomationWizard({
 
   const goToStep = (step: number) => {
     const minStep = isEditMode ? 3 : 1;
-    if (step >= minStep && step <= 7) {
+    // Only allow navigating to steps the user has already visited (≤ currentStep).
+    // Forward jumps to unvisited steps are blocked — each step must be completed
+    // in order before proceeding.
+    if (step >= minStep && step <= currentStep) {
       setCurrentStep(step);
     }
   };
@@ -292,17 +295,22 @@ export function AutomationWizard({
             const completed = isStepCompleted(step.id);
             const active = isStepActive(step.id);
 
+            const isFuture = step.id > currentStep;
+
             return (
               <button
                 key={step.id}
                 onClick={() => goToStep(step.id)}
+                disabled={isFuture}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
                   active
                     ? 'bg-primary/10 text-foreground'
                     : completed
                       ? 'text-foreground hover:bg-muted/60'
-                      : 'text-muted-foreground'
+                      : isFuture
+                        ? 'cursor-not-allowed text-muted-foreground/40'
+                        : 'text-muted-foreground'
                 )}
               >
                 <div

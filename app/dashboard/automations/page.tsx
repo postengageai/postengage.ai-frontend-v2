@@ -590,7 +590,8 @@ export default function AutomationsPage() {
               <Filter className='h-3.5 w-3.5' />
               <span className='hidden sm:inline'>Filter</span>
             </Button>
-            <Button
+            {/* Flow Builder button — hidden until feature is ready */}
+            {/* <Button
               asChild
               variant='outline'
               size='sm'
@@ -604,7 +605,7 @@ export default function AutomationsPage() {
                   Beta
                 </span>
               </Link>
-            </Button>
+            </Button> */}
             <Button asChild size='sm' className='h-9 shrink-0 gap-1.5' data-tour="create-automation-btn">
               <Link href='/dashboard/automations/new'>
                 <Plus className='h-4 w-4' />
