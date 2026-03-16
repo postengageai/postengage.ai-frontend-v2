@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { AppLogo } from '@/components/app/app-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +39,7 @@ import { SocialAccountsApi, SocialAccount } from '@/lib/api/social-accounts';
 import { OnboardingConnectStep } from '@/components/onboarding/onboarding-connect-step';
 import { automationsApi } from '@/lib/api/automations';
 import { completeOnboarding } from '@/lib/api/user';
-import { useUserActions } from '@/lib/user/store';
+import { useUserActions, useUser } from '@/lib/user/store';
 import { analytics } from '@/lib/analytics';
 import {
   AutomationTriggerType,
@@ -174,7 +173,9 @@ function AutomateStep({
   const isValid =
     draft.replyText.trim().length >= 2 &&
     (!draft.sendDmToo || draft.dmText.trim().length >= 2) &&
-    (draft.trigger !== 'comment' || scope === 'all' || selectedMedia.length > 0);
+    (draft.trigger !== 'comment' ||
+      scope === 'all' ||
+      selectedMedia.length > 0);
 
   const handleCreate = async () => {
     if (!isValid) return;
@@ -244,9 +245,10 @@ function AutomateStep({
               scope === 'specific'
                 ? AutomationTriggerScope.SPECIFIC
                 : AutomationTriggerScope.ALL,
-            ...(scope === 'specific' && selectedMedia.length > 0 && {
-              content_ids: selectedMedia.map(m => m.id),
-            }),
+            ...(scope === 'specific' &&
+              selectedMedia.length > 0 && {
+                content_ids: selectedMedia.map(m => m.id),
+              }),
           }),
         },
         conditions,
@@ -396,7 +398,9 @@ function AutomateStep({
                       />
                       <button
                         onClick={() =>
-                          setSelectedMedia(prev => prev.filter(m => m.id !== media.id))
+                          setSelectedMedia(prev =>
+                            prev.filter(m => m.id !== media.id)
+                          )
                         }
                         className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100'
                       >
@@ -629,10 +633,26 @@ function LaunchStep({
   accountUsername?: string;
 }) {
   const perks = [
-    { icon: Zap,           iconClass: 'text-yellow-500',  text: 'Your automation is active and running' },
-    { icon: MessageCircle, iconClass: 'text-blue-400',    text: 'Replies go out instantly — 24/7' },
-    { icon: Sparkles,      iconClass: 'text-violet-400',  text: '500 free credits to power AI replies later' },
-    { icon: ArrowRight,    iconClass: 'text-primary',     text: 'Track performance in your dashboard' },
+    {
+      icon: Zap,
+      iconClass: 'text-yellow-500',
+      text: 'Your automation is active and running',
+    },
+    {
+      icon: MessageCircle,
+      iconClass: 'text-blue-400',
+      text: 'Replies go out instantly — 24/7',
+    },
+    {
+      icon: Sparkles,
+      iconClass: 'text-violet-400',
+      text: '500 free credits to power AI replies later',
+    },
+    {
+      icon: ArrowRight,
+      iconClass: 'text-primary',
+      text: 'Track performance in your dashboard',
+    },
   ];
 
   return (
@@ -659,7 +679,9 @@ function LaunchStep({
       <div className='rounded-xl border border-border bg-card/50 p-5 text-left space-y-3 max-w-sm mx-auto'>
         {perks.map((p, i) => (
           <div key={i} className='flex items-center gap-3'>
-            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted ${p.iconClass}`}>
+            <div
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted ${p.iconClass}`}
+            >
               <p.icon className='h-3.5 w-3.5' />
             </div>
             <p className='text-sm text-foreground'>{p.text}</p>
@@ -691,9 +713,19 @@ function LaunchStep({
 export default function OnboardingPage() {
   const router = useRouter();
   const { updateUser } = useUserActions();
+  const user = useUser();
   const [step, setStep] = useState<StepId>('connect');
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // If the user has already completed onboarding, redirect them away immediately.
+  // This prevents the wizard from re-appearing on every login when
+  // onboarding_completed_at is already set in the backend.
+  useEffect(() => {
+    if (user?.onboarding_completed_at) {
+      router.replace('/dashboard');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     SocialAccountsApi.list()
@@ -765,16 +797,6 @@ export default function OnboardingPage() {
   return (
     <div className='min-h-screen bg-background flex flex-col items-center justify-start p-4 sm:p-8 pt-10'>
       <div className='w-full max-w-2xl'>
-        {/* Brand mark */}
-        <div className='flex items-center justify-center mb-8'>
-          <AppLogo
-            variant='wordmark'
-            colorScheme='auto'
-            height={26}
-            href={false}
-          />
-        </div>
-
         {/* Step indicator */}
         <StepIndicator current={step} />
 
