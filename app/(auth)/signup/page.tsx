@@ -103,19 +103,45 @@ function SignupPageInner() {
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Persist the ?ref= code in sessionStorage so it survives any redirects
-  // within the auth flow (e.g. email verify → back to login → signup again).
+  // Persist the ?ref= code so it survives redirects.
+  //
+  // Priority order for finding the ref code:
+  //   1. ?ref= query param in the current URL  (direct click on referral link)
+  //   2. sessionStorage 'affiliate_ref'         (survived a same-tab navigation)
+  //   3. document.cookie 'affiliate_ref'        (set by the middleware before any
+  //                                              redirect — this is the key fallback
+  //                                              when the middleware redirected the
+  //                                              user before the page could render
+  //                                              and write to sessionStorage)
   const [refCode, setRefCode] = useState<string | null>(null);
   useEffect(() => {
     const param = searchParams.get('ref');
     if (param) {
       sessionStorage.setItem('affiliate_ref', param);
+      // Also write a cookie so the middleware's redirect path doesn't lose it
+      document.cookie = `affiliate_ref=${encodeURIComponent(param)}; max-age=${60 * 60 * 24 * 7}; path=/; samesite=lax`;
       setRefCode(param);
       // Fire click tracking — best-effort, non-blocking
       void AffiliateApi.trackClick(param).catch(() => void 0);
     } else {
-      const stored = sessionStorage.getItem('affiliate_ref');
-      if (stored) setRefCode(stored);
+      // Try sessionStorage first (same-tab navigation)
+      const fromSession = sessionStorage.getItem('affiliate_ref');
+      if (fromSession) {
+        setRefCode(fromSession);
+      } else {
+        // Fall back to the cookie set by the middleware
+        const cookieMatch = document.cookie.match(
+          /(?:^|;\s*)affiliate_ref=([^;]+)/
+        );
+        const fromCookie = cookieMatch
+          ? decodeURIComponent(cookieMatch[1])
+          : null;
+        if (fromCookie) {
+          // Promote it to sessionStorage so subsequent checks are fast
+          sessionStorage.setItem('affiliate_ref', fromCookie);
+          setRefCode(fromCookie);
+        }
+      }
     }
   }, [searchParams]);
 
@@ -164,6 +190,8 @@ function SignupPageInner() {
       });
       // Clear the stored ref once successfully used
       sessionStorage.removeItem('affiliate_ref');
+      // Also expire the cookie set by the middleware
+      document.cookie = 'affiliate_ref=; max-age=0; path=/; samesite=lax';
       router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (err: unknown) {
       const parsed = parseApiError(err, { title: 'Signup failed' });

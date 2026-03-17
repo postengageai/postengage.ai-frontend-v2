@@ -24,27 +24,70 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
+/**
+ * Persists the affiliate ?ref= param to a cookie on the response so it
+ * survives redirects. The signup page reads this cookie as a fallback when
+ * sessionStorage hasn't been populated (e.g. when the middleware redirected
+ * the user away before the page could render and call sessionStorage.setItem).
+ */
+function attachAffiliateRefCookie(
+  response: NextResponse,
+  request: NextRequest
+): NextResponse {
+  const ref = request.nextUrl.searchParams.get('ref');
+  if (ref && /^[A-Za-z0-9_-]{3,30}$/.test(ref)) {
+    response.cookies.set('affiliate_ref', ref, {
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: false, // must be JS-readable so the signup page can consume it
+    });
+  }
+  return response;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // The backend sets an HttpOnly cookie named `access_token` on login.
   // We only check for its *presence* here — actual JWT validation happens
   // inside the NestJS guards on every API call.
-  const hasSession = Boolean(request.cookies.get('access_token')?.value);
+  const hasSession = Boolean(request.cookies.get('refresh_token')?.value);
 
-  // ── Authenticated user hitting a public route → send to dashboard
+  // ── Authenticated user hitting a public route → send to dashboard.
+  // IMPORTANT: preserve any ?ref= affiliate code in a cookie BEFORE redirecting,
+  // because the signup page JS (sessionStorage.setItem) never runs when the
+  // middleware short-circuits the render.
   if (hasSession && isPublicPath(pathname) && pathname !== '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const response = NextResponse.redirect(new URL('/dashboard', request.url));
+    return attachAffiliateRefCookie(response, request);
   }
 
-  // ── Unauthenticated user hitting a protected route → send to login
+  // ── Unauthenticated user hitting a protected route → send to login.
+  // Also save any ?ref= so it isn't lost if the user arrived via a referral
+  // link while not logged in and the route happens to be protected.
   if (!hasSession && !isPublicPath(pathname)) {
     const loginUrl = new URL('/login', request.url);
     // Preserve the intended destination so we can redirect back after login
     if (pathname !== '/login') {
       loginUrl.searchParams.set('redirect', pathname);
     }
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    return attachAffiliateRefCookie(response, request);
+  }
+
+  // ── Public route with a ?ref= param: save it to a cookie proactively
+  // (handles the case where the user refreshes or navigates away before JS runs).
+  const ref = request.nextUrl.searchParams.get('ref');
+  if (ref && /^[A-Za-z0-9_-]{3,30}$/.test(ref)) {
+    const response = NextResponse.next();
+    response.cookies.set('affiliate_ref', ref, {
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: false,
+    });
+    return response;
   }
 
   return NextResponse.next();
