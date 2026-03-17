@@ -95,6 +95,50 @@ export enum ByomProvider {
   GOOGLE = 'google',
 }
 
+export type OperationType =
+  | 'intent_classification'
+  | 'response_generation'
+  | 'voice_dna_analysis'
+  | 'memory_consolidation'
+  | 'entity_extraction'
+  | 'knowledge_retrieval';
+
+export const ALL_OPERATION_TYPES: OperationType[] = [
+  'intent_classification',
+  'response_generation',
+  'voice_dna_analysis',
+  'memory_consolidation',
+  'entity_extraction',
+  'knowledge_retrieval',
+];
+
+export const OPERATION_LABELS: Record<OperationType, string> = {
+  intent_classification: 'Intent Classification',
+  response_generation: 'Response Generation',
+  voice_dna_analysis: 'Voice DNA Analysis',
+  memory_consolidation: 'Memory Consolidation',
+  entity_extraction: 'Entity Extraction',
+  knowledge_retrieval: 'Knowledge Retrieval',
+};
+
+export const OPERATION_DESCRIPTIONS: Record<OperationType, string> = {
+  intent_classification:
+    'Classifies user intent — use a cheaper/faster model here',
+  response_generation:
+    'Generates bot replies — use the best quality model here',
+  voice_dna_analysis: 'Analyzes writing style to build brand voice profiles',
+  memory_consolidation:
+    'Summarises conversation history into long-term memories',
+  entity_extraction:
+    'Extracts structured entities (names, products, dates) from messages',
+  knowledge_retrieval: 'Retrieves relevant knowledge base chunks for a query',
+};
+
+export interface ByomOperationConfig {
+  provider?: ByomProvider;
+  model?: string;
+}
+
 export enum ResponseLengthPreference {
   SHORT = 'short',
   MEDIUM = 'medium',
@@ -115,6 +159,8 @@ export interface ByomConfig {
   validation_error?: string;
   last_error_at?: string;
   consecutive_errors?: number;
+  /** Per-operation model overrides (Tier 1 of the resolution hierarchy). */
+  operation_configs?: Partial<Record<OperationType, ByomOperationConfig>>;
 }
 
 export interface BrandVoice {
