@@ -9,11 +9,12 @@ import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
 export default function BuyCreditsPage() {
   const { data, isLoading } = usePricing();
 
-  // Use dynamic costs if available, else fallback to constants
-  const costs = data?.costs || CREDIT_COSTS;
-
-  const commentReplyCost = costs.REPLY_COMMENT || 2;
-  const dmCost = costs.SEND_DM || 2;
+  // Show AI-powered action costs (manual actions are always free).
+  // Prefer live API values; fall back to local constants when API hasn't loaded yet.
+  // AI_REPLY_COMMENT = STANDARD (8) + ai_infra (1) = 9 cr
+  // AI_SEND_DM = FULL_CONTEXT (18) + ai_infra (1) = 19 cr
+  const commentReplyCost = data?.costs.AI_REPLY_COMMENT ?? (CREDIT_COSTS.AI_STANDARD + 1);
+  const dmCost = data?.costs.AI_SEND_DM ?? (CREDIT_COSTS.AI_FULL_CONTEXT + 1);
 
   const usageExamples = [
     {
@@ -88,7 +89,7 @@ export default function BuyCreditsPage() {
             <div className='flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3'>
               <MessageCircle className='h-5 w-5 text-muted-foreground' />
               <div>
-                <div className='font-medium'>Comment Reply</div>
+                <div className='font-medium'>AI Comment Reply</div>
                 <div className='text-sm text-muted-foreground'>
                   {commentReplyCost} credits
                 </div>
@@ -97,7 +98,7 @@ export default function BuyCreditsPage() {
             <div className='flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3'>
               <Send className='h-5 w-5 text-muted-foreground' />
               <div>
-                <div className='font-medium'>Auto DM</div>
+                <div className='font-medium'>AI Auto DM</div>
                 <div className='text-sm text-muted-foreground'>
                   {dmCost} credits
                 </div>
