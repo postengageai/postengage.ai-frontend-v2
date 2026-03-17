@@ -20,22 +20,22 @@ export default function BuyCreditsPage() {
       persona: 'Micro-influencer',
       followers: '10K',
       commentsPerDay: '20-30',
-      creditsPerMonth: '~150',
+      creditsPerMonth: '~270',
       recommendation: 'Starter Pack (500)',
     },
     {
       persona: 'Growing Creator',
       followers: '50K',
       commentsPerDay: '50-100',
-      creditsPerMonth: '~400',
-      recommendation: 'Starter Pack (500)',
+      creditsPerMonth: '~900',
+      recommendation: 'Pro Pack (2,800)',
     },
     {
       persona: 'Brand / Agency',
       followers: '100K+',
       commentsPerDay: '100-200',
-      creditsPerMonth: '~800',
-      recommendation: 'Pro Pack (2000)',
+      creditsPerMonth: '~2,000',
+      recommendation: 'Pro Pack (2,800)',
     },
   ];
 

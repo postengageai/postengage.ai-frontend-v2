@@ -272,7 +272,7 @@ function SignupPageInner() {
               Create your free account
             </h1>
             <p className='mt-1.5 text-sm text-muted-foreground mb-7'>
-              No credit card required. 500 credits free on signup.
+              No credit card required. 200 credits free on signup.
             </p>
 
             {error && (

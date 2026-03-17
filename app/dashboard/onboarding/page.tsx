@@ -646,7 +646,7 @@ function LaunchStep({
     {
       icon: Sparkles,
       iconClass: 'text-violet-400',
-      text: '500 free credits to power AI replies later',
+      text: '200 free credits to power AI replies later',
     },
     {
       icon: ArrowRight,

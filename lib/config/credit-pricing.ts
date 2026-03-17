@@ -10,9 +10,9 @@ export const CREDIT_COSTS = {
   SEND_DM: 0,
 
   // AI Actions (Tiered)
-  AI_STANDARD: 5, // Standard AI response
-  AI_KNOWLEDGE: 8, // With knowledge base context
-  AI_FULL_CONTEXT: 12, // Full conversation history + knowledge
+  AI_STANDARD: 8, // Standard AI response
+  AI_KNOWLEDGE: 12, // With knowledge base context
+  AI_FULL_CONTEXT: 18, // Full conversation history + knowledge
 
   // BYOM (Infrastructure Cost)
   BYOM_INFRA: 1, // Using own API key
@@ -23,9 +23,9 @@ export const CREDIT_PACKS = [
     id: 'starter',
     name: 'Starter Pack',
     description:
-      'Start Your Growth Engine. Automate ~190 interactions and never miss a lead.',
+      'Start Your Growth Engine. Power ~55 AI replies — perfect for getting started.',
     credits: 500,
-    price: 149,
+    price: 199,
     currency: 'INR',
     popular: false,
     savings: '0%',
@@ -34,9 +34,9 @@ export const CREDIT_PACKS = [
     id: 'pro',
     name: 'Pro Pack',
     description:
-      'Scale Your Presence. Handle 4x more volume and turn engagement into revenue.',
+      'Scale Your Presence. Power ~300 AI replies and turn engagement into revenue.',
     credits: 2800,
-    price: 699,
+    price: 999,
     currency: 'INR',
     popular: true,
     savings: '15%',
@@ -45,9 +45,9 @@ export const CREDIT_PACKS = [
     id: 'business',
     name: 'Business Pack',
     description:
-      'Dominate Your Niche. Maximum power for agencies & brands at our best rate.',
+      'Dominate Your Niche. Power ~1,650 AI replies — built for agencies & brands.',
     credits: 15000,
-    price: 2999,
+    price: 3999,
     currency: 'INR',
     popular: false,
     savings: '35%',
@@ -61,7 +61,7 @@ export const CREDIT_PACKS = [
  */
 export function calculateActions(credits: number, withAI = true): number {
   if (!withAI) return Infinity; // Manual actions are free
-  // Standard AI cost (5) + Infrastructure cost (1) = 6 credits per reply
-  const averageAiCost = 6;
+  // Standard AI cost (8) + Infrastructure cost (1) = 9 credits per reply
+  const averageAiCost = 9;
   return Math.floor(credits / averageAiCost);
 }
