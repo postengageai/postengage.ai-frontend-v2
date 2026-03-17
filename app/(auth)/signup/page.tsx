@@ -271,9 +271,31 @@ function SignupPageInner() {
             <h1 className='text-[1.625rem] font-bold text-foreground tracking-tight'>
               Create your free account
             </h1>
-            <p className='mt-1.5 text-sm text-muted-foreground mb-7'>
+            <p className='mt-1.5 text-sm text-muted-foreground'>
               No credit card required. 200 credits free on signup.
             </p>
+
+            {refCode && (
+              <div className='mt-3 mb-7 inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1'>
+                <svg
+                  className='h-3.5 w-3.5 text-success'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2.5'
+                >
+                  <path
+                    d='M20 6L9 17l-5-5'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  />
+                </svg>
+                <span className='text-xs font-medium text-success'>
+                  Referral code applied: {refCode}
+                </span>
+              </div>
+            )}
+            {!refCode && <div className='mb-7' />}
 
             {error && (
               <div className='mb-5'>

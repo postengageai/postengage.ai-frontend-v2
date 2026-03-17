@@ -54,11 +54,14 @@ export function proxy(request: NextRequest) {
   // inside the NestJS guards on every API call.
   const hasSession = Boolean(request.cookies.get('refresh_token')?.value);
 
-  // ── Authenticated user hitting a public route → send to dashboard.
-  // IMPORTANT: preserve any ?ref= affiliate code in a cookie BEFORE redirecting,
-  // because the signup page JS (sessionStorage.setItem) never runs when the
-  // middleware short-circuits the render.
-  if (hasSession && isPublicPath(pathname) && pathname !== '/') {
+  // ── Authenticated user hitting home or login → send to dashboard.
+  // /login: no point staying there if already logged in.
+  // /: marketing home page, logged-in users should go straight to dashboard.
+  // We intentionally do NOT redirect from /signup or other auth pages —
+  // users may want to create a new account, and auto-redirecting causes
+  // the ?ref= affiliate param to be lost.
+  const REDIRECT_TO_DASHBOARD = new Set(['/', '/login']);
+  if (hasSession && REDIRECT_TO_DASHBOARD.has(pathname)) {
     const response = NextResponse.redirect(new URL('/dashboard', request.url));
     return attachAffiliateRefCookie(response, request);
   }
