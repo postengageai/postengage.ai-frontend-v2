@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
+import { usePricing } from '@/hooks/use-pricing';
 import { IntelligenceApi } from '@/lib/api/intelligence';
 import { parseApiError } from '@/lib/http/errors';
 import {
@@ -46,7 +47,9 @@ import {
 } from '@/lib/types/intelligence';
 import { SocialAccount } from '@/lib/api/social-accounts';
 
-const DEFAULT_BOT_BEHAVIOR: BotBehavior = {
+// Fallback defaults — used when API hasn't loaded yet.
+// Real values come from usePricing().data.app_limits.bot (sourced from backend env).
+const FALLBACK_BOT_BEHAVIOR: BotBehavior = {
   auto_reply_enabled: true,
   max_replies_per_hour: 3,
   max_replies_per_day: 10,
@@ -58,6 +61,7 @@ const DEFAULT_BOT_BEHAVIOR: BotBehavior = {
   stop_after_escalation: true,
 };
 
+// Schema is built with fallback caps; components can display dynamic caps from API
 export const botFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
@@ -118,8 +122,19 @@ export function BotForm({
 }: BotFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { data: pricingData } = usePricing();
   const [isLoading, setIsLoading] = useState(false);
   const [brandVoices, setBrandVoices] = useState<BrandVoice[]>([]);
+
+  // Prefer backend-sourced defaults; fall back to constants if API isn't loaded yet
+  const botLimits = pricingData?.app_limits?.bot;
+  const DEFAULT_BOT_BEHAVIOR: BotBehavior = {
+    ...FALLBACK_BOT_BEHAVIOR,
+    max_replies_per_hour: botLimits?.default_max_replies_per_hour ?? FALLBACK_BOT_BEHAVIOR.max_replies_per_hour,
+    max_replies_per_day: botLimits?.default_max_replies_per_day ?? FALLBACK_BOT_BEHAVIOR.max_replies_per_day,
+    reply_delay_min_seconds: botLimits?.default_reply_delay_min_seconds ?? FALLBACK_BOT_BEHAVIOR.reply_delay_min_seconds,
+    reply_delay_max_seconds: botLimits?.default_reply_delay_max_seconds ?? FALLBACK_BOT_BEHAVIOR.reply_delay_max_seconds,
+  };
 
   useEffect(() => {
     fetchBrandVoices();

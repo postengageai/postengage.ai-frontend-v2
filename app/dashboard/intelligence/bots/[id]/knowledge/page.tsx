@@ -43,6 +43,7 @@ import {
   CreditCostBadge,
   CREDIT_COSTS,
 } from '@/components/ui/credit-cost-badge';
+import { usePricing } from '@/hooks/use-pricing';
 
 // ─── Source type badge ────────────────────────────────────────────────────────
 
@@ -79,6 +80,9 @@ export default function BotKnowledgePage() {
   const params = useParams();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: pricingData } = usePricing();
+  const maxFileSizeMb = pricingData?.app_limits?.knowledge.max_file_size_mb ?? 10;
+  const supportedTypes = pricingData?.app_limits?.knowledge.supported_file_types?.join(', ').toUpperCase() ?? 'PDF, DOCX, TXT';
 
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -421,7 +425,7 @@ export default function BotKnowledgePage() {
                 <Label>
                   File{' '}
                   <span className='text-muted-foreground font-normal'>
-                    (PDF, DOCX, TXT — max 10 MB)
+                    ({supportedTypes} — max {maxFileSizeMb} MB)
                   </span>
                 </Label>
                 <div

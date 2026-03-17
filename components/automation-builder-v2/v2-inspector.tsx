@@ -42,6 +42,7 @@ import type {
   PrivateReplyConfig,
   SendDmConfig,
 } from './types';
+import { usePricing } from '@/hooks/use-pricing';
 import type { Bot } from '@/lib/types/intelligence';
 import type { Media } from '@/lib/api/media';
 
@@ -65,6 +66,10 @@ export function V2Inspector({
   onClose,
 }: V2InspectorProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>('config');
+  const { data: pricingData } = usePricing();
+  // Dynamic slider caps from backend env — fall back to safe static values
+  const maxCooldownHours = pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
+  const maxDelaySeconds = pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
   const def = getNodeDef(node.definitionId);
   const Icon = def.icon;
 
@@ -353,13 +358,13 @@ function NewCommentForm({
         <Input
           type='number'
           min={0}
-          max={168}
+          max={maxCooldownHours}
           value={config.cooldownHours}
           onChange={e => update({ cooldownHours: Number(e.target.value) })}
           className={inputCls}
         />
         <p className='mt-1 text-[11px] text-slate-600'>
-          0 = no cooldown. Max 168 h.
+          0 = no cooldown. Max {maxCooldownHours} h.
         </p>
       </FormField>
 
@@ -404,7 +409,7 @@ function SimpleTriggerForm({
         <Input
           type='number'
           min={0}
-          max={168}
+          max={maxCooldownHours}
           value={config.cooldownHours}
           onChange={e =>
             update({ cooldownHours: Number(e.target.value) } as Partial<
@@ -669,7 +674,7 @@ function ActionMessageForm({
         <Input
           type='number'
           min={0}
-          max={3600}
+          max={maxDelaySeconds}
           value={config.delay_seconds}
           onChange={e => update({ delay_seconds: Number(e.target.value) })}
           className={inputCls}
@@ -799,7 +804,7 @@ function SendDmForm({
         <Input
           type='number'
           min={0}
-          max={3600}
+          max={maxDelaySeconds}
           value={config.delay_seconds}
           onChange={e => update({ delay_seconds: Number(e.target.value) })}
           className={inputCls}

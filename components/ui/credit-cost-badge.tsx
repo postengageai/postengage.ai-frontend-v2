@@ -2,14 +2,15 @@ import { Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Static credit costs — mirrors credit-pricing.config.ts on the backend.
- * Update here if backend pricing changes.
+ * Static credit costs for UI badge display — mirrors INTELLIGENCE_CREDIT_PRICING on the backend.
+ * AI_REPLY = STANDARD tier (8 cr) + ai_infra (1 cr) = 9 cr
+ * KNOWLEDGE_SOURCE = SUPPORTING.KNOWLEDGE_PROCESSING = 5 cr
  */
 export const CREDIT_COSTS = {
-  AI_REPLY: 3, // per AI-generated reply (DM or comment)
+  AI_REPLY: 9, // STANDARD (8) + ai_infra (1) — per AI-generated reply
   VOICE_DNA_ANALYZE: 15, // per Voice DNA analysis run
-  KNOWLEDGE_SOURCE: 5, // per knowledge source ingestion
-  BOT_REPLY_BASE: 1, // base cost per non-AI reply
+  KNOWLEDGE_SOURCE: 5, // per knowledge source ingestion (KNOWLEDGE_PROCESSING)
+  BOT_REPLY_BASE: 1, // ai_infra overhead per any AI action
 } as const;
 
 interface CreditCostBadgeProps {
