@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { usePricing } from '@/hooks/use-pricing';
 import { IntelligenceApi } from '@/lib/api/intelligence';
@@ -59,6 +60,11 @@ const FALLBACK_BOT_BEHAVIOR: BotBehavior = {
   cta_aggressiveness: 'soft',
   should_reply_to_spam: false,
   stop_after_escalation: true,
+  schedule_enabled: false,
+  schedule_start_hour: 9,
+  schedule_end_hour: 17,
+  schedule_timezone: 'UTC',
+  schedule_days: [],
 };
 
 // Schema is built with fallback caps; components can display dynamic caps from API
@@ -90,6 +96,12 @@ export const botFormSchema = z.object({
       cta_aggressiveness: z.enum(['none', 'soft', 'moderate', 'aggressive']),
       should_reply_to_spam: z.boolean(),
       stop_after_escalation: z.boolean(),
+      // Schedule (all optional — defaultValues in useForm provides the actual defaults)
+      schedule_enabled: z.boolean().optional(),
+      schedule_start_hour: z.number().min(0).max(23).optional(),
+      schedule_end_hour: z.number().min(0).max(23).optional(),
+      schedule_timezone: z.string().optional(),
+      schedule_days: z.array(z.number().min(0).max(6)).optional(),
     })
     .refine(
       values =>
@@ -167,6 +179,11 @@ export function BotForm({
           cta_aggressiveness: initialData.behavior.cta_aggressiveness,
           should_reply_to_spam: initialData.behavior.should_reply_to_spam,
           stop_after_escalation: initialData.behavior.stop_after_escalation,
+          schedule_enabled: initialData.behavior.schedule_enabled ?? false,
+          schedule_start_hour: initialData.behavior.schedule_start_hour ?? 9,
+          schedule_end_hour: initialData.behavior.schedule_end_hour ?? 17,
+          schedule_timezone: initialData.behavior.schedule_timezone ?? 'UTC',
+          schedule_days: initialData.behavior.schedule_days ?? [],
         },
       }
     : {
@@ -221,6 +238,45 @@ export function BotForm({
       setIsLoading(false);
     }
   };
+
+  // ─── Schedule helpers ──────────────────────────────────────────────────────
+  const scheduleEnabled = useWatch({ control: form.control, name: 'behavior.schedule_enabled' });
+  const scheduleDays = useWatch({ control: form.control, name: 'behavior.schedule_days' }) ?? [];
+
+  function formatHour(h: number): string {
+    if (h === 0) return '12:00 AM';
+    if (h < 12) return `${h}:00 AM`;
+    if (h === 12) return '12:00 PM';
+    return `${h - 12}:00 PM`;
+  }
+
+  const COMMON_TIMEZONES = [
+    { value: 'UTC', label: 'UTC' },
+    { value: 'America/New_York', label: 'Eastern (US)' },
+    { value: 'America/Chicago', label: 'Central (US)' },
+    { value: 'America/Denver', label: 'Mountain (US)' },
+    { value: 'America/Los_Angeles', label: 'Pacific (US)' },
+    { value: 'Europe/London', label: 'London' },
+    { value: 'Europe/Paris', label: 'Paris / Berlin' },
+    { value: 'Europe/Moscow', label: 'Moscow' },
+    { value: 'Asia/Dubai', label: 'Dubai' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+    { value: 'Asia/Dhaka', label: 'Dhaka (BST)' },
+    { value: 'Asia/Singapore', label: 'Singapore' },
+    { value: 'Asia/Tokyo', label: 'Tokyo' },
+    { value: 'Australia/Sydney', label: 'Sydney' },
+    { value: 'Pacific/Auckland', label: 'Auckland' },
+  ];
+
+  const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function toggleDay(idx: number) {
+    const current = form.getValues('behavior.schedule_days') ?? [];
+    const next = current.includes(idx)
+      ? current.filter(d => d !== idx)
+      : [...current, idx].sort((a, b) => a - b);
+    form.setValue('behavior.schedule_days', next, { shouldDirty: true });
+  }
 
   return (
     <Form {...form}>
@@ -565,6 +621,166 @@ export function BotForm({
             </CardContent>
           </Card>
         </div>
+
+        {/* ─── Active Schedule ─────────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <Clock className='h-4 w-4 text-muted-foreground' />
+              Active Schedule
+            </CardTitle>
+            <CardDescription>
+              Restrict when this bot is allowed to reply. Outside the window it will skip messages silently.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-5'>
+            {/* Master toggle */}
+            <FormField
+              control={form.control}
+              name='behavior.schedule_enabled'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                  <div className='space-y-0.5'>
+                    <FormLabel>Enable Schedule</FormLabel>
+                    <FormDescription>
+                      Only reply during the configured hours and days.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {scheduleEnabled && (
+              <div className='space-y-4 pl-1'>
+                {/* Hours row */}
+                <div className='grid grid-cols-2 gap-4'>
+                  <FormField
+                    control={form.control}
+                    name='behavior.schedule_start_hour'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Hour</FormLabel>
+                        <Select
+                          onValueChange={v => field.onChange(parseInt(v, 10))}
+                          value={String(field.value)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder='Select hour' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.from({ length: 24 }, (_, i) => (
+                              <SelectItem key={i} value={String(i)}>
+                                {formatHour(i)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='behavior.schedule_end_hour'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Hour</FormLabel>
+                        <Select
+                          onValueChange={v => field.onChange(parseInt(v, 10))}
+                          value={String(field.value)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder='Select hour' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.from({ length: 24 }, (_, i) => (
+                              <SelectItem key={i} value={String(i)}>
+                                {formatHour(i)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className='text-[11px]'>
+                          If end &lt; start, window wraps overnight.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Timezone */}
+                <FormField
+                  control={form.control}
+                  name='behavior.schedule_timezone'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Timezone</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select timezone' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COMMON_TIMEZONES.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>
+                              {tz.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Days of week */}
+                <div className='space-y-2'>
+                  <p className='text-sm font-medium leading-none'>
+                    Active Days
+                  </p>
+                  <p className='text-xs text-muted-foreground'>
+                    Leave all unselected to run every day.
+                  </p>
+                  <div className='flex flex-wrap gap-2 pt-1'>
+                    {DAY_LABELS.map((day, idx) => {
+                      const active = scheduleDays.includes(idx);
+                      return (
+                        <button
+                          key={day}
+                          type='button'
+                          onClick={() => toggleDay(idx)}
+                          className={cn(
+                            'h-8 min-w-[44px] rounded-full border px-3 text-xs font-medium transition-colors',
+                            active
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                          )}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className='flex justify-end'>
           <Button type='submit' disabled={isLoading}>
