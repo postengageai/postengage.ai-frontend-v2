@@ -25,8 +25,6 @@ import {
   Pause,
   // Download,
   AlertTriangle,
-  RotateCcw,
-  FileText,
   MinusCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -974,7 +972,6 @@ function HistoryTab({
   const [pages, setPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [retryingId, setRetryingId] = useState<string | null>(null);
   const PAGE_SIZE = 10;
 
   const fetchHistory = useCallback(async () => {
@@ -1069,19 +1066,6 @@ function HistoryTab({
         return 'Skipped';
       default:
         return status;
-    }
-  }
-
-  async function handleRetry(exec: AutomationExecution) {
-    setRetryingId(exec._id);
-    try {
-      await automationsApi.retryExecution(automationId, exec._id);
-      // Refresh after retry
-      await fetchHistory();
-    } catch {
-      // Silently fail — could show toast here
-    } finally {
-      setRetryingId(null);
     }
   }
 
@@ -1293,34 +1277,6 @@ function HistoryTab({
                                 </p>
                               </div>
                             </div>
-                            <div className='flex flex-wrap gap-2'>
-                              <Button
-                                size='sm'
-                                className='h-8 gap-1.5 text-xs'
-                                disabled={retryingId === exec._id}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleRetry(exec);
-                                }}
-                              >
-                                <RotateCcw
-                                  className={cn(
-                                    'h-3.5 w-3.5',
-                                    retryingId === exec._id && 'animate-spin'
-                                  )}
-                                />
-                                Retry
-                              </Button>
-                              <Button
-                                variant='outline'
-                                size='sm'
-                                className='h-8 gap-1.5 text-xs'
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <FileText className='h-3.5 w-3.5' />
-                                View Log
-                              </Button>
-                            </div>
                           </div>
                         ) : (
                           <div className='rounded-lg border border-border/50 bg-muted/10 p-3'>
@@ -1524,34 +1480,6 @@ function HistoryTab({
                                     'An unexpected error occurred.'}
                                 </p>
                               </div>
-                            </div>
-                            <div className='flex gap-2'>
-                              <Button
-                                size='sm'
-                                className='h-7 gap-1.5 text-xs'
-                                disabled={retryingId === exec._id}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleRetry(exec);
-                                }}
-                              >
-                                <RotateCcw
-                                  className={cn(
-                                    'h-3 w-3',
-                                    retryingId === exec._id && 'animate-spin'
-                                  )}
-                                />
-                                Retry
-                              </Button>
-                              <Button
-                                variant='outline'
-                                size='sm'
-                                className='h-7 gap-1.5 text-xs'
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <FileText className='h-3 w-3' />
-                                View Log
-                              </Button>
                             </div>
                           </div>
                         ) : (
