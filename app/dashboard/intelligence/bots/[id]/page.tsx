@@ -28,7 +28,7 @@ import { VoiceDnaApi } from '@/lib/api/voice-dna';
 import { MemoryApi } from '@/lib/api/memory';
 import { Bot } from '@/lib/types/intelligence';
 import type { VoiceDna } from '@/lib/types/voice-dna';
-import type { MemoryStats } from '@/lib/types/memory';
+import type { SemanticMemoryStats } from '@/lib/types/memory';
 import type { BotHealthScore } from '@/lib/types/quality';
 import { Badge } from '@/components/ui/badge';
 import { BotForm } from '@/components/intelligence/bot-form';
@@ -44,7 +44,7 @@ export default function EditBotPage() {
   const { toast } = useToast();
   const [bot, setBot] = useState<Bot | null>(null);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
-  const [memoryStats, setMemoryStats] = useState<MemoryStats | null>(null);
+  const [memoryStats, setMemoryStats] = useState<SemanticMemoryStats | null>(null);
   const [healthScore, setHealthScore] = useState<BotHealthScore | null>(null);
   const [flaggedCount, setFlaggedCount] = useState(0);
   const [voiceDna, setVoiceDna] = useState<VoiceDna | null>(null);
@@ -75,7 +75,7 @@ export default function EditBotPage() {
       try {
         const [statsResponse, healthResponse, flaggedResponse] =
           await Promise.all([
-            MemoryApi.getMemoryStats(botId).catch(() => null),
+            MemoryApi.getSemanticStats(botId).catch(() => null),
             IntelligenceApi.getBotHealth(botId).catch(() => null),
             IntelligenceApi.getFlaggedReplies(botId, {
               limit: 1,
@@ -196,31 +196,26 @@ export default function EditBotPage() {
           </Link>
         </CardHeader>
         <CardContent>
-          {memoryStats ? (
-            <div className='flex gap-6'>
+          {memoryStats && memoryStats.total_memories > 0 ? (
+            <div className='flex gap-6 flex-wrap'>
               <div className='flex items-center gap-2'>
                 <Users className='h-4 w-4 text-muted-foreground' />
                 <span className='text-sm'>
-                  <span className='font-medium'>
-                    {memoryStats.total_users_tracked}
-                  </span>{' '}
-                  users tracked
+                  <span className='font-medium'>{memoryStats.unique_users}</span>{' '}
+                  followers tracked
                 </span>
               </div>
               <div className='flex items-center gap-2'>
                 <Database className='h-4 w-4 text-muted-foreground' />
                 <span className='text-sm'>
-                  <span className='font-medium'>
-                    {memoryStats.total_entities_stored}
-                  </span>{' '}
-                  entities stored
+                  <span className='font-medium'>{memoryStats.total_memories}</span>{' '}
+                  memories stored
                 </span>
               </div>
             </div>
           ) : (
             <p className='text-sm text-muted-foreground'>
-              No memory data yet. Memory builds up as the bot interacts with
-              users.
+              No memory data yet. Memory builds up as the bot interacts with users.
             </p>
           )}
         </CardContent>
@@ -246,7 +241,9 @@ export default function EditBotPage() {
               <span className='text-sm'>
                 Confidence:{' '}
                 <span className='font-medium'>
-                  {(bot.stats.avg_confidence * 100).toFixed(0)}%
+                  {bot.stats.avg_confidence > 0
+                    ? `${Math.min(Math.round(bot.stats.avg_confidence <= 1 ? bot.stats.avg_confidence * 100 : bot.stats.avg_confidence), 100)}%`
+                    : '—'}
                 </span>
               </span>
             </div>

@@ -197,7 +197,7 @@ export default function BotsPage() {
                             ? 'bg-yellow-500'
                             : 'bg-red-500'
                       }`}
-                      title={`Health: ${(bot.stats.avg_confidence * 100).toFixed(0)}%`}
+                      title={`Health: ${Math.min(Math.round(bot.stats.avg_confidence <= 1 ? bot.stats.avg_confidence * 100 : bot.stats.avg_confidence), 100)}%`}
                     />
                   </CardTitle>
                   <CardDescription className='line-clamp-1'>
@@ -261,7 +261,9 @@ export default function BotsPage() {
                   <div className='flex justify-between items-center text-sm'>
                     <span className='text-muted-foreground'>Confidence</span>
                     <span className='font-medium'>
-                      {(bot.stats.avg_confidence * 100).toFixed(0)}%
+                      {bot.stats.avg_confidence > 0
+                        ? `${Math.min(Math.round(bot.stats.avg_confidence <= 1 ? bot.stats.avg_confidence * 100 : bot.stats.avg_confidence), 100)}%`
+                        : '—'}
                     </span>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
