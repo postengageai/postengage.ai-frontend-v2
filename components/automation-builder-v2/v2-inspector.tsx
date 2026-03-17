@@ -66,10 +66,6 @@ export function V2Inspector({
   onClose,
 }: V2InspectorProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>('config');
-  const { data: pricingData } = usePricing();
-  // Dynamic slider caps from backend env — fall back to safe static values
-  const maxCooldownHours = pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
-  const maxDelaySeconds = pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
   const def = getNodeDef(node.definitionId);
   const Icon = def.icon;
 
@@ -250,6 +246,8 @@ function NewCommentForm({
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
+  const { data: pricingData } = usePricing();
+  const maxCooldownHours = pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
 
   const handleMediaSelect = (media: Media[]) => {
     setSelectedMedia(media);
@@ -397,6 +395,9 @@ function SimpleTriggerForm({
     | NewFollowerConfig;
   update: (p: Partial<typeof config>) => void;
 }) {
+  const { data: pricingData } = usePricing();
+  const maxCooldownHours = pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
+
   return (
     <div className='space-y-5 p-4'>
       <FormField label='Platform'>
@@ -619,6 +620,9 @@ function ActionMessageForm({
   update: (p: Partial<ReplyCommentConfig | PrivateReplyConfig>) => void;
   placeholder: string;
 }) {
+  const { data: pricingData } = usePricing();
+  const maxDelaySeconds = pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
+
   return (
     <div className='space-y-5 p-4'>
       {/* AI toggle */}
@@ -692,6 +696,9 @@ function SendDmForm({
   config: SendDmConfig;
   update: (p: Partial<SendDmConfig>) => void;
 }) {
+  const { data: pricingData } = usePricing();
+  const maxDelaySeconds = pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
+
   return (
     <div className='space-y-4 p-4'>
       <Tabs
