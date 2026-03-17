@@ -110,8 +110,10 @@ export function GlobalSocketProvider({
 
     // ─── Global notification handler ──────────────────────────────────────
     const handleNotification = () => {
-      // Invalidate dashboard stats so the activity feed refreshes
+      // Refresh dashboard stats + notification bell count/list in real-time
       qc.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      qc.invalidateQueries({ queryKey: queryKeys.notifications.list() });
       maybePlaySound('notification');
     };
 

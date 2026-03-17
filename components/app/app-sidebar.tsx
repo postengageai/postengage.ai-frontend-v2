@@ -58,6 +58,7 @@ import { AuthApi } from '@/lib/api/auth';
 import { useEffect, useState, useCallback } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { NotificationBell } from '@/components/app/notification-bell';
 
 const navItems = [
   {
@@ -432,41 +433,47 @@ export function AppSidebar() {
 
       {/* Footer with Credits & User */}
       <SidebarFooter className='p-4 space-y-3'>
-        {/* Credits Card */}
-        <Link
-          href='/dashboard/credits'
-          onClick={closeMobileSidebar}
-          className='block rounded-xl bg-secondary/50 border border-border/50 p-3 hover:bg-secondary/70 transition-colors'
-        >
-          <div className='flex items-center justify-between mb-2'>
-            <span className='text-xs font-medium text-muted-foreground uppercase tracking-wider'>
-              Credits
-            </span>
-            <Zap
-              className={cn(
-                'h-4 w-4',
-                isLowCredits ? 'text-warning' : 'text-primary'
-              )}
-            />
+        {/* Credits + Notification Bell row */}
+        <div className='flex items-stretch gap-2'>
+          <Link
+            href='/dashboard/credits'
+            onClick={closeMobileSidebar}
+            className='flex-1 rounded-xl bg-secondary/50 border border-border/50 p-3 hover:bg-secondary/70 transition-colors'
+          >
+            <div className='flex items-center justify-between mb-2'>
+              <span className='text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                Credits
+              </span>
+              <Zap
+                className={cn(
+                  'h-4 w-4',
+                  isLowCredits ? 'text-warning' : 'text-primary'
+                )}
+              />
+            </div>
+            <div className='flex items-baseline gap-1'>
+              <span
+                className={cn(
+                  'text-2xl font-bold font-mono',
+                  isLowCredits && 'text-orange-500'
+                )}
+              >
+                {credits.remaining}
+              </span>
+            </div>
+            {isLowCredits && (
+              <p className='text-xs text-orange-600 font-medium mt-1'>
+                Low balance — top up to keep bots running
+              </p>
+            )}
+          </Link>
+          {/* Notification Bell */}
+          <div className='flex items-center justify-center rounded-xl bg-secondary/50 border border-border/50 px-2 hover:bg-secondary/70 transition-colors'>
+            <NotificationBell />
           </div>
-          <div className='flex items-baseline gap-1'>
-            <span
-              className={cn(
-                'text-2xl font-bold font-mono',
-                isLowCredits && 'text-orange-500'
-              )}
-            >
-              {credits.remaining}
-            </span>
-          </div>
-          {isLowCredits && (
-            <p className='text-xs text-orange-600 font-medium mt-1'>
-              Low balance — top up to keep bots running
-            </p>
-          )}
-        </Link>
+        </div>
 
-        {/* User Dropdown */}
+        {/* User Dropdown (replaces old Credits Card position) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className='flex w-full items-center gap-3 rounded-xl bg-secondary/30 border border-border/50 p-3 hover:bg-secondary/50 transition-colors text-left'>

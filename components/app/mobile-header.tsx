@@ -2,6 +2,7 @@
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/app/app-logo';
+import { NotificationBell } from '@/components/app/notification-bell';
 
 /**
  * Sticky mobile-only top bar that shows the app logo + hamburger trigger.
@@ -18,6 +19,9 @@ export function MobileHeader() {
         height={24}
         href='/dashboard'
       />
+      <div className='ml-auto'>
+        <NotificationBell />
+      </div>
     </header>
   );
 }
