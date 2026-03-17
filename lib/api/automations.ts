@@ -282,6 +282,13 @@ export interface AutomationExecution {
   };
   credits_used?: number;
   actions_run?: string[];
+  actions_detail?: Array<{
+    action_type: string;
+    status: 'success' | 'skipped' | 'failed';
+    reply_text?: string;
+    skipped_reason?: string;
+    credits_used: number;
+  }>;
   trigger_type?: string;
 }
 

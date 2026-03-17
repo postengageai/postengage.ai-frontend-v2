@@ -1555,8 +1555,8 @@ function HistoryTab({
                             </div>
                           </div>
                         ) : (
-                          <div className='flex flex-col gap-2'>
-                            {/* Full trigger text */}
+                          <div className='flex flex-col gap-3'>
+                            {/* Trigger → Reply conversation view */}
                             {exec.trigger_data?.text && (
                               <div>
                                 <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
@@ -1567,7 +1567,37 @@ function HistoryTab({
                                 </p>
                               </div>
                             )}
-                            {/* Actions + meta row */}
+                            {/* Per-action reply bubbles */}
+                            {exec.actions_detail &&
+                              exec.actions_detail.length > 0 && (
+                                <div className='flex flex-col gap-2'>
+                                  {exec.actions_detail.map((detail, i) => (
+                                    <div key={i}>
+                                      <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'>
+                                        {detail.status === 'skipped'
+                                          ? `${getActionLabel(detail.action_type)} — Skipped`
+                                          : getActionLabel(detail.action_type)}
+                                      </p>
+                                      {detail.status === 'skipped' ? (
+                                        <p className='rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-400'>
+                                          {detail.skipped_reason ===
+                                          'hourly_limit'
+                                            ? 'Bot hourly reply limit reached — this action was skipped'
+                                            : detail.skipped_reason ===
+                                                'daily_limit'
+                                              ? 'Bot daily reply limit reached — this action was skipped'
+                                              : 'Action was skipped'}
+                                        </p>
+                                      ) : detail.reply_text ? (
+                                        <p className='rounded-md border border-border/40 bg-violet-500/5 px-3 py-2 text-sm text-foreground/90'>
+                                          &ldquo;{detail.reply_text}&rdquo;
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            {/* Meta row */}
                             <div className='flex flex-wrap items-center gap-4 text-xs text-muted-foreground'>
                               {actionsRun && (
                                 <div className='flex items-center gap-1'>
