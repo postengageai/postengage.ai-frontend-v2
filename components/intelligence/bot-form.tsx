@@ -86,11 +86,11 @@ export const botFormSchema = z.object({
         .max(5000, 'Keep under 5000 replies per day for safety'),
       reply_delay_min_seconds: z
         .number()
-        .min(0)
+        .min(5, 'Minimum delay is 5 seconds')
         .max(3600, 'Delay must be less than 1 hour'),
       reply_delay_max_seconds: z
         .number()
-        .min(0)
+        .min(5, 'Minimum delay is 5 seconds')
         .max(3600, 'Delay must be less than 1 hour'),
       escalation_threshold: z.number().min(0).max(1),
       cta_aggressiveness: z.enum(['none', 'soft', 'moderate', 'aggressive']),
@@ -104,10 +104,7 @@ export const botFormSchema = z.object({
       schedule_days: z.array(z.number().min(0).max(6)).optional(),
     })
     .refine(
-      values =>
-        values.reply_delay_max_seconds === 0 ||
-        values.reply_delay_min_seconds === 0 ||
-        values.reply_delay_max_seconds >= values.reply_delay_min_seconds,
+      values => values.reply_delay_max_seconds >= values.reply_delay_min_seconds,
       {
         message: 'Max delay must be greater than or equal to min delay',
         path: ['reply_delay_max_seconds'],
@@ -511,17 +508,18 @@ export function BotForm({
                       <FormControl>
                         <Input
                           type='number'
+                          min={5}
                           {...field}
                           onChange={e => {
                             const value = e.target.value;
                             field.onChange(
-                              value === '' ? 0 : parseInt(value, 10)
+                              value === '' ? 5 : parseInt(value, 10)
                             );
                           }}
                         />
                       </FormControl>
                       <FormDescription>
-                        Minimum delay before sending an auto-reply.
+                        Minimum delay before sending an auto-reply (min 5s).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -536,17 +534,18 @@ export function BotForm({
                       <FormControl>
                         <Input
                           type='number'
+                          min={5}
                           {...field}
                           onChange={e => {
                             const value = e.target.value;
                             field.onChange(
-                              value === '' ? 0 : parseInt(value, 10)
+                              value === '' ? 5 : parseInt(value, 10)
                             );
                           }}
                         />
                       </FormControl>
                       <FormDescription>
-                        Upper bound for random reply delay window.
+                        Upper bound for random reply delay window (min 5s).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
