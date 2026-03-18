@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +28,7 @@ import { UserApi } from '@/lib/api/user';
 import { AuthApi } from '@/lib/api/auth';
 import { useUserStore } from '@/lib/user/store';
 import { parseApiError } from '@/lib/http/errors';
+import { QrCodeWithLogo } from '@/components/ui/qr-code-with-logo';
 
 const passwordRules = [
   {
@@ -68,29 +69,10 @@ function TwoFactorCard() {
 
   const [step, setStep] = useState<TwoFaStep>('idle');
   const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // Generate QR code from otpauth_url using canvas / img tag
-  const generateQrDataUrl = useCallback(async (url: string) => {
-    try {
-      // Use the free QR code API — no auth needed
-      const encoded = encodeURIComponent(url);
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}&margin=2`;
-      setQrDataUrl(qrUrl);
-    } catch {
-      setQrDataUrl(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (otpauthUrl) {
-      void generateQrDataUrl(otpauthUrl);
-    }
-  }, [otpauthUrl, generateQrDataUrl]);
 
   const handleStartSetup = async () => {
     setStep('setup-loading');
@@ -119,7 +101,6 @@ function TwoFactorCard() {
       setStep('idle');
       setCode('');
       setOtpauthUrl(null);
-      setQrDataUrl(null);
       setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       const parsed = parseApiError(err);
@@ -155,7 +136,6 @@ function TwoFactorCard() {
     setCode('');
     setError(null);
     setOtpauthUrl(null);
-    setQrDataUrl(null);
   };
 
   return (
@@ -275,21 +255,14 @@ function TwoFactorCard() {
                 any compatible app, then scan the code below.
               </p>
 
-              {/* QR code */}
+              {/* QR code with PostEngage logo in the centre */}
               <div className='flex justify-center'>
-                {qrDataUrl ? (
+                {otpauthUrl ? (
                   <div className='p-3 bg-white rounded-xl border border-border shadow-sm'>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={qrDataUrl}
-                      alt='2FA QR Code'
-                      width={180}
-                      height={180}
-                      className='rounded'
-                    />
+                    <QrCodeWithLogo value={otpauthUrl} size={192} />
                   </div>
                 ) : (
-                  <div className='h-[196px] w-[196px] flex items-center justify-center bg-muted rounded-xl border border-border'>
+                  <div className='h-[216px] w-[216px] flex items-center justify-center bg-muted rounded-xl border border-border'>
                     <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
                   </div>
                 )}
