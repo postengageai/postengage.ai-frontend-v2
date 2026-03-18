@@ -75,6 +75,16 @@ function TwoFactorCard() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleStartSetup = async () => {
+    // Guard: if 2FA is already active in the local store, refuse to start setup.
+    // Calling the setup endpoint while 2FA is enabled would overwrite the secret
+    // and set totp_enabled=false, silently disabling 2FA.
+    if (isEnabled) {
+      setError(
+        '2FA is already enabled on your account. Disable it first before setting up a new authenticator.'
+      );
+      return;
+    }
+
     setStep('setup-loading');
     setError(null);
     try {

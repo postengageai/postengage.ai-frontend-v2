@@ -1,6 +1,8 @@
 // ─── Backend error response shape ────────────────────────────────────────────
 // Mirrors PostEngageErrorResponse from @app/errors in the backend.
 
+import { ErrorCodes } from '../error-codes';
+
 /** One field-level validation failure (present when code === 'PE-VAL-001'). */
 export interface FieldError {
   field: string;
@@ -60,7 +62,10 @@ export class ApiError extends Error {
 
   /** True when this error carries field-level validation details. */
   get isValidationError(): boolean {
-    return this.code === 'PE-VAL-001' || this.type === 'validation_error';
+    return (
+      this.code === ErrorCodes.VALIDATION.INVALID_INPUT ||
+      this.type === 'validation_error'
+    );
   }
 
   /**
@@ -207,44 +212,50 @@ export function createAppropriateError(
 
 // ─── parseApiError ────────────────────────────────────────────────────────────
 // Single utility for components to convert any caught error into a displayable
-// shape without importing getErrorMessage + isApiError separately.
+// shape without importing getTitleForCode + isApiError separately.
 
 export interface ParsedApiError {
-  /** Human-friendly title (e.g. "Invalid credentials") */
+  /** Short display title for toast headers / error banners (e.g. "Invalid credentials") */
   title: string;
-  /** Human-friendly message for the user */
+  /**
+   * The human-friendly message to show the user.
+   * Comes directly from the backend `error.message` field so there is no
+   * duplication or drift between frontend and backend copy.
+   */
   message: string;
   /**
    * Field → message map for validation errors.
    * Use with react-hook-form: Object.entries(fields).forEach(([f,m]) => setError(f, {message:m}))
    */
   fields: Record<string, string>;
-  /** Raw PE-* code if available — useful for conditional logic */
+  /** Raw PE-* code if available — useful for conditional branching logic */
   code: string | undefined;
 }
 
 /**
  * Converts any caught error into a `ParsedApiError` that is safe to show.
- * Lazily imports `getErrorMessage` to avoid a circular dep at module init.
+ *
+ * The `message` is taken directly from the backend response — we do NOT
+ * maintain a duplicate frontend copy of error messages.  Only `title`
+ * (a short display header not sent by the API) is derived from the code.
  */
 export function parseApiError(
   error: unknown,
   fallback: { title?: string; message?: string } = {}
 ): ParsedApiError {
-  // Lazy import to avoid circular dependency with auth-errors
-
-  const { getErrorMessage } = require('../auth-errors') as {
-    getErrorMessage: (code: string | undefined) => {
-      title: string;
-      message: string;
-    };
-  };
-
   if (error instanceof ApiError) {
-    const mapped = getErrorMessage(error.code);
+    // Lazy import to avoid a circular dep at module init time.
+    const { getTitleForCode } = require('../auth-errors') as {
+      getTitleForCode: (code: string | undefined) => string;
+    };
+
     return {
-      title: mapped.title,
-      message: mapped.message,
+      title: getTitleForCode(error.code),
+      // Use the backend's own message — no frontend override.
+      message:
+        error.message && error.message !== ''
+          ? error.message
+          : 'An unexpected error occurred. Please try again.',
       fields: error.getFieldErrors(),
       code: error.code,
     };

@@ -17,6 +17,7 @@ import { AuthApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/auth/store';
 import { useUserStore } from '@/lib/user/store';
 import { ApiError, parseApiError } from '@/lib/http/errors';
+import { ErrorCodes } from '@/lib/error-codes';
 
 // ── Zod schema ─────────────────────────────────────────────────────────────────
 
@@ -129,17 +130,17 @@ function LoginContent() {
       router.refresh();
     } catch (error: unknown) {
       if (error instanceof ApiError) {
-        if (error.code === 'PE-AUTH-005') {
+        if (error.code === ErrorCodes.AUTH.ACCOUNT_LOCKED) {
           router.push(
             `/account-locked?email=${encodeURIComponent(values.email)}`
           );
           return;
         }
-        if (error.code === 'PE-AUTH-006') {
+        if (error.code === ErrorCodes.AUTH.ACCOUNT_SUSPENDED) {
           router.push('/account-suspended');
           return;
         }
-        if (error.code === 'PE-AUTH-007') setShowResend(true);
+        if (error.code === ErrorCodes.AUTH.EMAIL_NOT_VERIFIED) setShowResend(true);
 
         // Map backend field errors onto react-hook-form fields
         if (error.isValidationError) {

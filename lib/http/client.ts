@@ -42,6 +42,7 @@ import {
   BackendErrorResponse,
   ErrorResponseDetails,
 } from './errors';
+import { INLINE_AUTH_ERROR_CODES } from '../error-codes';
 
 // Callback for handling 401 responses
 let onUnauthorized: (() => void) | null = null;
@@ -142,8 +143,17 @@ export class HttpClient {
 
         // Handle 401 Unauthorized responses
         if (error.response?.status === 401) {
-          // Call the unauthorized handler if set
-          if (onUnauthorized) {
+          // Only fire the global logout handler for genuine session-level 401s
+          // (expired token, missing token, revoked token).
+          //
+          // Domain-level 401s (wrong TOTP code, wrong password, etc.) should
+          // NOT trigger a logout — the calling component handles them inline.
+          // The set of codes to skip is defined in `lib/error-codes.ts`.
+          const responseCode = (
+            error.response.data as { error?: { code?: string } }
+          )?.error?.code;
+
+          if (!INLINE_AUTH_ERROR_CODES.has(responseCode ?? '') && onUnauthorized) {
             onUnauthorized();
           }
         }
@@ -281,7 +291,7 @@ export class HttpClient {
 
     return {
       message: payload.error.message ?? 'An unexpected error occurred',
-      code: payload.error.code ?? 'PE-INT-001',
+      code: payload.error.code ?? ErrorCodes.INTERNAL.UNEXPECTED,
       type: payload.error.type,
       fieldErrors: fieldErrors.length > 0 ? fieldErrors : undefined,
       details,

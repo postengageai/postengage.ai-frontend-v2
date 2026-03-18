@@ -22,6 +22,7 @@ import { AuthApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/auth/store';
 import { useUserStore } from '@/lib/user/store';
 import { ApiError, parseApiError } from '@/lib/http/errors';
+import { ErrorCodes } from '@/lib/error-codes';
 import { cn } from '@/lib/utils';
 
 // ── Constants ───────────────────────────────────────────────────────────────────
@@ -308,17 +309,18 @@ function TwoFactorContent() {
         setCode('');
 
         if (err instanceof ApiError) {
-          // Token expired or challenge no longer valid — send back to login
-          if (
-            err.code === 'PE-AUTH-009' ||
-            err.code === 'PE-AUTH-010' ||
-            err.code === 'PE-AUTH-022'
-          ) {
+          // Token expired or challenge no longer valid — clear state and send
+          // the user back to login so they can restart the auth flow.
+          const CHALLENGE_EXPIRED_CODES = new Set([
+            ErrorCodes.AUTH.SOCIAL_LOGIN_FAILED,
+            ErrorCodes.AUTH.SOCIAL_ACCOUNT_CONFLICT,
+            ErrorCodes.AUTH.TOTP_REQUIRED,
+          ]);
+          if (CHALLENGE_EXPIRED_CODES.has(err.code ?? '')) {
             sessionStorage.removeItem('totp_challenge_token');
             sessionStorage.removeItem('totp_challenge_expires_at');
-            setError(
-              'Your verification session has expired. Please sign in again.'
-            );
+            // Use the backend's message directly — no frontend override.
+            setError(err.message);
             setTimeout(() => router.push('/login'), 2500);
             return;
           }

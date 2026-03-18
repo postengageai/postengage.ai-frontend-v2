@@ -21,6 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { AffiliateApi, type Affiliate } from '@/lib/api/affiliate';
 import { parseApiError } from '@/lib/http/errors';
+import { ErrorCodes } from '@/lib/error-codes';
 
 interface StatCardProps {
   title: string;
@@ -76,7 +77,7 @@ export default function AffiliatePage() {
       setAffiliate(data);
     } catch (err) {
       const error = parseApiError(err);
-      if (error?.code === 'PE-AFF-001') {
+      if (error?.code === ErrorCodes.AFFILIATE.NOT_FOUND) {
         setNotJoined(true);
       } else {
         toast({
