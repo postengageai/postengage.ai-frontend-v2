@@ -106,7 +106,12 @@ function LoginContent() {
       // Two-step 2FA: backend returned a challenge token — redirect to TOTP page
       if (data.requires_2fa) {
         sessionStorage.setItem('totp_challenge_token', data.challenge_token);
-        sessionStorage.setItem('totp_challenge_expires_at', data.challenge_expires_at.toString());
+        if (data.challenge_expires_at != null) {
+          sessionStorage.setItem(
+            'totp_challenge_expires_at',
+            data.challenge_expires_at.toString()
+          );
+        }
         router.push(`/2fa?redirect=${encodeURIComponent(redirectTo)}`);
         return;
       }
