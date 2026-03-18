@@ -311,7 +311,7 @@ function TwoFactorContent() {
         if (err instanceof ApiError) {
           // Token expired or challenge no longer valid — clear state and send
           // the user back to login so they can restart the auth flow.
-          const CHALLENGE_EXPIRED_CODES = new Set([
+          const CHALLENGE_EXPIRED_CODES = new Set<string>([
             ErrorCodes.AUTH.SOCIAL_LOGIN_FAILED,
             ErrorCodes.AUTH.SOCIAL_ACCOUNT_CONFLICT,
             ErrorCodes.AUTH.TOTP_REQUIRED,
