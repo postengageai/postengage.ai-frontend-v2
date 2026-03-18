@@ -38,12 +38,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     actions: { setIsAuthenticated, setLoading },
   } = useAuthStore();
 
-  // Wire up the HTTP-client logout handler so 401 responses clear auth state
+  // Wire up the HTTP-client logout handler so 401 responses clear auth state.
+  // Auth pages (/login, /2fa, /register, etc.) make unauthenticated requests by
+  // design — don't redirect to /login if we're already on one of those pages.
   useEffect(() => {
+    const AUTH_PAGES = ['/login', '/2fa', '/register', '/forgot-password'];
     setLogoutHandler(() => {
       setUser(null);
       setIsAuthenticated(false);
-      router.push('/login');
+      const isAuthPage = AUTH_PAGES.some(p =>
+        window.location.pathname.startsWith(p)
+      );
+      if (!isAuthPage) {
+        router.push('/login');
+      }
     });
   }, [setUser, setIsAuthenticated, router]);
 
