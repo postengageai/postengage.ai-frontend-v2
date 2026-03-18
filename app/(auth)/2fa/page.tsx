@@ -1,8 +1,20 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, ShieldCheck, AlertCircle, ArrowLeft } from 'lucide-react';
+import {
+  Loader2,
+  ShieldCheck,
+  AlertCircle,
+  ArrowLeft,
+  Clock,
+} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AuthLogo } from '@/components/auth/auth-logo';
@@ -12,9 +24,13 @@ import { useUserStore } from '@/lib/user/store';
 import { ApiError, parseApiError } from '@/lib/http/errors';
 import { cn } from '@/lib/utils';
 
-// ── OTP digit input ────────────────────────────────────────────────────────────
-
+// ── Constants ───────────────────────────────────────────────────────────────────
 const DIGITS = 6;
+// NOTE: No hardcoded TTL here — the actual expiry always comes from the backend
+// via `challenge_expires_at` stored in sessionStorage. This way the frontend
+// stays correct even if the backend changes the challenge duration.
+
+// ── OTP digit input ────────────────────────────────────────────────────────────
 
 interface OtpInputProps {
   value: string;
@@ -40,7 +56,6 @@ function OtpInput({ value, onChange, disabled, hasError }: OtpInputProps) {
       e.preventDefault();
       const next = digits.map((d, i) => (i === index ? '' : d));
       if (next[index] === '') {
-        // Already empty, move focus back
         if (index > 0) focus(index - 1);
       }
       onChange(next.join(''));
@@ -59,7 +74,6 @@ function OtpInput({ value, onChange, disabled, hasError }: OtpInputProps) {
     if (!raw) return;
 
     if (raw.length > 1) {
-      // Pasted a full code
       const pasted = raw.slice(0, DIGITS);
       onChange(pasted.padEnd(DIGITS, '').slice(0, DIGITS));
       focus(Math.min(pasted.length, DIGITS - 1));
@@ -115,6 +129,93 @@ function OtpInput({ value, onChange, disabled, hasError }: OtpInputProps) {
   );
 }
 
+// ── Countdown timer ─────────────────────────────────────────────────────────────
+
+function useCountdown(expiresAt: number | null) {
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  // Capture the remaining seconds at the moment the timer first starts —
+  // used as the "total" for the progress bar without any hardcoded TTL.
+  const initialSecondsRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (expiresAt === null) return;
+
+    const compute = () =>
+      Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+
+    const first = compute();
+    initialSecondsRef.current = first;
+    setSecondsLeft(first);
+
+    const interval = setInterval(() => {
+      const remaining = compute();
+      setSecondsLeft(remaining);
+      if (remaining === 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  return { secondsLeft, initialSeconds: initialSecondsRef.current };
+}
+
+interface CountdownBadgeProps {
+  secondsLeft: number;
+  /** Total seconds when the timer started — drives the progress bar width */
+  totalSeconds: number;
+}
+
+function CountdownBadge({ secondsLeft, totalSeconds }: CountdownBadgeProps) {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+  // Progress drains from 1 → 0 based on the actual token lifetime, not a
+  // hardcoded constant. If the backend ever changes the TTL, this still works.
+  const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
+
+  const isUrgent = secondsLeft <= 120; // < 2 min
+  const isWarning = secondsLeft <= 600 && secondsLeft > 120; // 2-10 min
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border',
+        'transition-colors duration-500',
+        secondsLeft === 0
+          ? 'border-error/40 bg-error/10 text-error'
+          : isUrgent
+            ? 'border-error/40 bg-error/10 text-error'
+            : isWarning
+              ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+              : 'border-border bg-muted/30 text-muted-foreground'
+      )}
+    >
+      <Clock className='h-3.5 w-3.5 shrink-0' />
+      <span className='tabular-nums'>{display}</span>
+      {/* Thin progress bar */}
+      <div className='flex-1 h-1 rounded-full bg-border/50 overflow-hidden min-w-[40px]'>
+        <div
+          className={cn(
+            'h-full rounded-full transition-all duration-1000',
+            secondsLeft === 0
+              ? 'bg-error w-0'
+              : isUrgent
+                ? 'bg-error'
+                : isWarning
+                  ? 'bg-amber-400'
+                  : 'bg-primary'
+          )}
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+      <span className='text-xs opacity-70'>
+        {secondsLeft === 0 ? 'Expired' : 'remaining'}
+      </span>
+    </div>
+  );
+}
+
 // ── Inner page ─────────────────────────────────────────────────────────────────
 
 function TwoFactorContent() {
@@ -130,75 +231,114 @@ function TwoFactorContent() {
   const [error, setError] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
-  // Read challenge token from sessionStorage
+  // Read challenge token + expiry from sessionStorage
   const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [tokenMissing, setTokenMissing] = useState(false);
+
+  const { secondsLeft, initialSeconds } = useCountdown(expiresAt);
 
   useEffect(() => {
     const token = sessionStorage.getItem('totp_challenge_token');
+    const expStr = sessionStorage.getItem('totp_challenge_expires_at');
+
     if (!token) {
       setTokenMissing(true);
-    } else {
-      setChallengeToken(token);
+      return;
     }
+
+    setChallengeToken(token);
+
+    if (expStr) {
+      const exp = parseInt(expStr, 10);
+      // If already expired when we load the page, treat as missing
+      if (exp <= Date.now()) {
+        sessionStorage.removeItem('totp_challenge_token');
+        sessionStorage.removeItem('totp_challenge_expires_at');
+        setTokenMissing(true);
+        return;
+      }
+      setExpiresAt(exp);
+    }
+    // If no expiry stored (e.g. older session before this feature), we simply
+    // skip the countdown — no hardcoded fallback that could drift from backend.
   }, []);
 
+  // Auto-redirect when timer hits 0
+  useEffect(() => {
+    if (secondsLeft === 0 && expiresAt !== null) {
+      sessionStorage.removeItem('totp_challenge_token');
+      sessionStorage.removeItem('totp_challenge_expires_at');
+      setError('Your verification session has expired. Please sign in again.');
+      setTimeout(() => router.push('/login'), 2500);
+    }
+  }, [secondsLeft, expiresAt, router]);
+
   // Auto-submit when all 6 digits are entered
+  const handleVerify = useCallback(
+    async (currentCode: string) => {
+      if (!challengeToken) return;
+      if (currentCode.replace(/\D/g, '').length !== DIGITS) return;
+
+      setIsSubmitting(true);
+      setError(null);
+      setHasError(false);
+
+      try {
+        const response = await AuthApi.verifyTotpChallenge({
+          challenge_token: challengeToken,
+          code: currentCode,
+        });
+
+        // Success — clean up and authenticate
+        sessionStorage.removeItem('totp_challenge_token');
+        sessionStorage.removeItem('totp_challenge_expires_at');
+        const user = response.data.user;
+        userActions.setUser(user);
+        actions.setIsAuthenticated(true);
+
+        if (!user.onboarding_completed_at) {
+          router.push('/dashboard/onboarding');
+        } else {
+          router.push(redirectTo);
+        }
+        router.refresh();
+      } catch (err) {
+        setHasError(true);
+        setCode('');
+
+        if (err instanceof ApiError) {
+          // Token expired or challenge no longer valid — send back to login
+          if (
+            err.code === 'PE-AUTH-009' ||
+            err.code === 'PE-AUTH-010' ||
+            err.code === 'PE-AUTH-022'
+          ) {
+            sessionStorage.removeItem('totp_challenge_token');
+            sessionStorage.removeItem('totp_challenge_expires_at');
+            setError(
+              'Your verification session has expired. Please sign in again.'
+            );
+            setTimeout(() => router.push('/login'), 2500);
+            return;
+          }
+          const parsed = parseApiError(err);
+          setError(parsed.message);
+        } else {
+          setError('Something went wrong. Please try again.');
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [challengeToken, redirectTo, router, actions, userActions]
+  );
+
   useEffect(() => {
     if (code.replace(/\D/g, '').length === DIGITS && challengeToken) {
       void handleVerify(code);
     }
-  }, [code]);
-
-  const handleVerify = async (currentCode: string) => {
-    if (!challengeToken) return;
-    if (currentCode.replace(/\D/g, '').length !== DIGITS) return;
-
-    setIsSubmitting(true);
-    setError(null);
-    setHasError(false);
-
-    try {
-      const response = await AuthApi.verifyTotpChallenge({
-        challenge_token: challengeToken,
-        code: currentCode,
-      });
-
-      // Success — clean up token and authenticate
-      sessionStorage.removeItem('totp_challenge_token');
-      const user = response.data.user;
-      userActions.setUser(user);
-      actions.setIsAuthenticated(true);
-
-      if (!user.onboarding_completed_at) {
-        router.push('/dashboard/onboarding');
-      } else {
-        router.push(redirectTo);
-      }
-      router.refresh();
-    } catch (err) {
-      setHasError(true);
-      setCode(''); // Clear digits so user can re-enter
-
-      if (err instanceof ApiError) {
-        // Token expired — send back to login
-        if (err.code === 'PE-AUTH-009' || err.code === 'PE-AUTH-010') {
-          sessionStorage.removeItem('totp_challenge_token');
-          setError(
-            'Your verification session has expired. Please sign in again.'
-          );
-          setTimeout(() => router.push('/login'), 2500);
-          return;
-        }
-        const parsed = parseApiError(err);
-        setError(parsed.message);
-      } else {
-        setError('Something went wrong. Please try again.');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [code, challengeToken, handleVerify]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,9 +435,19 @@ function TwoFactorContent() {
             <h1 className='text-[1.625rem] font-bold text-foreground tracking-tight text-center'>
               Verify your identity
             </h1>
-            <p className='mt-2 text-sm text-muted-foreground text-center mb-8'>
+            <p className='mt-2 text-sm text-muted-foreground text-center mb-6'>
               Enter the 6-digit code from your authenticator app.
             </p>
+
+            {/* Countdown timer — only shown when we have a real expiry from the backend */}
+            {secondsLeft !== null && initialSeconds !== null && (
+              <div className='mb-6'>
+                <CountdownBadge
+                  secondsLeft={secondsLeft}
+                  totalSeconds={initialSeconds}
+                />
+              </div>
+            )}
 
             {/* Error banner */}
             {error && (
@@ -312,7 +462,7 @@ function TwoFactorContent() {
               <OtpInput
                 value={code}
                 onChange={setCode}
-                disabled={isSubmitting}
+                disabled={isSubmitting || secondsLeft === 0}
                 hasError={hasError}
               />
 
@@ -323,16 +473,17 @@ function TwoFactorContent() {
                 </div>
               )}
 
-              {/* Submit — only shown when auto-submit isn't triggered */}
-              {!isSubmitting && code.replace(/\D/g, '').length === DIGITS && (
-                <Button
-                  type='submit'
-                  className='w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
-                  disabled={isSubmitting}
-                >
-                  Verify &amp; Sign In
-                </Button>
-              )}
+              {!isSubmitting &&
+                code.replace(/\D/g, '').length === DIGITS &&
+                secondsLeft !== 0 && (
+                  <Button
+                    type='submit'
+                    className='w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
+                    disabled={isSubmitting}
+                  >
+                    Verify &amp; Sign In
+                  </Button>
+                )}
 
               {!isSubmitting && code.replace(/\D/g, '').length < DIGITS && (
                 <p className='text-center text-xs text-muted-foreground'>

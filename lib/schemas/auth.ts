@@ -81,6 +81,8 @@ export const LoginResponseSchema = z.discriminatedUnion('requires_2fa', [
   z.object({
     requires_2fa: z.literal(true),
     challenge_token: z.string(),
+    /** Unix timestamp (ms) when the challenge token expires — used for countdown */
+    challenge_expires_at: z.number(),
   }),
   // Step 1 — No 2FA: login complete, user returned
   z.object({
