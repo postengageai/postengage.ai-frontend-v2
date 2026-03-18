@@ -26,7 +26,7 @@ interface OtpInputProps {
 function OtpInput({ value, onChange, disabled, hasError }: OtpInputProps) {
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
 
-  const digits = value.padEnd(DIGITS, '').split('').slice(0, DIGITS);
+  const digits = Array.from({ length: DIGITS }, (_, i) => value[i] ?? '');
 
   const focus = (index: number) => {
     inputs.current[index]?.focus();
