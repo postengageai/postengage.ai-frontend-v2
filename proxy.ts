@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server';
  */
 const PUBLIC_PATHS = new Set([
   '/login',
+  '/2fa',
   '/signup',
   '/verify-email',
   '/forgot-password',
