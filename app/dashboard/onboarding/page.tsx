@@ -40,6 +40,7 @@ import { OnboardingConnectStep } from '@/components/onboarding/onboarding-connec
 import { automationsApi } from '@/lib/api/automations';
 import { completeOnboarding } from '@/lib/api/user';
 import { useUserActions, useUser } from '@/lib/user/store';
+import { useAuth } from '@/lib/auth/context';
 import { analytics } from '@/lib/analytics';
 import {
   AutomationTriggerType,
@@ -714,6 +715,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { updateUser } = useUserActions();
   const user = useUser();
+  const { isLoading: authLoading } = useAuth();
   const [step, setStep] = useState<StepId>('connect');
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -722,10 +724,10 @@ export default function OnboardingPage() {
   // This prevents the wizard from re-appearing on every login when
   // onboarding_completed_at is already set in the backend.
   useEffect(() => {
-    if (user?.onboarding_completed_at) {
+    if (!authLoading && user?.onboarding_completed_at) {
       router.replace('/dashboard');
     }
-  }, [user, router]);
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     SocialAccountsApi.list()
@@ -766,6 +768,17 @@ export default function OnboardingPage() {
     router.push('/dashboard');
     router.refresh();
   };
+
+  // Block rendering entirely until auth resolves — prevents the onboarding UI
+  // from flashing for users who have already completed it (race condition where
+  // social accounts API resolves before the auth check completes).
+  if (authLoading) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
 
   // Don't render anything while we know the user has completed onboarding —
   // the useEffect redirect will fire, but returning null prevents any content flash.
