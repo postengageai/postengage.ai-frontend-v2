@@ -101,7 +101,17 @@ function LoginContent() {
 
     try {
       const response = await AuthApi.login(values);
-      const user = response.data.user;
+      const data = response.data;
+
+      // Two-step 2FA: backend returned a challenge token — redirect to TOTP page
+      if (data.requires_2fa) {
+        sessionStorage.setItem('totp_challenge_token', data.challenge_token);
+        router.push(`/2fa?redirect=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
+      // No 2FA — login complete
+      const user = data.user;
       userActions.setUser(user);
       actions.setIsAuthenticated(true);
       // If onboarding not completed, redirect to onboarding wizard
@@ -216,7 +226,15 @@ function LoginContent() {
 
             {justVerified && (
               <div className='mb-6 flex items-center gap-2.5 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success'>
-                <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M20 6L9 17l-5-5'/></svg>
+                <svg
+                  className='h-4 w-4 shrink-0'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                >
+                  <path d='M20 6L9 17l-5-5' />
+                </svg>
                 Email verified! Sign in to start automating.
               </div>
             )}

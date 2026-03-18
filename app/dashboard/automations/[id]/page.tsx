@@ -160,7 +160,6 @@ export default function AutomationDetailPage() {
             executed_at: exec.executed_at,
             credits_used: exec.credits_used || 0,
           })),
-          experiment_config: apiData.experiment_config ?? null,
           created_at: apiData.created_at,
           updated_at: apiData.updated_at,
           last_executed_at: apiData.last_executed_at || undefined,
