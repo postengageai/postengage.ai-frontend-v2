@@ -6,6 +6,7 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosHeaders,
 } from 'axios';
+import { ErrorCodes, INLINE_AUTH_ERROR_CODES } from '../error-codes';
 
 export interface PaginationMeta {
   total?: number;
@@ -42,8 +43,6 @@ import {
   BackendErrorResponse,
   ErrorResponseDetails,
 } from './errors';
-import { INLINE_AUTH_ERROR_CODES } from '../error-codes';
-
 // Callback for handling 401 responses
 let onUnauthorized: (() => void) | null = null;
 
