@@ -1,230 +1,113 @@
-// Maps backend PE-* error codes to human-friendly messages.
-// Updated to match the new @app/errors system (PE-DOMAIN-SEQ format).
-// Source of truth: postengage.ai-backend/libs/errors/src/codes/constants.ts
+/**
+ * Maps PE-* error codes to short display titles.
+ *
+ * IMPORTANT — messages are intentionally NOT stored here.
+ * The backend already sends a `message` field with every error response.
+ * `parseApiError` uses that backend message directly so there is no
+ * duplication or drift risk.  Only `title` (a brief toast/banner header)
+ * is maintained here because the API response does not include one.
+ *
+ * If you need to add a new code, add the constant to `lib/error-codes.ts`
+ * first, then optionally add a title entry below.
+ */
 
-type ErrorCode = string;
+const CODE_TITLES: Record<string, string> = {
+  // ── Auth ─────────────────────────────────────────────────────────────────
+  'PE-AUTH-001': 'Invalid credentials',
+  'PE-AUTH-002': 'Session expired',
+  'PE-AUTH-003': 'Not authenticated',
+  'PE-AUTH-004': 'Session revoked',
+  'PE-AUTH-005': 'Account locked',
+  'PE-AUTH-006': 'Account suspended',
+  'PE-AUTH-007': 'Email not verified',
+  'PE-AUTH-008': 'Password reset required',
+  'PE-AUTH-009': 'Social login failed',
+  'PE-AUTH-010': 'Account conflict',
+  'PE-AUTH-011': 'Too many attempts',
+  'PE-AUTH-012': 'Security violation',
+  'PE-AUTH-013': 'Account already exists',
+  'PE-AUTH-014': 'Invalid or expired link',
+  'PE-AUTH-015': 'Verification link expired',
+  'PE-AUTH-016': 'Already verified',
+  'PE-AUTH-017': 'Email recently sent',
+  'PE-AUTH-018': 'Access denied',
+  'PE-AUTH-019': 'Plan limit reached',
+  'PE-AUTH-020': 'Session expired',
+  'PE-AUTH-021': 'Invalid code',
+  'PE-AUTH-022': '2FA required',
+  'PE-AUTH-023': '2FA already enabled',
+  'PE-AUTH-024': '2FA not configured',
 
-interface ErrorMapping {
-  title: string;
-  message: string;
-}
+  // ── User ─────────────────────────────────────────────────────────────────
+  'PE-USR-001': 'Account not found',
+  'PE-USR-002': 'Email already in use',
+  'PE-USR-003': 'Username taken',
+  'PE-USR-004': 'Invalid profile',
+  'PE-USR-005': 'Account deactivated',
+  'PE-USR-006': 'Weak password',
 
-const errorMappings: Record<ErrorCode, ErrorMapping> = {
-  // ─── Auth errors (PE-AUTH-*) ──────────────────────────────────────────────
-  'PE-AUTH-001': {
-    title: 'Invalid credentials',
-    message:
-      'The email or password you entered is incorrect. Please try again.',
-  },
-  'PE-AUTH-002': {
-    title: 'Session expired',
-    message: 'Your session has expired. Please log in again.',
-  },
-  'PE-AUTH-003': {
-    title: 'Not authenticated',
-    message: 'Please log in to continue.',
-  },
-  'PE-AUTH-004': {
-    title: 'Session revoked',
-    message: 'Your session has been revoked. Please log in again.',
-  },
-  'PE-AUTH-005': {
-    title: 'Account locked',
-    message: 'Your account has been locked. Please contact support.',
-  },
-  'PE-AUTH-006': {
-    title: 'Account suspended',
-    message: 'Your account has been suspended. Please contact support.',
-  },
-  'PE-AUTH-007': {
-    title: 'Email not verified',
-    message:
-      'Please verify your email before logging in. Check your inbox for the verification link.',
-  },
-  'PE-AUTH-008': {
-    title: 'Password reset required',
-    message: 'You need to reset your password before logging in.',
-  },
-  'PE-AUTH-009': {
-    title: 'Social login failed',
-    message: 'We could not complete your social login. Please try again.',
-  },
-  'PE-AUTH-010': {
-    title: 'Account conflict',
-    message: 'This social account is already connected to another account.',
-  },
-  'PE-AUTH-011': {
-    title: 'Too many attempts',
-    message: 'Too many login attempts. Please wait before trying again.',
-  },
-  'PE-AUTH-012': {
-    title: 'Security violation',
-    message: 'A security violation was detected. Please contact support.',
-  },
-  'PE-AUTH-013': {
-    title: 'Account already exists',
-    message:
-      'An account with this email already exists. Try logging in instead.',
-  },
-  'PE-AUTH-014': {
-    title: 'Invalid or expired link',
-    message: 'This link is invalid or has expired. Please request a new one.',
-  },
-  'PE-AUTH-015': {
-    title: 'Verification link expired',
-    message: 'This verification link has expired. Please request a new one.',
-  },
-  'PE-AUTH-016': {
-    title: 'Already verified',
-    message: 'Your email is already verified. You can log in to your account.',
-  },
-  'PE-AUTH-017': {
-    title: 'Verification email recently sent',
-    message:
-      'A verification email was recently sent. Please check your inbox or wait a few minutes before requesting another.',
-  },
-  'PE-AUTH-018': {
-    title: 'Access denied',
-    message: "You don't have permission to perform this action.",
-  },
-  'PE-AUTH-019': {
-    title: 'Plan limit reached',
-    message: 'Your current plan does not support this feature. Please upgrade.',
-  },
-  'PE-AUTH-020': {
-    title: 'Session expired',
-    message: 'Your session has expired. Please log in again.',
-  },
+  // ── Validation ───────────────────────────────────────────────────────────
+  'PE-VAL-001': 'Invalid input',
+  'PE-VAL-002': 'Required field missing',
+  'PE-VAL-003': 'Invalid format',
 
-  // ─── User errors (PE-USR-*) ───────────────────────────────────────────────
-  'PE-USR-001': {
-    title: 'Account not found',
-    message:
-      "We couldn't find an account with that email. Would you like to create one?",
-  },
-  'PE-USR-002': {
-    title: 'Email already in use',
-    message: 'An account with this email already exists.',
-  },
-  'PE-USR-003': {
-    title: 'Username taken',
-    message: 'This username is already taken. Please choose a different one.',
-  },
-  'PE-USR-004': {
-    title: 'Invalid profile',
-    message: 'Your profile information is invalid. Please update it.',
-  },
-  'PE-USR-005': {
-    title: 'Account deactivated',
-    message: 'Your account has been deactivated. Please contact support.',
-  },
-  'PE-USR-006': {
-    title: 'Weak password',
-    message: 'Your password is too weak. Please choose a stronger password.',
-  },
+  // ── Rate limit ───────────────────────────────────────────────────────────
+  'PE-RATE-001': 'Too many requests',
+  'PE-RATE-003': 'Too many login attempts',
+  'PE-RATE-004': 'Too many signup attempts',
 
-  // ─── Validation errors (PE-VAL-*) ─────────────────────────────────────────
-  'PE-VAL-001': {
-    title: 'Invalid input',
-    message: 'Please check your information and try again.',
-  },
-  'PE-VAL-002': {
-    title: 'Required field missing',
-    message: 'Please fill in all required fields.',
-  },
-  'PE-VAL-003': {
-    title: 'Invalid format',
-    message: 'One or more fields have an invalid format.',
-  },
+  // ── Social ───────────────────────────────────────────────────────────────
+  'PE-SOC-001': 'Social account disconnected',
+  'PE-SOC-002': 'Rate limit',
 
-  // ─── Rate limit errors (PE-RATE-*) ────────────────────────────────────────
-  'PE-RATE-001': {
-    title: 'Too many attempts',
-    message: 'Please wait a moment before trying again.',
-  },
-  'PE-RATE-003': {
-    title: 'Too many login attempts',
-    message: 'Too many login attempts. Please wait before trying again.',
-  },
-  'PE-RATE-004': {
-    title: 'Too many signups',
-    message: 'Too many signup attempts. Please wait before trying again.',
-  },
+  // ── Payment ──────────────────────────────────────────────────────────────
+  'PE-PAY-001': 'Payment failed',
+  'PE-PAY-003': 'Subscription expired',
+  'PE-PAY-004': 'Plan limit reached',
 
-  // ─── Social errors (PE-SOC-*) ─────────────────────────────────────────────
-  'PE-SOC-001': {
-    title: 'Social account disconnected',
-    message: 'Your social account connection has expired. Please reconnect.',
-  },
-  'PE-SOC-002': {
-    title: 'Rate limit',
-    message:
-      'You have hit the rate limit for this social platform. Please try again later.',
-  },
+  // ── Affiliate ────────────────────────────────────────────────────────────
+  'PE-AFF-001': 'Affiliate not found',
+  'PE-AFF-002': 'Already joined',
+  'PE-AFF-003': 'Code not found',
+  'PE-AFF-004': 'Affiliate suspended',
 
-  // ─── Payment errors (PE-PAY-*) ────────────────────────────────────────────
-  'PE-PAY-001': {
-    title: 'Payment failed',
-    message: 'Your payment could not be processed. Please try again.',
-  },
-  'PE-PAY-003': {
-    title: 'Subscription expired',
-    message: 'Your subscription has expired. Please renew to continue.',
-  },
-  'PE-PAY-004': {
-    title: 'Plan limit reached',
-    message: 'You have reached the limit of your current plan. Please upgrade.',
-  },
-
-  // ─── Internal errors (PE-INT-*) ───────────────────────────────────────────
-  'PE-INT-001': {
-    title: 'Something went wrong',
-    message: 'An unexpected error occurred. Please try again.',
-  },
-  'PE-INT-002': {
-    title: 'Request timed out',
-    message: 'The request took too long. Please try again.',
-  },
-  'PE-INT-003': {
-    title: 'Service unavailable',
-    message: 'The service is temporarily unavailable. Please try again later.',
-  },
-
-  // ─── Generic fallbacks ────────────────────────────────────────────────────
-  NETWORK_ERROR: {
-    title: 'Connection issue',
-    message:
-      "We're having trouble connecting. Please check your internet and try again.",
-  },
+  // ── Internal ─────────────────────────────────────────────────────────────
+  'PE-INT-001': 'Something went wrong',
+  'PE-INT-002': 'Request timed out',
+  'PE-INT-003': 'Service unavailable',
 };
 
-export function getErrorMessage(code: ErrorCode | undefined): ErrorMapping {
-  if (!code) {
-    return {
-      title: 'Something went wrong',
-      message: 'An unexpected error occurred. Please try again.',
-    };
-  }
+/** Fallback titles derived from the code domain prefix. */
+const PREFIX_TITLES: Record<string, string> = {
+  'PE-AUTH': 'Authentication error',
+  'PE-USR': 'Account error',
+  'PE-VAL': 'Validation error',
+  'PE-RATE': 'Too many requests',
+  'PE-SOC': 'Social account error',
+  'PE-PAY': 'Payment error',
+  'PE-AFF': 'Affiliate error',
+  'PE-INT': 'Server error',
+};
 
-  return (
-    errorMappings[code] ?? {
-      title: 'Something went wrong',
-      message: 'An unexpected error occurred. Please try again.',
-    }
-  );
+/**
+ * Returns a short display title for a PE-* error code.
+ * Falls back to a domain-prefix title, then "Something went wrong".
+ */
+export function getTitleForCode(code: string | undefined): string {
+  if (!code) return 'Something went wrong';
+  if (CODE_TITLES[code]) return CODE_TITLES[code];
+  const prefix = code.split('-').slice(0, 2).join('-');
+  return PREFIX_TITLES[prefix] ?? 'Something went wrong';
 }
 
-export function mapHttpError(status: number): ErrorMapping {
-  switch (status) {
-    case 401:
-      return errorMappings['PE-AUTH-003'];
-    case 403:
-      return errorMappings['PE-AUTH-018'];
-    case 429:
-      return errorMappings['PE-RATE-001'];
-    case 404:
-      return errorMappings['PE-USR-001'];
-    default:
-      return getErrorMessage(undefined);
-  }
+/**
+ * @deprecated Use `getTitleForCode` — messages now come directly from the
+ * backend `error.message` field via `parseApiError`. This shim keeps callers
+ * that haven't migrated yet from breaking; message is always empty string.
+ */
+export function getErrorMessage(code: string | undefined): {
+  title: string;
+  message: string;
+} {
+  return { title: getTitleForCode(code), message: '' };
 }
