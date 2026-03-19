@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -71,8 +71,15 @@ function LoginContent() {
   const justVerified = searchParams.get('verified') === 'true';
   const redirectTo = searchParams.get('redirect') ?? '/dashboard';
 
-  const { actions, errors: authErrors } = useAuthStore();
+  const { actions, errors: authErrors, isAuthenticated } = useAuthStore();
   const { actions: userActions } = useUserStore();
+
+  // Already logged-in users should not see login — send them to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace(redirectTo);
+    }
+  }, [isAuthenticated, redirectTo, router]);
 
   // Platform stats via TanStack Query (no useEffect needed)
   const { data: platformStats, isLoading: statsLoading } = useQuery({

@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -17,48 +16,228 @@ import {
   Loader2,
   Sparkles,
   Zap,
+  Share2,
+  TrendingUp,
+  ArrowUpRight,
+  Link2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AffiliateApi, type Affiliate } from '@/lib/api/affiliate';
 import { parseApiError } from '@/lib/http/errors';
 import { ErrorCodes } from '@/lib/error-codes';
 
+// ─── Stat card ────────────────────────────────────────────────────────────────
+
 interface StatCardProps {
-  title: string;
+  label: string;
   value: string | number;
   icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-  subtext?: string;
+  accent: string;
+  sub?: string;
+  trend?: string;
 }
 
 function StatCard({
-  title,
+  label,
   value,
   icon: Icon,
-  iconBg,
-  iconColor,
-  subtext,
+  accent,
+  sub,
+  trend,
 }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className='p-5'>
-        <div className='flex items-start justify-between'>
-          <div>
-            <p className='text-sm text-muted-foreground'>{title}</p>
-            <p className='mt-1 text-2xl font-bold text-foreground'>{value}</p>
-            {subtext && (
-              <p className='mt-0.5 text-xs text-muted-foreground'>{subtext}</p>
-            )}
+    <Card className='overflow-hidden'>
+      <CardContent className='p-0'>
+        <div className={`h-1 w-full ${accent}`} />
+        <div className='p-5'>
+          <div className='flex items-start justify-between mb-3'>
+            <span className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
+              {label}
+            </span>
+            <div
+              className={`rounded-lg p-1.5 ${accent.replace('bg-', 'bg-').replace('-500', '-500/10')}`}
+            >
+              <Icon
+                className={`h-3.5 w-3.5 ${accent.replace('bg-', 'text-')}`}
+              />
+            </div>
           </div>
-          <div className={`rounded-lg p-2 ${iconBg}`}>
-            <Icon className={`h-5 w-5 ${iconColor}`} />
-          </div>
+          <p className='text-3xl font-bold tabular-nums'>{value}</p>
+          {(sub || trend) && (
+            <div className='flex items-center gap-1.5 mt-1'>
+              {trend && (
+                <span className='flex items-center gap-0.5 text-xs text-emerald-500 font-medium'>
+                  <ArrowUpRight className='h-3 w-3' />
+                  {trend}
+                </span>
+              )}
+              {sub && (
+                <span className='text-xs text-muted-foreground'>{sub}</span>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
+
+// ─── Share button ─────────────────────────────────────────────────────────────
+
+function ShareButton({
+  label,
+  icon: Icon,
+  onClick,
+  className = '',
+}: {
+  label: string;
+  icon: React.ElementType;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1.5 rounded-xl border bg-card p-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ${className}`}
+    >
+      <Icon className='h-4 w-4' />
+      {label}
+    </button>
+  );
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div className='mx-auto max-w-2xl space-y-6 p-6'>
+      <div className='space-y-2'>
+        <Skeleton className='h-7 w-48' />
+        <Skeleton className='h-4 w-72' />
+      </div>
+      <div className='grid gap-4 grid-cols-3'>
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className='p-5 space-y-2'>
+              <Skeleton className='h-3 w-20' />
+              <Skeleton className='h-8 w-14' />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardContent className='p-5 space-y-3'>
+          <Skeleton className='h-4 w-32' />
+          <Skeleton className='h-10 w-full' />
+          <Skeleton className='h-3 w-40' />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Join state ───────────────────────────────────────────────────────────────
+
+function JoinState({
+  onJoin,
+  isJoining,
+}: {
+  onJoin: () => void;
+  isJoining: boolean;
+}) {
+  const steps = [
+    {
+      icon: Link2,
+      color: 'text-primary',
+      bg: 'bg-primary/10',
+      text: 'Get your unique affiliate link instantly',
+    },
+    {
+      icon: Share2,
+      color: 'text-sky-500',
+      bg: 'bg-sky-500/10',
+      text: 'Share with your audience, network or friends',
+    },
+    {
+      icon: Sparkles,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10',
+      text: 'Earn 1–6 bonus credits for every signup',
+    },
+    {
+      icon: Zap,
+      color: 'text-violet-500',
+      bg: 'bg-violet-500/10',
+      text: 'Credits hit your balance instantly — no waiting',
+    },
+  ];
+
+  return (
+    <div className='mx-auto flex max-w-md flex-col items-center gap-8 p-6 pt-12 text-center'>
+      {/* Icon */}
+      <div className='relative'>
+        <div className='flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-8 ring-primary/5'>
+          <Gift className='h-10 w-10 text-primary' />
+        </div>
+        <div className='absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white'>
+          ✓
+        </div>
+      </div>
+
+      {/* Headline */}
+      <div>
+        <h1 className='text-2xl font-bold'>Earn Credits by Referring</h1>
+        <p className='mt-2 text-sm text-muted-foreground leading-relaxed'>
+          Every time someone signs up using your link, you get{' '}
+          <span className='font-semibold text-foreground'>
+            1–6 bonus credits
+          </span>{' '}
+          added to your balance — automatically, for free.
+        </p>
+      </div>
+
+      {/* Steps */}
+      <div className='w-full rounded-2xl border bg-card p-5 text-left space-y-3'>
+        {steps.map(({ icon: Icon, color, bg, text }, i) => (
+          <div key={i} className='flex items-center gap-3'>
+            <div
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${bg}`}
+            >
+              <Icon className={`h-4 w-4 ${color}`} />
+            </div>
+            <span className='text-sm text-muted-foreground'>{text}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <Button
+        size='lg'
+        className='w-full h-12 text-base'
+        onClick={onJoin}
+        disabled={isJoining}
+      >
+        {isJoining ? (
+          <>
+            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+            Setting up your link…
+          </>
+        ) : (
+          <>
+            <Gift className='mr-2 h-5 w-5' />
+            Get My Affiliate Link
+          </>
+        )}
+      </Button>
+
+      <p className='text-xs text-muted-foreground'>
+        Free to join. No minimum. Credits never expire.
+      </p>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AffiliatePage() {
   const { toast } = useToast();
@@ -72,9 +251,7 @@ export default function AffiliatePage() {
     setIsLoading(true);
     try {
       const res = await AffiliateApi.getMyAffiliate();
-
-      const data = res.data!.data;
-      setAffiliate(data);
+      setAffiliate(res.data!.data);
     } catch (err) {
       const error = parseApiError(err);
       if (error?.code === ErrorCodes.AFFILIATE.NOT_FOUND) {
@@ -99,11 +276,9 @@ export default function AffiliatePage() {
     setIsJoining(true);
     try {
       const res = await AffiliateApi.join({});
-
-      const data = res.data!.data;
-      setAffiliate(data);
+      setAffiliate(res.data!.data);
       setNotJoined(false);
-      toast({ title: 'Welcome to the affiliate program!' });
+      toast({ title: '🎉 Welcome! Your affiliate link is ready.' });
     } catch (err) {
       const error = parseApiError(err);
       toast({
@@ -121,234 +296,204 @@ export default function AffiliatePage() {
     void navigator.clipboard.writeText(affiliate.referral_url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({ title: 'Referral link copied!' });
+    toast({ title: 'Affiliate link copied!' });
   };
 
-  if (isLoading) {
-    return (
-      <div className='mx-auto max-w-3xl space-y-6 p-6'>
-        <Skeleton className='h-8 w-48' />
-        <div className='grid gap-4 sm:grid-cols-3'>
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className='p-5'>
-                <div className='space-y-2'>
-                  <Skeleton className='h-4 w-24' />
-                  <Skeleton className='h-8 w-16' />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+  const handleShareTwitter = () => {
+    if (!affiliate?.referral_url) return;
+    const text = `I've been using PostEngage AI to automate my Instagram. Sign up with my link and get started free 👇`;
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(affiliate.referral_url)}`,
+      '_blank'
     );
-  }
+  };
 
-  if (notJoined) {
-    return (
-      <div className='mx-auto flex max-w-lg flex-col items-center gap-6 p-6 pt-16 text-center'>
-        <div className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10'>
-          <Gift className='h-8 w-8 text-primary' />
-        </div>
-        <div>
-          <h1 className='text-2xl font-bold text-foreground'>
-            Join the Affiliate Program
-          </h1>
-          <p className='mt-2 text-muted-foreground'>
-            Refer friends and earn{' '}
-            <span className='font-semibold text-foreground'>free credits</span>{' '}
-            every time someone signs up with your link. Each referral surprises
-            you with{' '}
-            <span className='font-semibold text-foreground'>
-              1–6 bonus credits
-            </span>{' '}
-            — instantly added to your balance.
-          </p>
-        </div>
-        <div className='w-full rounded-xl border border-border bg-card p-5 text-left'>
-          <h2 className='mb-4 text-sm font-semibold text-foreground'>
-            How it works
-          </h2>
-          <div className='space-y-3'>
-            {[
-              {
-                icon: Gift,
-                color: 'text-primary',
-                bg: 'bg-primary/10',
-                text: 'Join to get your unique referral link',
-              },
-              {
-                icon: Users,
-                color: 'text-sky-500',
-                bg: 'bg-sky-500/10',
-                text: 'Share with your audience, followers or friends',
-              },
-              {
-                icon: Sparkles,
-                color: 'text-amber-500',
-                bg: 'bg-amber-500/10',
-                text: 'Earn 1–6 random credits for every signup',
-              },
-              {
-                icon: Zap,
-                color: 'text-violet-500',
-                bg: 'bg-violet-500/10',
-                text: 'Credits are instantly added to your balance',
-              },
-            ].map(({ icon: Icon, color, bg, text }, i) => (
-              <div key={i} className='flex items-center gap-3'>
-                <div
-                  className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${bg}`}
-                >
-                  <Icon className={`h-4 w-4 ${color}`} />
-                </div>
-                <span className='text-sm text-muted-foreground'>{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <Button
-          size='lg'
-          className='w-full'
-          onClick={handleJoin}
-          disabled={isJoining}
-        >
-          {isJoining ? (
-            <>
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              Joining…
-            </>
-          ) : (
-            <>
-              <Gift className='mr-2 h-4 w-4' />
-              Get My Referral Link
-            </>
-          )}
-        </Button>
-      </div>
-    );
-  }
+  const handleShareWhatsApp = () => {
+    if (!affiliate?.referral_url) return;
+    const text = `Check out PostEngage AI — it automates Instagram replies & DMs. Use my link: ${affiliate.referral_url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const conversionRate =
+    affiliate && affiliate.click_count > 0
+      ? Math.round((affiliate.referred_count / affiliate.click_count) * 100)
+      : 0;
+
+  if (isLoading) return <LoadingSkeleton />;
+  if (notJoined) return <JoinState onJoin={handleJoin} isJoining={isJoining} />;
 
   return (
-    <div className='mx-auto max-w-3xl space-y-6 p-6'>
-      <div className='flex items-center justify-between'>
+    <div className='mx-auto max-w-2xl space-y-6 p-6'>
+      {/* Header */}
+      <div className='flex items-start justify-between'>
         <div>
-          <h1 className='text-2xl font-bold text-foreground'>
-            Affiliate Program
-          </h1>
-          <p className='text-sm text-muted-foreground'>
-            Earn 1–6 bonus credits for every signup via your link
+          <h1 className='text-2xl font-bold'>Affiliate Program</h1>
+          <p className='text-sm text-muted-foreground mt-0.5'>
+            Share your link, earn credits for every signup
           </p>
         </div>
         <Badge
+          variant='outline'
           className={
             affiliate?.status === 'active'
-              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-              : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 capitalize'
+              : 'bg-amber-500/10 text-amber-600 border-amber-500/20 capitalize'
           }
-          variant='outline'
         >
           {affiliate?.status ?? 'active'}
         </Badge>
       </div>
 
-      <div className='grid gap-4 sm:grid-cols-3'>
+      {/* Stats */}
+      <div className='grid gap-4 grid-cols-3'>
         <StatCard
-          title='Link Clicks'
+          label='Link Clicks'
           value={affiliate?.click_count ?? 0}
           icon={MousePointerClick}
-          iconBg='bg-sky-500/10'
-          iconColor='text-sky-500'
+          accent='bg-sky-500'
         />
         <StatCard
-          title='Signups'
+          label='Signups'
           value={affiliate?.referred_count ?? 0}
           icon={Users}
-          iconBg='bg-violet-500/10'
-          iconColor='text-violet-500'
-          subtext={
-            affiliate && affiliate.click_count > 0
-              ? `${Math.round((affiliate.referred_count / affiliate.click_count) * 100)}% conversion`
-              : undefined
+          accent='bg-violet-500'
+          sub={conversionRate > 0 ? `${conversionRate}% conversion` : undefined}
+          trend={
+            affiliate && affiliate.referred_count > 0 ? 'Active' : undefined
           }
         />
         <StatCard
-          title='Credits Earned'
+          label='Credits Earned'
           value={affiliate?.credits_earned ?? 0}
           icon={Coins}
-          iconBg='bg-amber-500/10'
-          iconColor='text-amber-500'
-          subtext='from all referrals'
+          accent='bg-amber-500'
+          sub='total earned'
         />
       </div>
 
+      {/* Affiliate Link card */}
       <Card>
-        <CardHeader className='pb-3'>
-          <CardTitle className='text-base'>Your Referral Link</CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <div className='flex gap-2'>
-            <Input
-              value={affiliate?.referral_url ?? ''}
-              readOnly
-              className='flex-1 font-mono text-sm'
-            />
+        <CardContent className='p-5 space-y-4'>
+          <div className='flex items-center gap-2'>
+            <Link2 className='h-4 w-4 text-primary' />
+            <span className='text-sm font-semibold'>Your Affiliate Link</span>
+          </div>
+
+          {/* URL row */}
+          <div className='flex items-center gap-2 rounded-xl border bg-muted/40 px-3 py-2.5'>
+            <span className='flex-1 text-sm font-mono text-muted-foreground truncate'>
+              {affiliate?.referral_url}
+            </span>
             <Button
-              variant='outline'
+              variant='ghost'
               size='icon'
+              className='h-7 w-7 shrink-0'
               onClick={handleCopy}
-              className='flex-shrink-0'
             >
               {copied ? (
-                <Check className='h-4 w-4 text-emerald-500' />
+                <Check className='h-3.5 w-3.5 text-emerald-500' />
               ) : (
-                <Copy className='h-4 w-4' />
+                <Copy className='h-3.5 w-3.5' />
               )}
             </Button>
-            <Button
-              variant='outline'
-              size='icon'
-              asChild
-              className='flex-shrink-0'
+            <a
+              href={affiliate?.referral_url}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors'
             >
-              <a
-                href={affiliate?.referral_url}
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                <ExternalLink className='h-4 w-4' />
-              </a>
-            </Button>
+              <ExternalLink className='h-3.5 w-3.5' />
+            </a>
           </div>
-          <p className='text-xs text-muted-foreground'>
-            Your code:{' '}
-            <span className='font-mono font-semibold text-foreground'>
+
+          {/* Code pill */}
+          <div className='flex items-center gap-2'>
+            <span className='text-xs text-muted-foreground'>Your code:</span>
+            <span className='rounded-md border bg-muted px-2 py-0.5 font-mono text-xs font-semibold'>
               {affiliate?.code}
             </span>
-          </p>
+          </div>
+
+          {/* Copy CTA */}
+          <Button
+            className='w-full'
+            onClick={handleCopy}
+            variant={copied ? 'outline' : 'default'}
+          >
+            {copied ? (
+              <>
+                <Check className='mr-2 h-4 w-4 text-emerald-500' />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className='mr-2 h-4 w-4' />
+                Copy Affiliate Link
+              </>
+            )}
+          </Button>
+
+          {/* Share row */}
+          <div className='grid grid-cols-3 gap-2 pt-1'>
+            <ShareButton label='Copy Link' icon={Copy} onClick={handleCopy} />
+            <ShareButton
+              label='Share on X'
+              icon={Share2}
+              onClick={handleShareTwitter}
+            />
+            <ShareButton
+              label='WhatsApp'
+              icon={Share2}
+              onClick={handleShareWhatsApp}
+            />
+          </div>
         </CardContent>
       </Card>
 
+      {/* How it works */}
       <Card className='border-dashed'>
         <CardContent className='p-5'>
-          <div className='flex items-start gap-3'>
-            <div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10'>
-              <Sparkles className='h-4 w-4 text-amber-500' />
-            </div>
-            <div>
-              <p className='text-sm font-medium text-foreground'>
-                Surprise credit rewards
-              </p>
-              <p className='mt-0.5 text-xs text-muted-foreground'>
-                Each signup via your link awards you a random{' '}
-                <span className='font-semibold text-foreground'>
-                  1 to 6 credits
-                </span>{' '}
-                — automatically added to your balance. No minimum, no payout
-                required, no waiting.
-              </p>
-            </div>
+          <div className='flex items-center gap-2 mb-4'>
+            <TrendingUp className='h-4 w-4 text-primary' />
+            <span className='text-sm font-semibold'>How rewards work</span>
           </div>
+          <div className='grid gap-3 sm:grid-cols-3 text-center'>
+            {[
+              {
+                step: '1',
+                label: 'Someone clicks\nyour link',
+                color: 'text-sky-500',
+                bg: 'bg-sky-500/10',
+              },
+              {
+                step: '2',
+                label: 'They sign up\nfor PostEngage',
+                color: 'text-violet-500',
+                bg: 'bg-violet-500/10',
+              },
+              {
+                step: '3',
+                label: '1–6 credits land\nin your balance',
+                color: 'text-amber-500',
+                bg: 'bg-amber-500/10',
+              },
+            ].map(({ step, label, color, bg }) => (
+              <div key={step} className='flex flex-col items-center gap-2'>
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${bg} ${color}`}
+                >
+                  {step}
+                </div>
+                <p className='text-xs text-muted-foreground whitespace-pre-line leading-relaxed'>
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className='mt-4 text-xs text-muted-foreground text-center border-t pt-4'>
+            Credits are random (1–6) per signup and are added instantly. No
+            minimum payout. No expiry.
+          </p>
         </CardContent>
       </Card>
     </div>
