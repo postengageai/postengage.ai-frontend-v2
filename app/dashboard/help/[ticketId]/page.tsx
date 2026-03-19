@@ -145,6 +145,8 @@ export default function TicketChatPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  /** True after the first socket connect — used to detect reconnects vs initial connect. */
+  const hasConnectedRef = useRef(false);
 
   const isClosed = ticket?.status === 'resolved' || ticket?.status === 'closed';
 
@@ -222,11 +224,42 @@ export default function TicketChatPage() {
   useEffect(() => {
     socketService.subscribeToSupportMessage(handleIncomingMessage);
     socketService.subscribeToSupportTicketResolved(handleTicketResolved);
+
+    // Re-fetch messages on socket reconnect so we don't miss any sent during disconnect
+    const socket = socketService.getSocket();
+    const handleReconnect = () => {
+      if (!hasConnectedRef.current) {
+        // First connect — mark as connected, initial data already loaded via REST
+        hasConnectedRef.current = true;
+        return;
+      }
+      // Reconnect — re-fetch to catch messages missed while offline
+      SupportApi.getTicket(ticketId)
+        .then(({ messages: m }) => {
+          setMessages(prev => {
+            // Merge: keep existing + add any new ones by id
+            const existingIds = new Set(prev.map(msg => msg._id || msg.id));
+            const newMsgs = m.filter(
+              (msg: SupportMessage) => !existingIds.has(msg._id || msg.id)
+            );
+            return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
+          });
+        })
+        .catch(() => {});
+    };
+
+    if (socket) {
+      socket.on('connect', handleReconnect);
+      // If already connected when this effect runs, mark initial connect
+      if (socket.connected) hasConnectedRef.current = true;
+    }
+
     return () => {
       socketService.unsubscribeFromSupportMessage(handleIncomingMessage);
       socketService.unsubscribeFromSupportTicketResolved(handleTicketResolved);
+      socket?.off('connect', handleReconnect);
     };
-  }, [handleIncomingMessage, handleTicketResolved]);
+  }, [handleIncomingMessage, handleTicketResolved, ticketId]);
 
   // ── Send message ────────────────────────────────────────────────────────────
   const handleSend = async () => {
