@@ -277,7 +277,7 @@ export default function HelpSupportPage() {
 
   useEffect(() => {
     SupportApi.listTickets()
-      .then(res => setTickets(res?.data ?? []))
+      .then(tickets => setTickets(tickets))
       .catch(() => setTickets([]))
       .finally(() => setLoadingTickets(false));
   }, []);

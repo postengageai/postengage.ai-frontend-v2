@@ -92,8 +92,11 @@ export class SupportApi {
   }
 
   /** List the user's tickets (paginated) */
-  static async listTickets(page = 1, limit = 20): Promise<PaginatedTickets> {
-    const res = await httpClient.get<PaginatedTickets>(`${BASE}/tickets`, {
+  static async listTickets(page = 1, limit = 20): Promise<SupportTicket[]> {
+    // The ResponseInterceptor flattens PaginationResult, so the API sends:
+    // { success: true, data: SupportTicket[], pagination: {...}, meta: {...} }
+    // → res.data.data is already the flat SupportTicket[] array.
+    const res = await httpClient.get<SupportTicket[]>(`${BASE}/tickets`, {
       params: { page, limit },
     });
     if (res.error) throw res.error;
