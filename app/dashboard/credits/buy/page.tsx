@@ -1,13 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Check, Coins, MessageCircle, Send } from 'lucide-react';
 import { usePricing } from '@/hooks/use-pricing';
 import { PricingCard } from '@/components/pricing/pricing-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
+import { analytics } from '@/lib/analytics';
 
 export default function BuyCreditsPage() {
   const { data, isLoading } = usePricing();
+
+  useEffect(() => {
+    analytics.track('buy_credits_page_viewed', {});
+  }, []);
 
   // Show AI-powered action costs (manual actions are always free).
   // Prefer live API values; fall back to local constants when API hasn't loaded yet.

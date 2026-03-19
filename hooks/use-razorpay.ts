@@ -4,6 +4,7 @@ import { CreateOrderResponse } from '@/lib/types/payment';
 import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useCreditsStore } from '@/lib/credits/store';
+import { analytics } from '@/lib/analytics';
 
 interface RazorpayOptions {
   key: string;
@@ -72,6 +73,11 @@ export function useRazorpay() {
         order_id: order.order_id,
         handler: async () => {
           try {
+            analytics.track('credits_purchased', {
+              package_id: packageId,
+              credits: 0, // credits count not returned in order response
+              amount_usd: order.amount / 100,
+            });
             toast({
               title: 'Success',
               description:

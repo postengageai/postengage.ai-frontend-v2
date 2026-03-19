@@ -50,6 +50,7 @@ import type { CaptureSource } from '@/lib/types/leads';
 import type { SocialPlatform } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
 import { useLeads, useLeadTags, queryKeys } from '@/lib/hooks';
+import { analytics } from '@/lib/analytics';
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 
@@ -517,6 +518,9 @@ export default function LeadsPage() {
         open={addLeadOpen}
         onOpenChange={setAddLeadOpen}
         onSuccess={() => {
+          analytics.track('lead_added_manually', {
+            platform: platform === 'all' ? undefined : platform,
+          });
           // Invalidate leads cache so new lead appears without manual state juggling
           qc.invalidateQueries({ queryKey: queryKeys.leads.lists() });
           qc.invalidateQueries({ queryKey: queryKeys.leads.tags() });
@@ -524,7 +528,16 @@ export default function LeadsPage() {
       />
       <ExportLeadsDialog
         open={exportOpen}
-        onOpenChange={setExportOpen}
+        onOpenChange={open => {
+          if (!open && exportOpen) {
+            // Dialog was just closed — treat as export triggered
+            analytics.track('leads_exported', {
+              total_count: total,
+              format: 'csv',
+            });
+          }
+          setExportOpen(open);
+        }}
         totalLeads={total}
         activeFilters={{ platform, tags: activeTags, search }}
       />

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserApi, UpdateUserRequest } from '../api/user';
 import { useUserStore } from '../user/store';
 import { queryKeys } from './query-keys';
+import { analytics } from '../analytics';
 
 // ── Current user ───────────────────────────────────────────────────────────────
 
@@ -15,6 +16,11 @@ export function useCurrentUser() {
       const user = res.data;
       // Keep Zustand store in sync so legacy code still works
       setUser(user);
+      // Identify user in PostHog, Clarity, and GTM on every session restore
+      analytics.identify(user.id, {
+        email: user.email,
+        name: `${user.first_name} ${user.last_name}`.trim(),
+      });
       return user;
     },
     staleTime: 5 * 60 * 1_000, // User profile changes infrequently — 5 min

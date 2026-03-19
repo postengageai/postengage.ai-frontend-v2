@@ -24,6 +24,7 @@ import {
   type TicketStatus,
   type TicketCategory,
 } from '@/lib/api/support';
+import { analytics } from '@/lib/analytics';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -158,6 +159,10 @@ export default function TicketChatPage() {
       .then(({ ticket: t, messages: m }) => {
         setTicket(t);
         setMessages(m);
+        analytics.track('support_ticket_viewed', {
+          ticket_id: ticketId,
+          status: t.status,
+        });
       })
       .catch(err => {
         const parsed = parseApiError(err);
@@ -286,6 +291,7 @@ export default function TicketChatPage() {
 
     try {
       const saved = await SupportApi.sendMessage(ticketId, content);
+      analytics.track('support_message_sent', { ticket_id: ticketId });
       // Replace optimistic with real
       setMessages(prev =>
         prev.map(m =>

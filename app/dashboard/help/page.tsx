@@ -51,6 +51,7 @@ import {
   type TicketCategory,
   type TicketStatus,
 } from '@/lib/api/support';
+import { analytics } from '@/lib/analytics';
 
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 
@@ -186,6 +187,10 @@ function NewTicketForm({
         category: category as TicketCategory,
         subject,
         message,
+      });
+      analytics.track('support_ticket_created', {
+        ticket_id: ticket._id || ticket.id,
+        category: ticket.category,
       });
       toast({
         title: 'Ticket created',

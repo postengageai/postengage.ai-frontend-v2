@@ -39,6 +39,7 @@ import type {
   SocialAccountConnectionStatus,
 } from '@/lib/types/settings';
 import { SocialAccountsSkeleton } from './social-accounts-skeleton';
+import { analytics } from '@/lib/analytics';
 import {
   PlatformWaitlistCard,
   WAITLIST_PLATFORMS,
@@ -80,6 +81,7 @@ export function SocialAccounts() {
     const handleOAuthMessage = (data: Record<string, unknown>) => {
       if (!data || !data.type) return;
       if (data.type === 'OAUTH_SUCCESS' && data.platform === 'instagram') {
+        analytics.track('social_account_connected', { platform: 'instagram' });
         loadAccounts();
       } else if (data.type === 'OAUTH_ERROR') {
         setError(
@@ -151,9 +153,12 @@ export function SocialAccounts() {
 
   const handleDisconnect = async (accountId: string) => {
     try {
+      const account = accounts.find(a => a.id === accountId);
       // revoke existing connection
       await InstagramOAuthApi.revoke(accountId);
-
+      analytics.track('social_account_disconnected', {
+        platform: account?.platform ?? 'instagram',
+      });
       setTimeout(loadAccounts, 2000);
     } catch (err) {
       const errorMessage =

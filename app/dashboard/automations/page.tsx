@@ -57,6 +57,7 @@ import {
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
+import { analytics } from '@/lib/analytics';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -523,6 +524,10 @@ export default function AutomationsPage() {
 
     try {
       await AutomationsApi.update(id, { status: next });
+      analytics.track('automation_toggled', {
+        automation_id: id,
+        enabled: next === AutomationStatus.ACTIVE,
+      });
       toast({
         title: next === AutomationStatus.ACTIVE ? 'Activated' : 'Paused',
         description: `Automation ${next === AutomationStatus.ACTIVE ? 'is now active' : 'paused successfully'}.`,
@@ -543,6 +548,10 @@ export default function AutomationsPage() {
     setIsDeleting(true);
     try {
       await AutomationsApi.delete(deleteTarget.id);
+      analytics.track('automation_deleted', {
+        automation_id: deleteTarget.id,
+        automation_name: deleteTarget.name,
+      });
       setAutomations(prev => prev.filter(a => a.id !== deleteTarget.id));
       toast({
         title: 'Deleted',

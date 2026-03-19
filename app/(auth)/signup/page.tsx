@@ -26,6 +26,7 @@ import { AuthApi } from '@/lib/api/auth';
 import { AffiliateApi } from '@/lib/api/affiliate';
 import { parseApiError } from '@/lib/http/errors';
 import { useAuthStore } from '@/lib/auth/store';
+import { analytics } from '@/lib/analytics';
 
 /* ─── Feature bullet ───────────────────────────────────────────────────── */
 function FeatureBullet({
@@ -191,6 +192,7 @@ function SignupPageInner() {
       // Clear stored affiliate code once successfully used
       sessionStorage.removeItem('affiliate_code');
       document.cookie = 'affiliate_code=; max-age=0; path=/; samesite=lax';
+      analytics.track('user_signed_up', { has_ref_code: !!refCode });
       router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (err: unknown) {
       const parsed = parseApiError(err, { title: 'Signup failed' });

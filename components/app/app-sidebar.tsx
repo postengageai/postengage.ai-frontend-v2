@@ -55,6 +55,7 @@ import { useUser, useUserActions } from '@/lib/user/store';
 import { useAuthStore } from '@/lib/auth/store';
 import { CreditsApi } from '@/lib/api/credits';
 import { AuthApi } from '@/lib/api/auth';
+import { analytics } from '@/lib/analytics';
 import { useEffect, useState, useCallback } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -172,6 +173,8 @@ export function AppSidebar() {
     } catch (_error) {
       // ignore — even if the API call fails, clear local state and redirect
     } finally {
+      analytics.track('user_logged_out', {});
+      analytics.reset();
       // Clear all client-side auth state
       setUser(null);
       authActions.clearAuth();

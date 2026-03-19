@@ -18,6 +18,7 @@ import { useAuthStore } from '@/lib/auth/store';
 import { useUserStore } from '@/lib/user/store';
 import { ApiError, parseApiError } from '@/lib/http/errors';
 import { ErrorCodes } from '@/lib/error-codes';
+import { analytics } from '@/lib/analytics';
 
 // ── Zod schema ─────────────────────────────────────────────────────────────────
 
@@ -128,6 +129,11 @@ function LoginContent() {
       const user = data.user;
       userActions.setUser(user);
       actions.setIsAuthenticated(true);
+      analytics.identify(user.id, {
+        email: user.email,
+        name: `${user.first_name} ${user.last_name}`.trim(),
+      });
+      analytics.track('user_logged_in', { method: 'email' });
       // If onboarding not completed, redirect to onboarding wizard
       if (!user.onboarding_completed_at) {
         router.push('/dashboard/onboarding');
@@ -162,8 +168,10 @@ function LoginContent() {
         const parsed = parseApiError(error);
         setGlobalError(parsed.message);
         authErrors.setError('loginError', error);
+        analytics.track('user_login_failed', { reason: parsed.message });
       } else {
         setGlobalError('Something went wrong. Please try again.');
+        analytics.track('user_login_failed', { reason: 'unknown_error' });
       }
     }
   };

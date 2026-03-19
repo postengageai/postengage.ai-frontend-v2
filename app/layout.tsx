@@ -3,6 +3,9 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { Providers } from '@/components/providers';
+import { GoogleAnalytics } from '@/components/analytics/google-analytics';
+import { GoogleTagManager } from '@/components/analytics/google-tag-manager';
+import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity';
 import './globals.css';
 import './tour.css';
 
@@ -110,8 +113,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
+        <GoogleTagManager />
         <Providers>{children}</Providers>
         <Analytics />
+        <GoogleAnalytics />
+        <MicrosoftClarity />
       </body>
     </html>
   );
