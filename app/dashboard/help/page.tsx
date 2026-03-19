@@ -277,8 +277,11 @@ export default function HelpSupportPage() {
 
   useEffect(() => {
     SupportApi.listTickets()
-      .then(tickets => setTickets(tickets))
-      .catch(() => setTickets([]))
+      .then(tickets => setTickets(Array.isArray(tickets) ? tickets : []))
+      .catch(err => {
+        console.error('[Help] Failed to load tickets:', err);
+        setTickets([]);
+      })
       .finally(() => setLoadingTickets(false));
   }, []);
 
