@@ -10,10 +10,10 @@ export interface BotBehavior {
   stop_after_escalation: boolean;
   // Time-window scheduling
   schedule_enabled?: boolean;
-  schedule_start_hour?: number;    // 0–23
-  schedule_end_hour?: number;      // 0–23 (exclusive); if < start, wraps overnight
-  schedule_timezone?: string;      // IANA e.g. 'Asia/Kolkata'
-  schedule_days?: number[];        // 0=Sun … 6=Sat, empty = every day
+  schedule_start_hour?: number; // 0–23
+  schedule_end_hour?: number; // 0–23 (exclusive); if < start, wraps overnight
+  schedule_timezone?: string; // IANA e.g. 'Asia/Kolkata'
+  schedule_days?: number[]; // 0=Sun … 6=Sat, empty = every day
 }
 
 export enum BotStatus {

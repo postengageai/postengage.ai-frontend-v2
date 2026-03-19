@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -288,7 +289,9 @@ export function SocialAccounts() {
           </CardContent>
         </Card>
         <div className='space-y-4'>
-          <h3 className='text-sm font-medium text-muted-foreground'>More platforms coming soon</h3>
+          <h3 className='text-sm font-medium text-muted-foreground'>
+            More platforms coming soon
+          </h3>
           <div className='grid gap-4 sm:grid-cols-2'>
             {WAITLIST_PLATFORMS.map(cfg => (
               <PlatformWaitlistCard key={cfg.platform} config={cfg} />
@@ -342,7 +345,7 @@ export function SocialAccounts() {
                   {/* Avatar & Platform */}
                   <div className='relative shrink-0'>
                     {account.avatar?.url ? (
-                      <img
+                      <Image
                         src={account.avatar.url || '/placeholder.svg'}
                         alt={account.username}
                         width={48}
@@ -484,7 +487,9 @@ export function SocialAccounts() {
 
       {/* More platforms coming soon */}
       <div className='space-y-4'>
-        <h3 className='text-sm font-medium text-muted-foreground'>More platforms coming soon</h3>
+        <h3 className='text-sm font-medium text-muted-foreground'>
+          More platforms coming soon
+        </h3>
         <div className='grid gap-4 sm:grid-cols-2'>
           {WAITLIST_PLATFORMS.map(cfg => (
             <PlatformWaitlistCard key={cfg.platform} config={cfg} />

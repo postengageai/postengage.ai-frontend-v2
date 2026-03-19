@@ -44,7 +44,9 @@ export default function EditBotPage() {
   const { toast } = useToast();
   const [bot, setBot] = useState<Bot | null>(null);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
-  const [memoryStats, setMemoryStats] = useState<SemanticMemoryStats | null>(null);
+  const [memoryStats, setMemoryStats] = useState<SemanticMemoryStats | null>(
+    null
+  );
   const [healthScore, setHealthScore] = useState<BotHealthScore | null>(null);
   const [flaggedCount, setFlaggedCount] = useState(0);
   const [voiceDna, setVoiceDna] = useState<VoiceDna | null>(null);
@@ -201,21 +203,26 @@ export default function EditBotPage() {
               <div className='flex items-center gap-2'>
                 <Users className='h-4 w-4 text-muted-foreground' />
                 <span className='text-sm'>
-                  <span className='font-medium'>{memoryStats.unique_users}</span>{' '}
+                  <span className='font-medium'>
+                    {memoryStats.unique_users}
+                  </span>{' '}
                   followers tracked
                 </span>
               </div>
               <div className='flex items-center gap-2'>
                 <Database className='h-4 w-4 text-muted-foreground' />
                 <span className='text-sm'>
-                  <span className='font-medium'>{memoryStats.total_memories}</span>{' '}
+                  <span className='font-medium'>
+                    {memoryStats.total_memories}
+                  </span>{' '}
                   memories stored
                 </span>
               </div>
             </div>
           ) : (
             <p className='text-sm text-muted-foreground'>
-              No memory data yet. Memory builds up as the bot interacts with users.
+              No memory data yet. Memory builds up as the bot interacts with
+              users.
             </p>
           )}
         </CardContent>

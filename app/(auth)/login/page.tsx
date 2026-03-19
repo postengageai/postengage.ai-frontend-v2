@@ -140,7 +140,8 @@ function LoginContent() {
           router.push('/account-suspended');
           return;
         }
-        if (error.code === ErrorCodes.AUTH.EMAIL_NOT_VERIFIED) setShowResend(true);
+        if (error.code === ErrorCodes.AUTH.EMAIL_NOT_VERIFIED)
+          setShowResend(true);
 
         // Map backend field errors onto react-hook-form fields
         if (error.isValidationError) {

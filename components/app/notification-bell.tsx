@@ -88,8 +88,7 @@ function NotifRow({
 }) {
   const router = useRouter();
   const isUnread = n.status === 'unread';
-  const actionLabel =
-    (n.metadata?.action_label as string | undefined) ?? null;
+  const actionLabel = (n.metadata?.action_label as string | undefined) ?? null;
 
   function handleClick() {
     if (isUnread) onMarkRead(n.id);

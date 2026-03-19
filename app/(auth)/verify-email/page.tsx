@@ -306,7 +306,9 @@ function LinkExpiredCard({ emailFromUrl }: { emailFromUrl: string }) {
 /* ─── Auto-verify via token in URL ──────────────────────────────────────── */
 function AutoVerify({ token, email }: { token: string; email: string }) {
   const router = useRouter();
-  const [result, setResult] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [result, setResult] = useState<'verifying' | 'success' | 'error'>(
+    'verifying'
+  );
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {

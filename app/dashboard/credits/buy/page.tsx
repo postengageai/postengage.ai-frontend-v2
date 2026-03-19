@@ -13,8 +13,9 @@ export default function BuyCreditsPage() {
   // Prefer live API values; fall back to local constants when API hasn't loaded yet.
   // AI_REPLY_COMMENT = STANDARD (8) + ai_infra (1) = 9 cr
   // AI_SEND_DM = FULL_CONTEXT (18) + ai_infra (1) = 19 cr
-  const commentReplyCost = data?.costs.AI_REPLY_COMMENT ?? (CREDIT_COSTS.AI_STANDARD + 1);
-  const dmCost = data?.costs.AI_SEND_DM ?? (CREDIT_COSTS.AI_FULL_CONTEXT + 1);
+  const commentReplyCost =
+    data?.costs.AI_REPLY_COMMENT ?? CREDIT_COSTS.AI_STANDARD + 1;
+  const dmCost = data?.costs.AI_SEND_DM ?? CREDIT_COSTS.AI_FULL_CONTEXT + 1;
 
   const usageExamples = [
     {

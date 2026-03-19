@@ -351,7 +351,7 @@ function CreditsPageContent() {
         </Link>
       </div>
 
-      <div data-tour="credits-balance">
+      <div data-tour='credits-balance'>
         <CreditBalanceCard balance={displayBalance} isLoading={isLoading} />
       </div>
 

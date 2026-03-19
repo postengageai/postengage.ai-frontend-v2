@@ -254,6 +254,54 @@ class SocketService {
     this.socket.off('voice-dna:refinement-complete');
   }
 
+  // ─── Support ticket real-time events ─────────────────────────────────────
+
+  subscribeToSupportMessage(
+    callback: (msg: {
+      id: string;
+      ticket_id: string;
+      sender_type: string;
+      sender_id: string;
+      sender_name: string;
+      content: string;
+      created_at: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('support_message', callback);
+  }
+
+  unsubscribeFromSupportMessage(
+    callback: (msg: {
+      id: string;
+      ticket_id: string;
+      sender_type: string;
+      sender_id: string;
+      sender_name: string;
+      content: string;
+      created_at: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('support_message', callback);
+  }
+
+  subscribeToSupportTicketResolved(
+    callback: (data: { ticketId: string }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('support_ticket_resolved', callback);
+    this.socket.on('support_ticket_closed', callback);
+  }
+
+  unsubscribeFromSupportTicketResolved(
+    callback: (data: { ticketId: string }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('support_ticket_resolved', callback);
+    this.socket.off('support_ticket_closed', callback);
+  }
+
   // Join user-specific rooms
   joinUserRoom(userId: string): void {
     if (!this.socket) {

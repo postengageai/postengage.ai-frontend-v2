@@ -108,12 +108,19 @@ export const userApi = {
 
 // Complete onboarding
 export async function completeOnboarding(): Promise<SuccessResponse<User>> {
-  const response = await httpClient.patch<User>(`${USERS_BASE_URL}/onboarding-complete`);
+  const response = await httpClient.patch<User>(
+    `${USERS_BASE_URL}/onboarding-complete`
+  );
   return response.data!;
 }
 
 // Update sound notifications preference
-export async function updateSoundNotifications(enabled: boolean): Promise<SuccessResponse<User>> {
-  const response = await httpClient.patch<User>(`${USERS_BASE_URL}/sound-notifications`, { enabled });
+export async function updateSoundNotifications(
+  enabled: boolean
+): Promise<SuccessResponse<User>> {
+  const response = await httpClient.patch<User>(
+    `${USERS_BASE_URL}/sound-notifications`,
+    { enabled }
+  );
   return response.data!;
 }

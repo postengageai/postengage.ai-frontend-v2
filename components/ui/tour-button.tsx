@@ -92,7 +92,7 @@ export function TourButton() {
       };
       wasDrag.current = false;
     },
-    [],
+    []
   );
 
   const onPointerMove = useCallback(
@@ -112,11 +112,11 @@ export function TourButton() {
         });
       }
     },
-    [],
+    []
   );
 
   const onPointerUp = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
+    (_e: React.PointerEvent<HTMLButtonElement>) => {
       if (!dragOrigin.current) return;
       if (wasDrag.current && liveXY) {
         const btn = btnRef.current;
@@ -139,8 +139,22 @@ export function TourButton() {
       setLiveXY(null);
       dragOrigin.current = null;
     },
-    [liveXY, persistPos],
+    [liveXY, persistPos]
   );
+
+  // Handle escape key to cancel drag
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && dragging) {
+        setDragging(false);
+        setLiveXY(null);
+        wasDrag.current = false;
+        dragOrigin.current = null;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dragging]);
 
   // Only fire the tour if the pointer-up was not the end of a drag
   const handleClick = useCallback(() => {
@@ -158,7 +172,9 @@ export function TourButton() {
   } else {
     // Snap to the stored side at the stored vertical fraction
     const winH = window.innerHeight;
-    const topPx = Math.round(Math.min(Math.max(pos.yRatio * winH, 50), winH - 60));
+    const topPx = Math.round(
+      Math.min(Math.max(pos.yRatio * winH, 50), winH - 60)
+    );
     posStyle =
       pos.side === 'right'
         ? { right: SNAP_MARGIN, top: topPx }
@@ -189,18 +205,17 @@ export function TourButton() {
         'border border-border/60',
         'shadow-lg shadow-black/10',
         'text-sm font-medium text-muted-foreground',
-        !dragging && 'hover:text-foreground hover:border-border hover:shadow-xl',
+        !dragging &&
+          'hover:text-foreground hover:border-border hover:shadow-xl',
         'transition-shadow duration-200',
         // Pulse only when tour unseen and not mid-drag
         !hasSeenTour && !dragging && 'animate-pulse-subtle',
         dragging
           ? 'cursor-grabbing scale-105 opacity-90 shadow-2xl shadow-black/20'
-          : 'cursor-grab',
+          : 'cursor-grab'
       )}
       title={
-        dragging
-          ? 'Drop to set position'
-          : 'Take a tour · Drag to reposition'
+        dragging ? 'Drop to set position' : 'Take a tour · Drag to reposition'
       }
       aria-label='Start page tour'
     >
@@ -209,7 +224,7 @@ export function TourButton() {
           'h-4 w-4 shrink-0 transition-colors duration-200',
           !hasSeenTour
             ? 'text-primary'
-            : 'text-muted-foreground group-hover:text-foreground',
+            : 'text-muted-foreground group-hover:text-foreground'
         )}
       />
 

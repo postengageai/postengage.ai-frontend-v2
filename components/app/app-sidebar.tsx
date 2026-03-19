@@ -152,7 +152,7 @@ const settingsSubItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const _router = useRouter();
   const user = useUser();
   const { setUser } = useUserActions();
   const { actions: authActions } = useAuthStore();

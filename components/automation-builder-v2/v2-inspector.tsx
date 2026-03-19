@@ -247,7 +247,8 @@ function NewCommentForm({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
   const { data: pricingData } = usePricing();
-  const maxCooldownHours = pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
+  const maxCooldownHours =
+    pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
 
   const handleMediaSelect = (media: Media[]) => {
     setSelectedMedia(media);
@@ -396,7 +397,8 @@ function SimpleTriggerForm({
   update: (p: Partial<typeof config>) => void;
 }) {
   const { data: pricingData } = usePricing();
-  const maxCooldownHours = pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
+  const maxCooldownHours =
+    pricingData?.app_limits?.bot.max_cooldown_hours ?? 168;
 
   return (
     <div className='space-y-5 p-4'>
@@ -621,7 +623,8 @@ function ActionMessageForm({
   placeholder: string;
 }) {
   const { data: pricingData } = usePricing();
-  const maxDelaySeconds = pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
+  const maxDelaySeconds =
+    pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
 
   return (
     <div className='space-y-5 p-4'>
@@ -697,7 +700,8 @@ function SendDmForm({
   update: (p: Partial<SendDmConfig>) => void;
 }) {
   const { data: pricingData } = usePricing();
-  const maxDelaySeconds = pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
+  const maxDelaySeconds =
+    pricingData?.app_limits?.bot.max_reply_delay_seconds ?? 3600;
 
   return (
     <div className='space-y-4 p-4'>

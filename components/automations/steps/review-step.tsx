@@ -12,9 +12,6 @@ import {
   Mail,
   Pencil,
   Rocket,
-  ImageIcon,
-  AtSign,
-  UserPlus,
   Bot as BotIcon,
   Tag,
 } from 'lucide-react';

@@ -124,7 +124,10 @@ export default function VoiceDnaPage() {
 
   return (
     <div className='p-4 sm:p-6 space-y-6'>
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4' data-tour="voice-dna-header">
+      <div
+        className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'
+        data-tour='voice-dna-header'
+      >
         <div className='min-w-0'>
           <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
             Voice DNA

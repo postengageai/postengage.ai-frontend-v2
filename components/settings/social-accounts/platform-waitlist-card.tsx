@@ -127,7 +127,10 @@ interface PlatformWaitlistCardProps {
   compact?: boolean;
 }
 
-export function PlatformWaitlistCard({ config, compact = false }: PlatformWaitlistCardProps) {
+export function PlatformWaitlistCard({
+  config,
+  compact = false,
+}: PlatformWaitlistCardProps) {
   const [joined, setJoined] = useState(false);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -170,11 +173,7 @@ export function PlatformWaitlistCard({ config, compact = false }: PlatformWaitli
 
   return (
     <Card
-      className={cn(
-        'border-dashed border-2',
-        config.cardBorder,
-        config.cardBg,
-      )}
+      className={cn('border-dashed border-2', config.cardBorder, config.cardBg)}
     >
       <CardHeader className={compact ? 'pb-2 pt-4 px-4' : 'pb-3'}>
         <div className='flex items-center justify-between'>
@@ -183,7 +182,7 @@ export function PlatformWaitlistCard({ config, compact = false }: PlatformWaitli
               className={cn(
                 'flex items-center justify-center rounded-full shrink-0',
                 config.iconBg,
-                compact ? 'h-7 w-7' : 'h-8 w-8',
+                compact ? 'h-7 w-7' : 'h-8 w-8'
               )}
             >
               {config.iconContent}
@@ -196,7 +195,7 @@ export function PlatformWaitlistCard({ config, compact = false }: PlatformWaitli
               'text-xs',
               config.badgeBorder,
               config.badgeText,
-              config.badgeBg,
+              config.badgeBg
             )}
           >
             Coming Soon
@@ -206,7 +205,9 @@ export function PlatformWaitlistCard({ config, compact = false }: PlatformWaitli
 
       <CardContent className={compact ? 'pb-4 px-4' : undefined}>
         {!compact && (
-          <p className='text-sm text-muted-foreground mb-4'>{config.description}</p>
+          <p className='text-sm text-muted-foreground mb-4'>
+            {config.description}
+          </p>
         )}
 
         {isLoading ? (
@@ -216,7 +217,12 @@ export function PlatformWaitlistCard({ config, compact = false }: PlatformWaitli
           </div>
         ) : joined ? (
           <div className='flex items-center justify-between'>
-            <div className={cn('flex items-center gap-2 text-sm font-medium', config.joinedColor)}>
+            <div
+              className={cn(
+                'flex items-center gap-2 text-sm font-medium',
+                config.joinedColor
+              )}
+            >
               <CheckCircle2 className='h-4 w-4' />
               You&apos;re on the waitlist!
             </div>

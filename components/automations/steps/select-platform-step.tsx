@@ -101,7 +101,9 @@ export function SelectPlatformStep({
 
       {/* Coming soon platforms — join waitlist */}
       <div className='space-y-3'>
-        <p className='text-sm font-medium text-muted-foreground'>More platforms coming soon</p>
+        <p className='text-sm font-medium text-muted-foreground'>
+          More platforms coming soon
+        </p>
         <div className='grid gap-3 sm:grid-cols-2'>
           {WAITLIST_PLATFORMS.map(cfg => (
             <PlatformWaitlistCard key={cfg.platform} config={cfg} compact />

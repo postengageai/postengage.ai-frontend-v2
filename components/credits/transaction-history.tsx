@@ -99,12 +99,23 @@ function parseDescription(description: string): ParsedDescription | null {
         } else if (isAi) {
           botName = bracketContent;
         }
-        currentAction = { order, type, isAi, botName, tier, credits, components: [] };
+        currentAction = {
+          order,
+          type,
+          isAi,
+          botName,
+          tier,
+          credits,
+          components: [],
+        };
         continue;
       }
       const compMatch = line.match(/^\s+•\s+(\S+)\s+(\d+) cr/);
       if (compMatch && currentAction) {
-        currentAction.components.push({ name: compMatch[1].trim(), credits: parseInt(compMatch[2]) });
+        currentAction.components.push({
+          name: compMatch[1].trim(),
+          credits: parseInt(compMatch[2]),
+        });
         continue;
       }
       const totalMatch = line.match(/Total: (\d+) credits/);
@@ -433,101 +444,108 @@ export function TransactionHistory({
                   <p className='text-sm leading-relaxed text-foreground'>
                     {selectedTransaction.description}
                   </p>
-                ) : (() => {
-                  const parsed = parseDescription(selectedTransaction.description);
-                  if (!parsed) {
-                    return (
-                      <pre className='whitespace-pre-wrap font-mono text-xs text-muted-foreground'>
-                        {selectedTransaction.description}
-                      </pre>
+                ) : (
+                  (() => {
+                    const parsed = parseDescription(
+                      selectedTransaction.description
                     );
-                  }
-                  return (
-                    <div className='space-y-2'>
-                      {/* Automation name */}
-                      <div className='flex items-center gap-2 pb-1'>
-                        <div className='h-1.5 w-1.5 rounded-full bg-primary shrink-0' />
-                        <p className='text-sm font-medium text-foreground truncate'>
-                          {parsed.automationName}
-                        </p>
-                      </div>
+                    if (!parsed) {
+                      return (
+                        <pre className='whitespace-pre-wrap font-mono text-xs text-muted-foreground'>
+                          {selectedTransaction.description}
+                        </pre>
+                      );
+                    }
+                    return (
+                      <div className='space-y-2'>
+                        {/* Automation name */}
+                        <div className='flex items-center gap-2 pb-1'>
+                          <div className='h-1.5 w-1.5 rounded-full bg-primary shrink-0' />
+                          <p className='text-sm font-medium text-foreground truncate'>
+                            {parsed.automationName}
+                          </p>
+                        </div>
 
-                      {/* Actions */}
-                      {parsed.actions.map((action) => (
-                        <div
-                          key={action.order}
-                          className='rounded-lg border border-border bg-muted/20 p-3 space-y-2'
-                        >
-                          {/* Action header */}
-                          <div className='flex items-center justify-between gap-2'>
-                            <div className='flex items-center gap-1.5 flex-wrap min-w-0'>
-                              <Badge
-                                variant='outline'
-                                className='font-mono text-xs shrink-0'
-                              >
-                                {action.type.replace(/_/g, ' ')}
-                              </Badge>
-                              {action.botName && (
-                                <span className='text-xs text-muted-foreground truncate'>
-                                  {action.botName}
-                                </span>
-                              )}
-                              {action.tier && (
+                        {/* Actions */}
+                        {parsed.actions.map(action => (
+                          <div
+                            key={action.order}
+                            className='rounded-lg border border-border bg-muted/20 p-3 space-y-2'
+                          >
+                            {/* Action header */}
+                            <div className='flex items-center justify-between gap-2'>
+                              <div className='flex items-center gap-1.5 flex-wrap min-w-0'>
                                 <Badge
                                   variant='outline'
-                                  className='text-xs bg-primary/10 text-primary border-primary/20 shrink-0'
+                                  className='font-mono text-xs shrink-0'
                                 >
-                                  {action.tier}
+                                  {action.type.replace(/_/g, ' ')}
                                 </Badge>
-                              )}
-                              {!action.isAi && (
-                                <Badge variant='secondary' className='text-xs shrink-0'>
-                                  static
-                                </Badge>
-                              )}
+                                {action.botName && (
+                                  <span className='text-xs text-muted-foreground truncate'>
+                                    {action.botName}
+                                  </span>
+                                )}
+                                {action.tier && (
+                                  <Badge
+                                    variant='outline'
+                                    className='text-xs bg-primary/10 text-primary border-primary/20 shrink-0'
+                                  >
+                                    {action.tier}
+                                  </Badge>
+                                )}
+                                {!action.isAi && (
+                                  <Badge
+                                    variant='secondary'
+                                    className='text-xs shrink-0'
+                                  >
+                                    static
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className='text-sm font-semibold text-foreground shrink-0'>
+                                {action.credits} cr
+                              </span>
                             </div>
-                            <span className='text-sm font-semibold text-foreground shrink-0'>
-                              {action.credits} cr
-                            </span>
-                          </div>
 
-                          {/* Components */}
-                          {action.components.length > 0 && (
-                            <div className='space-y-1.5 pt-1 border-t border-border/50'>
-                              {action.components.map((comp) => (
-                                <div
-                                  key={comp.name}
-                                  className='flex items-center justify-between'
-                                >
-                                  <div className='flex items-center gap-2'>
-                                    <div className='h-1 w-1 rounded-full bg-muted-foreground/40 shrink-0' />
-                                    <span className='text-xs text-muted-foreground'>
-                                      {COMPONENT_LABELS[comp.name] ??
-                                        comp.name.replace(/_/g, ' ')}
+                            {/* Components */}
+                            {action.components.length > 0 && (
+                              <div className='space-y-1.5 pt-1 border-t border-border/50'>
+                                {action.components.map(comp => (
+                                  <div
+                                    key={comp.name}
+                                    className='flex items-center justify-between'
+                                  >
+                                    <div className='flex items-center gap-2'>
+                                      <div className='h-1 w-1 rounded-full bg-muted-foreground/40 shrink-0' />
+                                      <span className='text-xs text-muted-foreground'>
+                                        {COMPONENT_LABELS[comp.name] ??
+                                          comp.name.replace(/_/g, ' ')}
+                                      </span>
+                                    </div>
+                                    <span className='text-xs font-medium text-foreground'>
+                                      {comp.credits} cr
                                     </span>
                                   </div>
-                                  <span className='text-xs font-medium text-foreground'>
-                                    {comp.credits} cr
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
 
-                      {/* Total */}
-                      <div className='flex items-center justify-between rounded-lg bg-primary/5 border border-primary/10 px-3 py-2'>
-                        <span className='text-xs font-medium uppercase tracking-wider text-muted-foreground'>
-                          Total
-                        </span>
-                        <span className='text-sm font-bold text-foreground'>
-                          {parsed.total} credits
-                        </span>
+                        {/* Total */}
+                        <div className='flex items-center justify-between rounded-lg bg-primary/5 border border-primary/10 px-3 py-2'>
+                          <span className='text-xs font-medium uppercase tracking-wider text-muted-foreground'>
+                            Total
+                          </span>
+                          <span className='text-sm font-bold text-foreground'>
+                            {parsed.total} credits
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })()}
+                    );
+                  })()
+                )}
               </div>
 
               {/* Timestamp */}

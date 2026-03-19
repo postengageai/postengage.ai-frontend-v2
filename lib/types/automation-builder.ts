@@ -2,9 +2,7 @@
 
 export type Platform = 'instagram' | 'facebook' | 'twitter' | 'linkedin';
 
-export type TriggerType =
-  | 'new_comment'
-  | 'dm_received';
+export type TriggerType = 'new_comment' | 'dm_received';
 
 export type TriggerScope =
   | 'all_posts'

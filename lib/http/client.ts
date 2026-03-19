@@ -152,7 +152,10 @@ export class HttpClient {
             error.response.data as { error?: { code?: string } }
           )?.error?.code;
 
-          if (!INLINE_AUTH_ERROR_CODES.has(responseCode ?? '') && onUnauthorized) {
+          if (
+            !INLINE_AUTH_ERROR_CODES.has(responseCode ?? '') &&
+            onUnauthorized
+          ) {
             onUnauthorized();
           }
         }

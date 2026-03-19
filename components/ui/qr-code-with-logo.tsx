@@ -46,7 +46,7 @@ export function QrCodeWithLogo({
         margin: 1,
         errorCorrectionLevel: 'H', // highest — needed when logo covers the centre
         color: {
-          dark: '#0a0a0f',  // matches --background dark token
+          dark: '#0a0a0f', // matches --background dark token
           light: '#ffffff',
         },
       });
@@ -72,7 +72,12 @@ export function QrCodeWithLogo({
       ctx.lineTo(bgX + bgSize - radius, bgY);
       ctx.quadraticCurveTo(bgX + bgSize, bgY, bgX + bgSize, bgY + radius);
       ctx.lineTo(bgX + bgSize, bgY + bgSize - radius);
-      ctx.quadraticCurveTo(bgX + bgSize, bgY + bgSize, bgX + bgSize - radius, bgY + bgSize);
+      ctx.quadraticCurveTo(
+        bgX + bgSize,
+        bgY + bgSize,
+        bgX + bgSize - radius,
+        bgY + bgSize
+      );
       ctx.lineTo(bgX + radius, bgY + bgSize);
       ctx.quadraticCurveTo(bgX, bgY + bgSize, bgX, bgY + bgSize - radius);
       ctx.lineTo(bgX, bgY + radius);

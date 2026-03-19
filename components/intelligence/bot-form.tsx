@@ -104,7 +104,8 @@ export const botFormSchema = z.object({
       schedule_days: z.array(z.number().min(0).max(6)).optional(),
     })
     .refine(
-      values => values.reply_delay_max_seconds >= values.reply_delay_min_seconds,
+      values =>
+        values.reply_delay_max_seconds >= values.reply_delay_min_seconds,
       {
         message: 'Max delay must be greater than or equal to min delay',
         path: ['reply_delay_max_seconds'],
@@ -139,10 +140,18 @@ export function BotForm({
   const botLimits = pricingData?.app_limits?.bot;
   const DEFAULT_BOT_BEHAVIOR: BotBehavior = {
     ...FALLBACK_BOT_BEHAVIOR,
-    max_replies_per_hour: botLimits?.default_max_replies_per_hour ?? FALLBACK_BOT_BEHAVIOR.max_replies_per_hour,
-    max_replies_per_day: botLimits?.default_max_replies_per_day ?? FALLBACK_BOT_BEHAVIOR.max_replies_per_day,
-    reply_delay_min_seconds: botLimits?.default_reply_delay_min_seconds ?? FALLBACK_BOT_BEHAVIOR.reply_delay_min_seconds,
-    reply_delay_max_seconds: botLimits?.default_reply_delay_max_seconds ?? FALLBACK_BOT_BEHAVIOR.reply_delay_max_seconds,
+    max_replies_per_hour:
+      botLimits?.default_max_replies_per_hour ??
+      FALLBACK_BOT_BEHAVIOR.max_replies_per_hour,
+    max_replies_per_day:
+      botLimits?.default_max_replies_per_day ??
+      FALLBACK_BOT_BEHAVIOR.max_replies_per_day,
+    reply_delay_min_seconds:
+      botLimits?.default_reply_delay_min_seconds ??
+      FALLBACK_BOT_BEHAVIOR.reply_delay_min_seconds,
+    reply_delay_max_seconds:
+      botLimits?.default_reply_delay_max_seconds ??
+      FALLBACK_BOT_BEHAVIOR.reply_delay_max_seconds,
   };
 
   useEffect(() => {
@@ -237,8 +246,12 @@ export function BotForm({
   };
 
   // ─── Schedule helpers ──────────────────────────────────────────────────────
-  const scheduleEnabled = useWatch({ control: form.control, name: 'behavior.schedule_enabled' });
-  const scheduleDays = useWatch({ control: form.control, name: 'behavior.schedule_days' }) ?? [];
+  const scheduleEnabled = useWatch({
+    control: form.control,
+    name: 'behavior.schedule_enabled',
+  });
+  const scheduleDays =
+    useWatch({ control: form.control, name: 'behavior.schedule_days' }) ?? [];
 
   function formatHour(h: number): string {
     if (h === 0) return '12:00 AM';
@@ -629,7 +642,8 @@ export function BotForm({
               Active Schedule
             </CardTitle>
             <CardDescription>
-              Restrict when this bot is allowed to reply. Outside the window it will skip messages silently.
+              Restrict when this bot is allowed to reply. Outside the window it
+              will skip messages silently.
             </CardDescription>
           </CardHeader>
           <CardContent className='space-y-5'>

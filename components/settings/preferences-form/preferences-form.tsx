@@ -216,7 +216,7 @@ export function PreferencesForm() {
       </Card>
 
       {/* Product Tours */}
-      <Card data-tour="tour-toggle">
+      <Card data-tour='tour-toggle'>
         <CardHeader>
           <CardTitle>Product Tours</CardTitle>
           <CardDescription>
@@ -230,7 +230,8 @@ export function PreferencesForm() {
                 Enable product tours
               </Label>
               <p className='text-sm text-muted-foreground'>
-                Show a &ldquo;Take a tour&rdquo; button on each page. Tours auto-start the first time you visit a page.
+                Show a &ldquo;Take a tour&rdquo; button on each page. Tours
+                auto-start the first time you visit a page.
               </p>
             </div>
             <Switch

@@ -155,20 +155,27 @@ export default function DashboardPage() {
     },
   });
 
-  const [creditWarningId, setCreditWarningId] = React.useState<string | null>(null);
+  const [creditWarningId, setCreditWarningId] = React.useState<string | null>(
+    null
+  );
 
   const isAiAutomation = (automation: Automation) => {
     return (
-      automation.actions?.some(a => a.toLowerCase().includes('ai')) ||
-      automation.action === 'reply'
-    ) ?? false;
+      (automation.actions?.some(a => a.toLowerCase().includes('ai')) ||
+        automation.action === 'reply') ??
+      false
+    );
   };
 
   const handleToggleAutomation = (id: string) => {
     const automation = automations.find(a => a.id === id);
     if (!automation) return;
     // Only warn for AI automations being activated when credits are low
-    if (automation.status === 'paused' && isAiAutomation(automation) && credits.remaining < 20) {
+    if (
+      automation.status === 'paused' &&
+      isAiAutomation(automation) &&
+      credits.remaining < 20
+    ) {
       setCreditWarningId(id);
       return;
     }
@@ -219,98 +226,114 @@ export default function DashboardPage() {
 
   const hasNoAutomations = automations.length === 0;
   const pausedCount = automations.filter(a => a.status === 'paused').length;
-  const hasAllPaused = automations.length > 0 && pausedCount === automations.length;
+  const hasAllPaused =
+    automations.length > 0 && pausedCount === automations.length;
   const lowCredits = credits.remaining < 20;
 
   return (
     <>
-    <main className='p-4 sm:p-6 lg:p-8 space-y-6' data-tour='dashboard-stats'>
-      {/* Paused automations banner */}
-      {hasAllPaused && lowCredits && (
-        <div className='flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3'>
-          <AlertTriangle className='h-4 w-4 text-warning shrink-0' />
-          <p className='text-sm text-warning font-medium flex-1'>
-            {pausedCount} automation{pausedCount > 1 ? 's' : ''} paused — you&apos;re out of credits.
-          </p>
-          <Button asChild size='sm' className='bg-warning hover:bg-warning/90 text-warning-foreground h-8 text-xs font-semibold'>
-            <Link href='/dashboard/credits/buy'>Top up now</Link>
-          </Button>
-        </div>
-      )}
-
-      {/* System Health Bar */}
-      <SystemHealthBar
-        isConnected={connectedAccount?.isConnected ?? false}
-        activeAutomations={activeAutomationCount}
-        creditsRemaining={credits.remaining}
-        lastActivityTime={lastActivity}
-      />
-
-      {/* Impact Card */}
-      {data?.impact && <ImpactCard impact={data.impact} />}
-
-      {/* Quick Insights */}
-      <QuickInsights
-        credits={credits}
-        todayReplies={data?.overview.credits_used_today ?? 0}
-        weeklyGrowth={data?.overview.weekly_growth ?? 0}
-        totalLeads={data?.overview.total_leads ?? 0}
-      />
-
-      {/* Performance Metrics */}
-      {data?.performance && <PerformanceMetrics metrics={data.performance} />}
-
-      {/* Empty state for new users */}
-      {hasNoAutomations && (
-        <div className='rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center'>
-          <div className='mx-auto mb-4 h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center'>
-            <Zap className='h-8 w-8 text-primary' />
+      <main className='p-4 sm:p-6 lg:p-8 space-y-6' data-tour='dashboard-stats'>
+        {/* Paused automations banner */}
+        {hasAllPaused && lowCredits && (
+          <div className='flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3'>
+            <AlertTriangle className='h-4 w-4 text-warning shrink-0' />
+            <p className='text-sm text-warning font-medium flex-1'>
+              {pausedCount} automation{pausedCount > 1 ? 's' : ''} paused —
+              you&apos;re out of credits.
+            </p>
+            <Button
+              asChild
+              size='sm'
+              className='bg-warning hover:bg-warning/90 text-warning-foreground h-8 text-xs font-semibold'
+            >
+              <Link href='/dashboard/credits/buy'>Top up now</Link>
+            </Button>
           </div>
-          <h3 className='text-xl font-bold text-foreground mb-2'>
-            Create your first automation
-          </h3>
-          <p className='text-sm text-muted-foreground max-w-sm mx-auto mb-6'>
-            Automate your Instagram DMs and comment replies with AI. Set it up once and let it run 24/7.
-          </p>
-          <Button asChild className='bg-primary hover:bg-primary/90 text-white font-semibold h-10 px-6'>
-            <Link href='/dashboard/automations/new'>
-              <Plus className='mr-2 h-4 w-4' />
-              Create Automation
-            </Link>
-          </Button>
-          <p className='text-xs text-muted-foreground mt-4'>
-            Free to create · Uses credits only when triggered
-          </p>
-        </div>
-      )}
+        )}
 
-      {/* Main content grid */}
-      <div className='grid gap-6 lg:grid-cols-5'>
-        <div className='lg:col-span-3 space-y-6'>
-          <RecentActivity
-            notifications={notifications}
-            onMarkAsRead={id => markAsReadMutation.mutate(id)}
-            onMarkAllAsRead={() => markAllAsReadMutation.mutate()}
-          />
+        {/* System Health Bar */}
+        <SystemHealthBar
+          isConnected={connectedAccount?.isConnected ?? false}
+          activeAutomations={activeAutomationCount}
+          creditsRemaining={credits.remaining}
+          lastActivityTime={lastActivity}
+        />
+
+        {/* Impact Card */}
+        {data?.impact && <ImpactCard impact={data.impact} />}
+
+        {/* Quick Insights */}
+        <QuickInsights
+          credits={credits}
+          todayReplies={data?.overview.credits_used_today ?? 0}
+          weeklyGrowth={data?.overview.weekly_growth ?? 0}
+          totalLeads={data?.overview.total_leads ?? 0}
+        />
+
+        {/* Performance Metrics */}
+        {data?.performance && <PerformanceMetrics metrics={data.performance} />}
+
+        {/* Empty state for new users */}
+        {hasNoAutomations && (
+          <div className='rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center'>
+            <div className='mx-auto mb-4 h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center'>
+              <Zap className='h-8 w-8 text-primary' />
+            </div>
+            <h3 className='text-xl font-bold text-foreground mb-2'>
+              Create your first automation
+            </h3>
+            <p className='text-sm text-muted-foreground max-w-sm mx-auto mb-6'>
+              Automate your Instagram DMs and comment replies with AI. Set it up
+              once and let it run 24/7.
+            </p>
+            <Button
+              asChild
+              className='bg-primary hover:bg-primary/90 text-white font-semibold h-10 px-6'
+            >
+              <Link href='/dashboard/automations/new'>
+                <Plus className='mr-2 h-4 w-4' />
+                Create Automation
+              </Link>
+            </Button>
+            <p className='text-xs text-muted-foreground mt-4'>
+              Free to create · Uses credits only when triggered
+            </p>
+          </div>
+        )}
+
+        {/* Main content grid */}
+        <div className='grid gap-6 lg:grid-cols-5'>
+          <div className='lg:col-span-3 space-y-6'>
+            <RecentActivity
+              notifications={notifications}
+              onMarkAsRead={id => markAsReadMutation.mutate(id)}
+              onMarkAllAsRead={() => markAllAsReadMutation.mutate()}
+            />
+          </div>
+          <div className='lg:col-span-2 space-y-6'>
+            <AutomationSummary
+              automations={automations}
+              onToggle={handleToggleAutomation}
+              onDelete={id => deleteAutomationMutation.mutate(id)}
+            />
+          </div>
         </div>
-        <div className='lg:col-span-2 space-y-6'>
-          <AutomationSummary
-            automations={automations}
-            onToggle={handleToggleAutomation}
-            onDelete={id => deleteAutomationMutation.mutate(id)}
-          />
-        </div>
-      </div>
-    </main>
+      </main>
 
       {/* Low credits warning dialog */}
-      <AlertDialog open={!!creditWarningId} onOpenChange={open => { if (!open) setCreditWarningId(null); }}>
+      <AlertDialog
+        open={!!creditWarningId}
+        onOpenChange={open => {
+          if (!open) setCreditWarningId(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Low credits — activate anyway?</AlertDialogTitle>
             <AlertDialogDescription>
-              You only have <strong>{credits.remaining} credits</strong> left. AI automations use credits on every reply.
-              Your automation may pause automatically if credits run out.
+              You only have <strong>{credits.remaining} credits</strong> left.
+              AI automations use credits on every reply. Your automation may
+              pause automatically if credits run out.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -321,7 +344,8 @@ export default function DashboardPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (creditWarningId) toggleAutomationMutation.mutate(creditWarningId);
+                if (creditWarningId)
+                  toggleAutomationMutation.mutate(creditWarningId);
                 setCreditWarningId(null);
               }}
             >
