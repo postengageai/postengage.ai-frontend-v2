@@ -6,6 +6,7 @@ import { Providers } from '@/components/providers';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 import { GoogleTagManager } from '@/components/analytics/google-tag-manager';
 import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity';
+import { MetaPixel } from '@/components/analytics/meta-pixel';
 import './globals.css';
 import './tour.css';
 
@@ -114,6 +115,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <GoogleTagManager />
+        <MetaPixel />
         <Providers>{children}</Providers>
         <Analytics />
         <GoogleAnalytics />
