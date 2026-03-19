@@ -295,6 +295,18 @@ export default function HelpSupportPage() {
     ['resolved', 'closed'].includes(t.status)
   );
 
+  const stats = {
+    total: tickets.length,
+    open: tickets.filter(t => t.status === 'open').length,
+    in_progress: tickets.filter(
+      t => t.status === 'in_progress' || t.status === 'waiting_user'
+    ).length,
+    resolved: tickets.filter(
+      t => t.status === 'resolved' || t.status === 'closed'
+    ).length,
+    unread: tickets.reduce((sum, t) => sum + (t.unread_count ?? 0), 0),
+  };
+
   return (
     <div className='min-h-screen pb-20 md:pb-0'>
       <div className='px-4 py-8 md:py-12'>
@@ -320,6 +332,34 @@ export default function HelpSupportPage() {
                 New Ticket
               </Button>
             </div>
+
+            {/* Stats strip — only when there are tickets */}
+            {!loadingTickets && tickets.length > 0 && (
+              <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6'>
+                <div className='rounded-xl border bg-card p-4 flex flex-col gap-1'>
+                  <span className='text-xs text-muted-foreground'>Total</span>
+                  <span className='text-2xl font-bold'>{stats.total}</span>
+                </div>
+                <div className='rounded-xl border bg-amber-500/5 border-amber-500/20 p-4 flex flex-col gap-1'>
+                  <span className='text-xs text-amber-500'>Open</span>
+                  <span className='text-2xl font-bold text-amber-500'>
+                    {stats.open}
+                  </span>
+                </div>
+                <div className='rounded-xl border bg-blue-500/5 border-blue-500/20 p-4 flex flex-col gap-1'>
+                  <span className='text-xs text-blue-500'>In Progress</span>
+                  <span className='text-2xl font-bold text-blue-500'>
+                    {stats.in_progress}
+                  </span>
+                </div>
+                <div className='rounded-xl border bg-emerald-500/5 border-emerald-500/20 p-4 flex flex-col gap-1'>
+                  <span className='text-xs text-emerald-500'>Resolved</span>
+                  <span className='text-2xl font-bold text-emerald-500'>
+                    {stats.resolved}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {showNewTicket && (
               <Card className='mb-6 border-primary/30'>
