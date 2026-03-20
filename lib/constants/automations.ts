@@ -1,9 +1,6 @@
 export const AutomationTriggerType = {
   NEW_COMMENT: 'new_comment',
-  STORY_REPLY: 'story_reply',
   DM_RECEIVED: 'dm_received',
-  MENTION: 'mention',
-  NEW_FOLLOWER: 'new_follower',
 } as const;
 
 export type AutomationTriggerTypeType =
@@ -33,9 +30,6 @@ export const AutomationActionType = {
   REPLY_COMMENT: 'reply_comment',
   SEND_DM: 'send_dm',
   PRIVATE_REPLY: 'private_reply',
-  LIKE_CONTENT: 'like_content',
-  ADD_TAG: 'add_tag',
-  NOTIFY_ADMIN: 'notify_admin',
 } as const;
 
 export type AutomationActionTypeType =
@@ -61,15 +55,6 @@ export const AutomationStatus = {
 
 export type AutomationStatusType =
   (typeof AutomationStatus)[keyof typeof AutomationStatus];
-
-export const AutomationExecutionMode = {
-  REAL_TIME: 'real_time',
-  SCHEDULED: 'scheduled',
-  DELAYED: 'delayed',
-} as const;
-
-export type AutomationExecutionModeType =
-  (typeof AutomationExecutionMode)[keyof typeof AutomationExecutionMode];
 
 export const AutomationConditionType = {
   KEYWORD: 'keyword',

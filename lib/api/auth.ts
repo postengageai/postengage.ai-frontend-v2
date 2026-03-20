@@ -8,6 +8,9 @@ import {
   LoginResponse,
   SignupResponse,
   VerifyEmailResponse,
+  TotpChallengeRequest,
+  TotpChallengeResponse,
+  TotpSetupResponse,
   User,
 } from '../schemas/auth';
 import { httpClient, SuccessResponse } from '../http/client';
@@ -105,6 +108,68 @@ export class AuthApi {
       throw error;
     }
   }
+
+  // Get account lock/suspend status by email (public endpoint)
+  static async getAccountStatus(
+    email: string
+  ): Promise<{ status: string; unlocksAt?: string }> {
+    const response = await httpClient.get<{
+      status: string;
+      unlocksAt?: string;
+    }>(`${AUTH_BASE_URL}/account-status?email=${encodeURIComponent(email)}`);
+    return response.data?.data ?? { status: 'unknown' };
+  }
+
+  // ── 2FA / TOTP ─────────────────────────────────────────────────────────────
+
+  /** Complete the two-step TOTP challenge after login returned requires_2fa: true */
+  static async verifyTotpChallenge(
+    request: TotpChallengeRequest
+  ): Promise<SuccessResponse<TotpChallengeResponse>> {
+    const response = await httpClient.post<TotpChallengeResponse>(
+      `${AUTH_BASE_URL}/2fa/challenge`,
+      request
+    );
+    return response.data!;
+  }
+
+  /** Start 2FA setup — returns otpauth_url for QR code rendering */
+  static async setup2FA(): Promise<SuccessResponse<TotpSetupResponse>> {
+    const response = await httpClient.post<TotpSetupResponse>(
+      `${AUTH_BASE_URL}/2fa/setup`
+    );
+    return response.data!;
+  }
+
+  /** Verify a TOTP token and permanently enable 2FA on the account */
+  static async verify2FA(code: string): Promise<void> {
+    await httpClient.post(`${AUTH_BASE_URL}/2fa/verify`, { code });
+  }
+
+  /** Disable 2FA — requires a valid TOTP token as confirmation */
+  static async disable2FA(code: string): Promise<void> {
+    await httpClient.post(`${AUTH_BASE_URL}/2fa/disable`, { code });
+  }
+
+  // Get platform-wide stats for the login page (public endpoint — marketing module)
+  static async getPlatformStats(): Promise<{
+    replies_sent: number;
+    total_automations: number;
+    active_users: number;
+  }> {
+    const response = await httpClient.get<{
+      replies_sent: number;
+      total_automations: number;
+      active_users: number;
+    }>('/api/v1/marketing/platform-stats');
+    return (
+      response.data?.data ?? {
+        replies_sent: 0,
+        total_automations: 0,
+        active_users: 0,
+      }
+    );
+  }
 }
 
 // Hook-friendly API functions
@@ -119,4 +184,8 @@ export const authApi = {
   resetPassword: AuthApi.resetPassword,
   getCurrentUser: AuthApi.getCurrentUser,
   checkAuth: AuthApi.checkAuth,
+  verifyTotpChallenge: AuthApi.verifyTotpChallenge,
+  setup2FA: AuthApi.setup2FA,
+  verify2FA: AuthApi.verify2FA,
+  disable2FA: AuthApi.disable2FA,
 };

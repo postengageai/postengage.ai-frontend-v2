@@ -32,6 +32,104 @@ import {
   ExternalLink,
   Gift,
 } from 'lucide-react';
+import Link from 'next/link';
+
+// ── Description Parser ────────────────────────────────────────────────────────
+
+const COMPONENT_LABELS: Record<string, string> = {
+  ai_infra: 'AI Infrastructure',
+  intent_classification: 'Intent Detection',
+  brand_voice: 'Brand Voice',
+  response_generation: 'Response Generation',
+  knowledge_retrieval: 'Knowledge Base',
+  conversation_history: 'Conversation History',
+  user_profile: 'User Profile',
+  static_reply: 'Static Reply',
+};
+
+interface ParsedComponent {
+  name: string;
+  credits: number;
+}
+
+interface ParsedAction {
+  order: number;
+  type: string;
+  isAi: boolean;
+  botName?: string;
+  tier?: string;
+  credits: number;
+  components: ParsedComponent[];
+}
+
+interface ParsedDescription {
+  automationName: string;
+  actions: ParsedAction[];
+  total: number;
+}
+
+function parseDescription(description: string): ParsedDescription | null {
+  try {
+    const lines = description.split('\n');
+    const headerMatch = lines[0]?.match(/^Automation "(.+)" — \d+ action/);
+    if (!headerMatch) return null;
+    const automationName = headerMatch[1];
+
+    const actions: ParsedAction[] = [];
+    let currentAction: ParsedAction | null = null;
+    let total = 0;
+
+    for (const line of lines.slice(1)) {
+      const actionMatch = line.match(/^\s+Action (\d+): (.+?) — (\d+) credits/);
+      if (actionMatch) {
+        if (currentAction) actions.push(currentAction);
+        const order = parseInt(actionMatch[1]);
+        const fullLabel = actionMatch[2];
+        const credits = parseInt(actionMatch[3]);
+        const labelMatch = fullLabel.match(/^(\w+) \[(.+?)\]$/);
+        const type = labelMatch ? labelMatch[1] : fullLabel;
+        const bracketContent = labelMatch ? labelMatch[2] : '';
+        const isAi = bracketContent !== 'static';
+        let botName: string | undefined;
+        let tier: string | undefined;
+        if (isAi && bracketContent.includes(' | ')) {
+          const parts = bracketContent.split(' | ');
+          botName = parts[0];
+          tier = parts[1];
+        } else if (isAi) {
+          botName = bracketContent;
+        }
+        currentAction = {
+          order,
+          type,
+          isAi,
+          botName,
+          tier,
+          credits,
+          components: [],
+        };
+        continue;
+      }
+      const compMatch = line.match(/^\s+•\s+(\S+)\s+(\d+) cr/);
+      if (compMatch && currentAction) {
+        currentAction.components.push({
+          name: compMatch[1].trim(),
+          credits: parseInt(compMatch[2]),
+        });
+        continue;
+      }
+      const totalMatch = line.match(/Total: (\d+) credits/);
+      if (totalMatch) total = parseInt(totalMatch[1]);
+    }
+
+    if (currentAction) actions.push(currentAction);
+    return { automationName, actions, total };
+  } catch {
+    return null;
+  }
+}
+
+// ── End Description Parser ────────────────────────────────────────────────────
 
 interface TransactionHistoryProps {
   transactions: CreditTransaction[];
@@ -142,11 +240,15 @@ export function TransactionHistory({
     const color = isPositive ? 'text-success' : 'text-foreground';
     const size = large ? 'text-2xl' : 'text-sm';
 
+    // credit_amount may already be negative from the backend — use Math.abs
+    // to avoid double-negative rendering (e.g. "--1")
+    const absAmount = Math.abs(transaction.credit_amount);
+
     if (transaction.status === 'cancelled') {
       return (
         <span className={`text-muted-foreground line-through ${size}`}>
           {sign}
-          {transaction.credit_amount}
+          {absAmount}
         </span>
       );
     }
@@ -154,7 +256,7 @@ export function TransactionHistory({
     return (
       <span className={`font-mono font-semibold ${color} ${size}`}>
         {sign}
-        {transaction.credit_amount}
+        {absAmount}
       </span>
     );
   };
@@ -332,14 +434,118 @@ export function TransactionHistory({
                 </div>
               </div>
 
-              {/* Description */}
-              <div className='space-y-2'>
+              {/* Cost Breakdown */}
+              <div className='space-y-3'>
                 <p className='text-xs font-medium uppercase tracking-wider text-muted-foreground'>
-                  Description
+                  Cost Breakdown
                 </p>
-                <p className='text-sm leading-relaxed text-foreground'>
-                  {selectedTransaction.description}
-                </p>
+                {selectedTransaction.transaction_type === 'purchase' ||
+                selectedTransaction.transaction_type === 'bonus' ? (
+                  <p className='text-sm leading-relaxed text-foreground'>
+                    {selectedTransaction.description}
+                  </p>
+                ) : (
+                  (() => {
+                    const parsed = parseDescription(
+                      selectedTransaction.description
+                    );
+                    if (!parsed) {
+                      return (
+                        <pre className='whitespace-pre-wrap font-mono text-xs text-muted-foreground'>
+                          {selectedTransaction.description}
+                        </pre>
+                      );
+                    }
+                    return (
+                      <div className='space-y-2'>
+                        {/* Automation name */}
+                        <div className='flex items-center gap-2 pb-1'>
+                          <div className='h-1.5 w-1.5 rounded-full bg-primary shrink-0' />
+                          <p className='text-sm font-medium text-foreground truncate'>
+                            {parsed.automationName}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        {parsed.actions.map(action => (
+                          <div
+                            key={action.order}
+                            className='rounded-lg border border-border bg-muted/20 p-3 space-y-2'
+                          >
+                            {/* Action header */}
+                            <div className='flex items-center justify-between gap-2'>
+                              <div className='flex items-center gap-1.5 flex-wrap min-w-0'>
+                                <Badge
+                                  variant='outline'
+                                  className='font-mono text-xs shrink-0'
+                                >
+                                  {action.type.replace(/_/g, ' ')}
+                                </Badge>
+                                {action.botName && (
+                                  <span className='text-xs text-muted-foreground truncate'>
+                                    {action.botName}
+                                  </span>
+                                )}
+                                {action.tier && (
+                                  <Badge
+                                    variant='outline'
+                                    className='text-xs bg-primary/10 text-primary border-primary/20 shrink-0'
+                                  >
+                                    {action.tier}
+                                  </Badge>
+                                )}
+                                {!action.isAi && (
+                                  <Badge
+                                    variant='secondary'
+                                    className='text-xs shrink-0'
+                                  >
+                                    static
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className='text-sm font-semibold text-foreground shrink-0'>
+                                {action.credits} cr
+                              </span>
+                            </div>
+
+                            {/* Components */}
+                            {action.components.length > 0 && (
+                              <div className='space-y-1.5 pt-1 border-t border-border/50'>
+                                {action.components.map(comp => (
+                                  <div
+                                    key={comp.name}
+                                    className='flex items-center justify-between'
+                                  >
+                                    <div className='flex items-center gap-2'>
+                                      <div className='h-1 w-1 rounded-full bg-muted-foreground/40 shrink-0' />
+                                      <span className='text-xs text-muted-foreground'>
+                                        {COMPONENT_LABELS[comp.name] ??
+                                          comp.name.replace(/_/g, ' ')}
+                                      </span>
+                                    </div>
+                                    <span className='text-xs font-medium text-foreground'>
+                                      {comp.credits} cr
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        {/* Total */}
+                        <div className='flex items-center justify-between rounded-lg bg-primary/5 border border-primary/10 px-3 py-2'>
+                          <span className='text-xs font-medium uppercase tracking-wider text-muted-foreground'>
+                            Total
+                          </span>
+                          <span className='text-sm font-bold text-foreground'>
+                            {parsed.total} credits
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
 
               {/* Timestamp */}
@@ -505,12 +711,12 @@ export function TransactionHistory({
                   className='w-full gap-2 bg-transparent'
                   asChild
                 >
-                  <a
-                    href={`/automations?id=${selectedTransaction.automation_id}`}
+                  <Link
+                    href={`/dashboard/automations/${selectedTransaction.automation_id}`}
                   >
                     <ExternalLink className='h-4 w-4' />
                     View Automation
-                  </a>
+                  </Link>
                 </Button>
               )}
             </div>

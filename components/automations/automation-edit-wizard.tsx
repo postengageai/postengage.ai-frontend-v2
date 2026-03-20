@@ -26,8 +26,17 @@ import {
   automationsApi,
   type Automation,
   type CreateAutomationRequest,
+  type AutomationActionPayload,
+  type SendDmPayload,
+  type ReplyCommentPayload,
+  type PrivateReplyPayload,
+  type SendDmTextMessage,
+  type SendDmTextPayload,
+  type SendDmMediaMessage,
+  type SendDmMediaPayload,
 } from '@/lib/api/automations';
-import { toast } from '@/hooks/use-toast';
+import { parseApiError } from '@/lib/http/errors';
+import { useToast } from '@/hooks/use-toast';
 
 interface AutomationEditWizardProps {
   automationId: string;
@@ -98,31 +107,60 @@ function apiToFormData(apiData: Automation): AutomationFormData {
         }
       : null,
     actions:
-      apiData.actions?.map((action, index) => ({
-        action_type: parseEnum<AutomationActionTypeType>(
+      apiData.actions?.map((action, index) => {
+        const actionType = parseEnum<AutomationActionTypeType>(
           action.action_type,
           AutomationActionType,
           AutomationActionType.REPLY_COMMENT
-        ),
-        execution_order: index + 1,
-        delay_seconds: action.delay_seconds || 0,
-        status: 'active',
-        action_payload: {
-          ...(action.action_payload || {}),
-          text: action.action_payload?.text || '',
-          message: action.action_payload?.message || {
+        );
+
+        let payload: AutomationActionPayload;
+
+        if (actionType === AutomationActionType.SEND_DM) {
+          const dmPayload = action.action_payload as SendDmPayload;
+          const message = dmPayload?.message || {
             type: 'text',
-            text: action.action_payload?.text || '',
-          },
-        },
-      })) || [],
+            text: '',
+          };
+
+          if (message.type === 'text') {
+            payload = {
+              ...dmPayload,
+              message: message as SendDmTextMessage,
+            } as SendDmTextPayload;
+          } else {
+            payload = {
+              ...dmPayload,
+              message: message as SendDmMediaMessage,
+            } as SendDmMediaPayload;
+          }
+        } else {
+          const textPayload = action.action_payload as
+            | ReplyCommentPayload
+            | PrivateReplyPayload;
+          payload = {
+            ...textPayload,
+            text: textPayload?.text || '',
+          };
+        }
+
+        return {
+          action_type: actionType,
+          execution_order: index + 1,
+          delay_seconds: action.delay_seconds || 0,
+          status: 'active',
+          action_payload: payload,
+        };
+      }) || [],
     name: apiData.name,
     description: apiData.description,
+    labels: Array.isArray(apiData.labels) ? (apiData.labels as string[]) : [],
     status: parseEnum<AutomationStatusType>(
       apiData.status,
       AutomationStatus,
       AutomationStatus.ACTIVE
     ),
+    bot_id: apiData.bot_id,
   };
 }
 
@@ -135,6 +173,7 @@ export function AutomationEditWizard({
   const [initialData, setInitialData] = useState<AutomationFormData | null>(
     null
   );
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAutomation = async () => {
@@ -146,11 +185,11 @@ export function AutomationEditWizard({
           setInitialData(formData);
         }
       } catch (error) {
-        console.error('Failed to fetch automation:', error);
+        const err = parseApiError(error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load automation details',
+          title: err.title,
+          description: err.message,
         });
       } finally {
         setIsLoading(false);
@@ -160,7 +199,7 @@ export function AutomationEditWizard({
     if (automationId) {
       fetchAutomation();
     }
-  }, [automationId]);
+  }, [automationId, toast]);
 
   if (isLoading) {
     return (

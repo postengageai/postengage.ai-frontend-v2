@@ -3,6 +3,7 @@
 import type React from 'react';
 
 import { useState, useMemo, useEffect } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,9 +77,8 @@ export default function ActivityPage() {
         setError(null);
         const response = await notificationsApi.getNotifications();
         setNotifications(response.data || []);
-      } catch (err) {
+      } catch {
         setError('Failed to load notifications');
-        console.error('Error fetching notifications:', err);
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +94,7 @@ export default function ActivityPage() {
       setNotifications(prev => [newNotification, ...prev]);
 
       // Flash UI indicator or show toast (optional)
-      console.log('New notification received:', newNotification);
+      // console.log('New notification received:', newNotification);
     };
 
     // Connect to socket and subscribe to notification updates
@@ -140,40 +140,60 @@ export default function ActivityPage() {
   ).length;
 
   const handleMarkAsRead = async (id: string) => {
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n =>
+        n.id === id
+          ? {
+              ...n,
+              status: 'read' as NotificationStatusType,
+              read_at: new Date().toISOString(),
+            }
+          : n
+      )
+    );
     try {
       await notificationsApi.markAsRead(id);
+    } catch {
+      // H-7 FIX: roll back optimistic update and surface error to user
       setNotifications(prev =>
         prev.map(n =>
           n.id === id
             ? {
                 ...n,
-                status: 'read' as NotificationStatusType,
-                read_at: new Date().toISOString(),
+                status: 'unread' as NotificationStatusType,
+                read_at: undefined,
               }
             : n
         )
       );
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
+      toast.error('Failed to mark notification as read. Please try again.');
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    // Snapshot for rollback
+    const snapshot = [...notifications];
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n =>
+        n.status === 'unread'
+          ? {
+              ...n,
+              status: 'read' as NotificationStatusType,
+              read_at: new Date().toISOString(),
+            }
+          : n
+      )
+    );
     try {
       await notificationsApi.markAllAsRead();
-      setNotifications(prev =>
-        prev.map(n =>
-          n.status === 'unread'
-            ? {
-                ...n,
-                status: 'read' as NotificationStatusType,
-                read_at: new Date().toISOString(),
-              }
-            : n
-        )
+    } catch {
+      // H-7 FIX: roll back optimistic update and surface error to user
+      setNotifications(snapshot);
+      toast.error(
+        'Failed to mark all notifications as read. Please try again.'
       );
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
     }
   };
 
@@ -692,7 +712,7 @@ function NotificationRow({
                 <Button
                   variant='ghost'
                   size='icon'
-                  className='h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity'
+                  className='h-7 w-7 transition-opacity sm:opacity-0 sm:group-hover:opacity-100'
                 >
                   <MoreHorizontal className='h-4 w-4' />
                 </Button>

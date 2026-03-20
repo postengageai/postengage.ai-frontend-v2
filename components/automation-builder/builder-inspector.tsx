@@ -46,6 +46,7 @@ import {
   getActionTypeLabel,
   mockDmTemplates,
 } from '@/lib/mock/automation-builder-data';
+import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
 
 interface BuilderInspectorProps {
   automation: AutomationBuilder;
@@ -191,24 +192,6 @@ function TriggerInspector({
             </div>
           </div>
         </>
-      )}
-
-      {trigger.type === 'keyword_mention' && (
-        <div className='space-y-4'>
-          <div className='space-y-2'>
-            <Label className='text-xs text-muted-foreground uppercase tracking-wide'>
-              Keywords to Monitor
-            </Label>
-            <Textarea
-              placeholder='Enter keywords, one per line...'
-              className='bg-background/50 resize-none text-sm'
-              rows={4}
-            />
-            <p className='text-xs text-muted-foreground'>
-              The automation triggers when any of these keywords appear
-            </p>
-          </div>
-        </div>
       )}
 
       {/* Scope settings */}
@@ -372,7 +355,9 @@ function ActionInspector({
         </Badge>
         <div className='flex items-center gap-2'>
           <Badge variant='outline' className='text-xs font-mono'>
-            {action.creditCost} credit{action.creditCost > 1 ? 's' : ''}
+            {action.creditCost > 0
+              ? `${action.creditCost} credit${action.creditCost > 1 ? 's' : ''}`
+              : 'Free'}
           </Badge>
           <Switch
             checked={action.enabled}
@@ -400,13 +385,21 @@ function ActionInspector({
                     <Switch
                       checked={action.config.useAI}
                       onCheckedChange={checked =>
-                        updateConfig({ useAI: checked })
+                        onUpdate({
+                          creditCost: checked
+                            ? CREDIT_COSTS.AI_STANDARD + CREDIT_COSTS.BYOM_INFRA
+                            : 0,
+                          config: { ...action.config, useAI: checked },
+                        })
                       }
                       className='data-[state=checked]:bg-purple-500'
                     />
                   </div>
                   <p className='text-xs text-muted-foreground'>
-                    Let AI craft contextual, personalized responses
+                    Let AI craft contextual, personalized responses (
+                    {CREDIT_COSTS.AI_STANDARD + CREDIT_COSTS.BYOM_INFRA}-
+                    {CREDIT_COSTS.AI_FULL_CONTEXT + CREDIT_COSTS.BYOM_INFRA}{' '}
+                    credits)
                   </p>
                 </CardContent>
               </Card>
@@ -619,24 +612,6 @@ function ActionInspector({
                 />
               </div>
             </>
-          )}
-
-          {/* Add tag settings */}
-          {action.type === 'add_tag' && (
-            <div className='space-y-2'>
-              <Label className='text-xs text-muted-foreground uppercase tracking-wide'>
-                Tag Name
-              </Label>
-              <Input
-                value={action.config.tagName || ''}
-                onChange={e => updateConfig({ tagName: e.target.value })}
-                placeholder='e.g., interested, hot-lead, customer'
-                className='bg-background/50'
-              />
-              <p className='text-xs text-muted-foreground'>
-                Tags help you organize and segment users
-              </p>
-            </div>
           )}
 
           {/* Delay settings (common to all actions) */}

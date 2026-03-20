@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,18 @@ export function ProfileForm() {
   const [hasChanges, setHasChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Re-fetch the full profile on mount so fields like created_at/updated_at
+  // are present (the login response may not include all fields).
+  useEffect(() => {
+    UserApi.getProfile()
+      .then(res => {
+        if (res?.data) userActions.setUser(res.data);
+      })
+      .catch(() => {
+        /* silent — we already have partial user data from login */
+      });
+  }, []);
 
   // Show skeleton while user data is loading
   if (isUserLoading || !user) {
@@ -105,8 +117,11 @@ export function ProfileForm() {
     return `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase();
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -147,6 +162,7 @@ export function ProfileForm() {
                     alt='Profile'
                     fill
                     className='object-cover'
+                    unoptimized
                   />
                 ) : (
                   <span className='flex h-full w-full items-center justify-center text-xl font-medium text-muted-foreground'>

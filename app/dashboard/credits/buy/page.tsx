@@ -1,49 +1,57 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Check, Coins, MessageCircle, Send } from 'lucide-react';
 import { usePricing } from '@/hooks/use-pricing';
 import { PricingCard } from '@/components/pricing/pricing-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CREDIT_COSTS } from '@/lib/config/credit-pricing';
+import { analytics } from '@/lib/analytics';
 
 export default function BuyCreditsPage() {
   const { data, isLoading } = usePricing();
 
-  // Use dynamic costs if available, else fallback to constants
-  const costs = data?.costs || CREDIT_COSTS;
+  useEffect(() => {
+    analytics.track('buy_credits_page_viewed', {});
+  }, []);
 
-  const commentReplyCost = costs.REPLY_COMMENT || 2;
-  const dmCost = costs.SEND_DM || 2;
+  // Show AI-powered action costs (manual actions are always free).
+  // Prefer live API values; fall back to local constants when API hasn't loaded yet.
+  // AI_REPLY_COMMENT = STANDARD (8) + ai_infra (1) = 9 cr
+  // AI_SEND_DM = FULL_CONTEXT (18) + ai_infra (1) = 19 cr
+  const commentReplyCost =
+    data?.costs.AI_REPLY_COMMENT ?? CREDIT_COSTS.AI_STANDARD + 1;
+  const dmCost = data?.costs.AI_SEND_DM ?? CREDIT_COSTS.AI_FULL_CONTEXT + 1;
 
   const usageExamples = [
     {
       persona: 'Micro-influencer',
       followers: '10K',
       commentsPerDay: '20-30',
-      creditsPerMonth: '~150',
-      recommendation: 'Starter Pack (500)',
+      creditsPerMonth: '~270',
+      recommendation: 'Starter (650 credits)',
     },
     {
       persona: 'Growing Creator',
       followers: '50K',
       commentsPerDay: '50-100',
-      creditsPerMonth: '~400',
-      recommendation: 'Starter Pack (500)',
+      creditsPerMonth: '~900',
+      recommendation: 'Growth (3,500 credits)',
     },
     {
       persona: 'Brand / Agency',
       followers: '100K+',
       commentsPerDay: '100-200',
-      creditsPerMonth: '~800',
-      recommendation: 'Pro Pack (2000)',
+      creditsPerMonth: '~2,000',
+      recommendation: 'Agency (10,000 credits)',
     },
   ];
 
   return (
-    <div className='mx-auto max-w-5xl space-y-8'>
+    <div className='mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8 sm:space-y-8'>
       {/* Header */}
       <div>
-        <h1 className='text-2xl font-semibold tracking-tight text-foreground'>
+        <h1 className='text-xl font-semibold tracking-tight text-foreground sm:text-2xl'>
           Buy Credits
         </h1>
         <p className='mt-1 text-sm text-muted-foreground'>
@@ -72,8 +80,8 @@ export default function BuyCreditsPage() {
       </section>
 
       {/* What is a Credit */}
-      <section className='pt-8'>
-        <div className='rounded-2xl border border-border bg-card p-8'>
+      <section className='pt-4 sm:pt-8'>
+        <div className='rounded-2xl border border-border bg-card p-4 sm:p-8'>
           <div className='flex items-center gap-3 mb-6'>
             <Coins className='h-6 w-6 text-primary' />
             <h2 className='text-xl font-semibold'>What's a credit?</h2>
@@ -88,7 +96,7 @@ export default function BuyCreditsPage() {
             <div className='flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3'>
               <MessageCircle className='h-5 w-5 text-muted-foreground' />
               <div>
-                <div className='font-medium'>Comment Reply</div>
+                <div className='font-medium'>AI Comment Reply</div>
                 <div className='text-sm text-muted-foreground'>
                   {commentReplyCost} credits
                 </div>
@@ -97,7 +105,7 @@ export default function BuyCreditsPage() {
             <div className='flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3'>
               <Send className='h-5 w-5 text-muted-foreground' />
               <div>
-                <div className='font-medium'>Auto DM</div>
+                <div className='font-medium'>AI Auto DM</div>
                 <div className='text-sm text-muted-foreground'>
                   {dmCost} credits
                 </div>

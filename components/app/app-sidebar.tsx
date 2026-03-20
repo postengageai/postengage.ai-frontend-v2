@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { AppLogo } from '@/components/app/app-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,7 @@ import {
   Coins,
   Settings,
   Sparkles,
+  Bot,
   LogOut,
   User,
   Shield,
@@ -39,6 +41,9 @@ import {
   CreditCard,
   HelpCircle,
   ChevronUp,
+  Dna,
+  Users,
+  Gift,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -47,26 +52,74 @@ import {
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useUser, useUserActions } from '@/lib/user/store';
+import { useAuthStore } from '@/lib/auth/store';
 import { CreditsApi } from '@/lib/api/credits';
 import { AuthApi } from '@/lib/api/auth';
-import { useEffect, useState } from 'react';
+import { analytics } from '@/lib/analytics';
+import { useEffect, useState, useCallback } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { NotificationBell } from '@/components/app/notification-bell';
 
 const navItems = [
   {
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    tourId: 'sidebar-dashboard',
   },
   {
     title: 'Automations',
     href: '/dashboard/automations',
     icon: Zap,
+    tourId: 'sidebar-automations',
+  },
+  {
+    title: 'Leads',
+    href: '/dashboard/leads',
+    icon: Users,
+    tourId: 'sidebar-leads',
   },
   {
     title: 'Media',
     href: '/dashboard/media',
     icon: Sparkles,
+    tourId: 'sidebar-media',
+  },
+  {
+    title: 'Affiliate',
+    href: '/dashboard/affiliate',
+    icon: Gift,
+    tourId: 'sidebar-affiliate',
+  },
+  {
+    title: 'Help',
+    href: '/dashboard/help',
+    icon: HelpCircle,
+    tourId: 'sidebar-help',
+  },
+];
+
+const intelligenceSubItems = [
+  {
+    title: 'Bots',
+    href: '/dashboard/intelligence/bots',
+    icon: Bot,
+  },
+  {
+    title: 'Brand Voices',
+    href: '/dashboard/intelligence/brand-voices',
+    icon: SlidersHorizontal,
+  },
+  {
+    title: 'Voice DNA',
+    href: '/dashboard/intelligence/voice-dna',
+    icon: Dna,
+  },
+  {
+    title: 'AI Settings',
+    href: '/dashboard/intelligence/settings',
+    icon: Settings,
   },
 ];
 
@@ -100,21 +153,35 @@ const settingsSubItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const _router = useRouter();
   const user = useUser();
   const { setUser } = useUserActions();
+  const { actions: authActions } = useAuthStore();
+  const { isMobile, setOpenMobile } = useSidebar();
   const [credits, setCredits] = useState({ remaining: 0 });
+
+  const closeMobileSidebar = useCallback(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
   const isSettingsActive = pathname.startsWith('/dashboard/settings');
   const isCreditsActive = pathname.startsWith('/dashboard/credits');
+  const isIntelligenceActive = pathname.startsWith('/dashboard/intelligence');
 
   const handleLogout = async () => {
     try {
       await AuthApi.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch (_error) {
+      // ignore — even if the API call fails, clear local state and redirect
     } finally {
+      analytics.track('user_logged_out', {});
+      analytics.reset();
+      // Clear all client-side auth state
       setUser(null);
-      router.push('/login');
+      authActions.clearAuth();
+      // Use a full page navigation so the browser sends the cleared cookie
+      // to the middleware — router.push() is client-side and can race against
+      // the Set-Cookie header from the logout response.
+      window.location.href = '/login';
     }
   };
 
@@ -128,31 +195,30 @@ export function AppSidebar() {
             remaining: response.data.available_credits,
           }));
         }
-      } catch (error) {
-        console.error('Failed to fetch credits:', error);
+      } catch (_error) {
+        // console.error('Failed to fetch credits:', error);
       }
     }
     fetchCredits();
   }, []);
 
-  const isLowCredits = credits.remaining < 50;
+  const isLowCredits = credits.remaining < 100;
 
   return (
     <Sidebar className='border-r border-border/50'>
       {/* Header with Logo */}
       <SidebarHeader className='p-5 pb-4'>
-        <Link href='/dashboard' className='flex items-center gap-3'>
-          <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20'>
-            <Sparkles className='h-5 w-5 text-primary-foreground' />
-          </div>
-          <span className='text-lg font-semibold tracking-tight'>
-            PostEngageAI
-          </span>
-        </Link>
+        <AppLogo
+          variant='wordmark'
+          colorScheme='auto'
+          height={28}
+          href='/dashboard'
+          priority
+        />
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className='px-2'>
+      <SidebarContent className='px-2' data-tour='sidebar-nav'>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -167,7 +233,7 @@ export function AppSidebar() {
                   item.href === '/dashboard' ? isExactDashboard : isActive;
 
                 return (
-                  <SidebarMenuItem key={item.href}>
+                  <SidebarMenuItem key={item.href} data-tour={item.tourId}>
                     <SidebarMenuButton
                       asChild
                       isActive={finalActive}
@@ -177,7 +243,7 @@ export function AppSidebar() {
                           'bg-primary/10 text-primary font-medium shadow-sm'
                       )}
                     >
-                      <Link href={item.href}>
+                      <Link href={item.href} onClick={closeMobileSidebar}>
                         <item.icon
                           className={cn(
                             'h-4 w-4',
@@ -191,9 +257,67 @@ export function AppSidebar() {
                 );
               })}
 
+              {/* Intelligence Section */}
+              <Collapsible asChild defaultOpen={isIntelligenceActive}>
+                <SidebarMenuItem data-tour='sidebar-intelligence'>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isIntelligenceActive}
+                      className={cn(
+                        'h-10 w-full rounded-lg transition-all duration-200',
+                        isIntelligenceActive &&
+                          'bg-primary/10 text-primary font-medium shadow-sm'
+                      )}
+                    >
+                      <Bot
+                        className={cn(
+                          'h-4 w-4',
+                          isIntelligenceActive && 'text-primary'
+                        )}
+                      />
+                      <span>Intelligence</span>
+                      <ChevronDown
+                        className={cn(
+                          'ml-auto h-4 w-4 transition-transform duration-200',
+                          isIntelligenceActive && 'rotate-180'
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className='mt-1 ml-4 border-l border-border/50 pl-2'>
+                      {intelligenceSubItems.map(subItem => {
+                        const isSubActive = pathname === subItem.href;
+                        return (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isSubActive}
+                              className={cn(
+                                'h-9 rounded-md transition-all duration-200',
+                                isSubActive &&
+                                  'bg-primary/10 text-primary font-medium'
+                              )}
+                            >
+                              <Link
+                                href={subItem.href}
+                                onClick={closeMobileSidebar}
+                              >
+                                <subItem.icon className='h-4 w-4 mr-2' />
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
               {/* Credits Section */}
               <Collapsible asChild defaultOpen={isCreditsActive}>
-                <SidebarMenuItem>
+                <SidebarMenuItem data-tour='sidebar-credits'>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       isActive={isCreditsActive}
@@ -233,7 +357,10 @@ export function AppSidebar() {
                                   'bg-primary/10 text-primary font-medium'
                               )}
                             >
-                              <Link href={subItem.href}>
+                              <Link
+                                href={subItem.href}
+                                onClick={closeMobileSidebar}
+                              >
                                 <subItem.icon className='h-4 w-4 mr-2' />
                                 <span>{subItem.title}</span>
                               </Link>
@@ -287,7 +414,10 @@ export function AppSidebar() {
                                   'bg-primary/10 text-primary font-medium'
                               )}
                             >
-                              <Link href={subItem.href}>
+                              <Link
+                                href={subItem.href}
+                                onClick={closeMobileSidebar}
+                              >
                                 <subItem.icon className='h-3.5 w-3.5' />
                                 <span>{subItem.title}</span>
                               </Link>
@@ -306,30 +436,47 @@ export function AppSidebar() {
 
       {/* Footer with Credits & User */}
       <SidebarFooter className='p-4 space-y-3'>
-        {/* Credits Card */}
-        <Link
-          href='/dashboard/credits'
-          className='block rounded-xl bg-secondary/50 border border-border/50 p-3 hover:bg-secondary/70 transition-colors'
-        >
-          <div className='flex items-center justify-between mb-2'>
-            <span className='text-xs font-medium text-muted-foreground uppercase tracking-wider'>
-              Credits
-            </span>
-            <Zap
-              className={cn(
-                'h-4 w-4',
-                isLowCredits ? 'text-warning' : 'text-primary'
-              )}
-            />
+        {/* Credits + Notification Bell row */}
+        <div className='flex items-stretch gap-2'>
+          <Link
+            href='/dashboard/credits'
+            onClick={closeMobileSidebar}
+            className='flex-1 rounded-xl bg-secondary/50 border border-border/50 p-3 hover:bg-secondary/70 transition-colors'
+          >
+            <div className='flex items-center justify-between mb-2'>
+              <span className='text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                Credits
+              </span>
+              <Zap
+                className={cn(
+                  'h-4 w-4',
+                  isLowCredits ? 'text-warning' : 'text-primary'
+                )}
+              />
+            </div>
+            <div className='flex items-baseline gap-1'>
+              <span
+                className={cn(
+                  'text-2xl font-bold font-mono',
+                  isLowCredits && 'text-orange-500'
+                )}
+              >
+                {credits.remaining}
+              </span>
+            </div>
+            {isLowCredits && (
+              <p className='text-xs text-orange-600 font-medium mt-1'>
+                Low balance — top up to keep bots running
+              </p>
+            )}
+          </Link>
+          {/* Notification Bell */}
+          <div className='flex items-center justify-center rounded-xl bg-secondary/50 border border-border/50 px-2 hover:bg-secondary/70 transition-colors'>
+            <NotificationBell />
           </div>
-          <div className='flex items-baseline gap-1'>
-            <span className='text-2xl font-bold font-mono'>
-              {credits.remaining}
-            </span>
-          </div>
-        </Link>
+        </div>
 
-        {/* User Dropdown */}
+        {/* User Dropdown (replaces old Credits Card position) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className='flex w-full items-center gap-3 rounded-xl bg-secondary/30 border border-border/50 p-3 hover:bg-secondary/50 transition-colors text-left'>
@@ -365,6 +512,7 @@ export function AppSidebar() {
             <DropdownMenuItem asChild>
               <Link
                 href='/dashboard/settings'
+                onClick={closeMobileSidebar}
                 className='flex items-center gap-2'
               >
                 <Settings className='h-4 w-4' />
@@ -374,6 +522,7 @@ export function AppSidebar() {
             <DropdownMenuItem asChild>
               <Link
                 href='/dashboard/credits'
+                onClick={closeMobileSidebar}
                 className='flex items-center gap-2'
               >
                 <CreditCard className='h-4 w-4' />
@@ -381,7 +530,11 @@ export function AppSidebar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href='/dashboard/help' className='flex items-center gap-2'>
+              <Link
+                href='/dashboard/help'
+                onClick={closeMobileSidebar}
+                className='flex items-center gap-2'
+              >
                 <HelpCircle className='h-4 w-4' />
                 Help & Support
               </Link>

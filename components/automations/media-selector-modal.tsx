@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Media } from '@/lib/api/media';
-import { InstagramMediaApi } from '@/lib/api/instagram/media';
+import { InstagramMediaApi, GetMediaResponse } from '@/lib/api/instagram/media';
+import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/components/ui/use-toast';
 import Image from 'next/image';
 
@@ -71,20 +72,22 @@ export function MediaSelectorModal({
       const instagramMedia = response.data || [];
       const pagination = response.pagination;
 
-      const mappedMedia: Media[] = instagramMedia.map((item: any) => ({
-        id: item.id,
-        name: item.caption || 'Instagram Media',
-        url: item.media_url || item.permalink || '',
-        thumbnail_url: item.thumbnail_url || item.media_url,
-        mime_type:
-          item.media_type === 'VIDEO' || item.media_type === 'REELS'
-            ? 'video/mp4'
-            : 'image/jpeg',
-        size: 0,
-        description: item.caption,
-        created_at: item.timestamp,
-        updated_at: item.timestamp,
-      }));
+      const mappedMedia: Media[] = instagramMedia.map(
+        (item: GetMediaResponse) => ({
+          id: item.id,
+          name: item.caption || 'Instagram Media',
+          url: item.media_url || item.permalink || '',
+          thumbnail_url: item.thumbnail_url || item.media_url,
+          mime_type:
+            item.media_type === 'VIDEO' || item.media_type === 'REELS'
+              ? 'video/mp4'
+              : 'image/jpeg',
+          size: 0,
+          description: item.caption,
+          created_at: item.timestamp,
+          updated_at: item.timestamp,
+        })
+      );
 
       if (isInitialLoad) {
         setMediaList(mappedMedia);
@@ -94,10 +97,10 @@ export function MediaSelectorModal({
 
       setNextCursor(pagination?.next_cursor || null);
     } catch (error) {
-      console.error('Failed to fetch media:', error);
+      const err = parseApiError(error);
       toast({
-        title: 'Error',
-        description: 'Failed to load media. Please try again.',
+        title: err.title,
+        description: err.message,
         variant: 'destructive',
       });
     } finally {

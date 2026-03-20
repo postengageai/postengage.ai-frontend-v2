@@ -2,7 +2,6 @@ import { httpClient, SuccessResponse } from '../http/client';
 import {
   AutomationPlatformType,
   AutomationStatusType,
-  AutomationExecutionModeType,
   AutomationTriggerTypeType,
   AutomationTriggerSourceType,
   AutomationTriggerScopeType,
@@ -17,7 +16,6 @@ const AUTOMATIONS_BASE_URL = '/api/v1/automations';
 
 export type AutomationPlatform = AutomationPlatformType;
 export type AutomationStatus = AutomationStatusType;
-export type AutomationExecutionMode = AutomationExecutionModeType;
 
 export type AutomationTriggerType = AutomationTriggerTypeType;
 export type AutomationTriggerSource = AutomationTriggerSourceType;
@@ -70,11 +68,16 @@ export interface SendDmMediaMessage {
 
 export type SendDmMessage = SendDmTextMessage | SendDmMediaMessage;
 
-export interface SendDmTextPayload {
+export interface SendDmBasePayload {
+  text?: string;
+  use_ai_reply?: boolean;
+}
+
+export interface SendDmTextPayload extends SendDmBasePayload {
   message: SendDmTextMessage;
 }
 
-export interface SendDmMediaPayload {
+export interface SendDmMediaPayload extends SendDmBasePayload {
   message: SendDmMediaMessage;
   attachment_id?: string;
 }
@@ -83,30 +86,18 @@ export type SendDmPayload = SendDmTextPayload | SendDmMediaPayload;
 
 export interface ReplyCommentPayload {
   text: string;
-  variations?: string[];
-  hide_comment?: boolean;
+  use_ai_reply?: boolean;
 }
 
 export interface PrivateReplyPayload {
   text: string;
-}
-
-export interface AddTagPayload {
-  tag_name: string;
-  create_if_missing?: boolean;
-}
-
-export interface NotifyAdminPayload {
-  message: string;
-  email?: string;
+  use_ai_reply?: boolean;
 }
 
 export type AutomationActionPayload =
   | ReplyCommentPayload
   | SendDmPayload
-  | PrivateReplyPayload
-  | AddTagPayload
-  | NotifyAdminPayload;
+  | PrivateReplyPayload;
 
 export interface AutomationAction {
   action_type: AutomationActionType;
@@ -114,6 +105,8 @@ export interface AutomationAction {
   delay_seconds?: number;
   status?: AutomationActionStatus;
   action_payload: AutomationActionPayload;
+  /** Per-action bot override. Takes precedence over the automation-level bot_id. */
+  bot_id?: string;
 }
 
 export interface AutomationActionResponse extends AutomationAction {
@@ -144,17 +137,17 @@ export interface AutomationConditionResponse extends AutomationCondition {
   created_at: string;
   updated_at: string;
 }
-
 export interface CreateAutomationRequest {
   name: string;
   description?: string;
+  labels?: string[];
   social_account_id: string;
+  bot_id?: string;
   platform: AutomationPlatform;
   status?: AutomationStatus;
-  execution_mode: AutomationExecutionMode;
   trigger: AutomationTrigger;
+  conditions: AutomationCondition[];
   actions: AutomationAction[];
-  conditions?: AutomationCondition[];
   is_template?: boolean;
   template_category?: string;
   template_tags?: string[];
@@ -199,12 +192,11 @@ export interface Automation {
   id: string;
   name: string;
   description?: string;
+  labels?: string[];
   platform: AutomationPlatform;
   status: AutomationStatus;
-  execution_mode: AutomationExecutionMode;
+  bot_id?: string;
   paused_reason?: string | null;
-  scheduled_time?: string | null;
-  delayed_minutes?: number | null;
   execution_count: number;
   success_count: number;
   failure_count: number;
@@ -230,11 +222,52 @@ export interface AutomationListParams {
   limit?: number;
 }
 
+export interface AutomationDailyStats {
+  date: string; // 'Mon' | 'Tue' etc
+  successful: number;
+  failed: number;
+  skipped: number;
+}
+
+export interface AutomationStatsResponse {
+  total_executions: number;
+  successful: number;
+  failed: number;
+  skipped: number;
+  avg_duration_ms: number;
+  credits_used: number;
+  daily: AutomationDailyStats[];
+  action_performance: Array<{
+    action_type: string;
+    step: number;
+    timing: string;
+    sent: number;
+    success: number;
+    rate: number;
+    avg_time_ms: number;
+  }>;
+  peak_activity_hours?: Record<string, Record<string, number>>;
+  period: '7d' | '30d' | '90d';
+}
+
+export interface AutomationHistoryResponse {
+  data: AutomationExecution[];
+  pagination: {
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
 export interface AutomationExecution {
   _id: string;
   automation_id: string;
   trigger_event_id: string;
   status: 'success' | 'failed' | 'skipped' | 'partial_success';
+  error_code?: string;
   error_message?: string;
   duration_ms: number;
   executed_at: string;
@@ -247,6 +280,15 @@ export interface AutomationExecution {
     [key: string]: unknown;
   };
   credits_used?: number;
+  actions_run?: string[];
+  actions_detail?: Array<{
+    action_type: string;
+    status: 'success' | 'skipped' | 'failed';
+    reply_text?: string;
+    skipped_reason?: string;
+    credits_used: number;
+  }>;
+  trigger_type?: string;
 }
 
 export class AutomationsApi {
@@ -294,13 +336,56 @@ export class AutomationsApi {
   static async getHistory(
     id: string,
     page = 1,
-    limit = 10
-  ): Promise<SuccessResponse<AutomationExecution[]>> {
-    const response = await httpClient.get<AutomationExecution[]>(
+    limit = 10,
+    status?: string
+  ): Promise<SuccessResponse<AutomationHistoryResponse>> {
+    const response = await httpClient.get<AutomationHistoryResponse>(
       `${AUTOMATIONS_BASE_URL}/${id}/history`,
       {
-        params: { page, limit },
+        params: {
+          page,
+          limit,
+          ...(status && status !== 'all' ? { status } : {}),
+        },
       }
+    );
+    return response.data!;
+  }
+
+  static async retryExecution(
+    automationId: string,
+    executionId: string
+  ): Promise<SuccessResponse<{ message: string; execution_id: string }>> {
+    const response = await httpClient.post<{
+      message: string;
+      execution_id: string;
+    }>(
+      `${AUTOMATIONS_BASE_URL}/${automationId}/executions/${executionId}/retry`
+    );
+    return response.data!;
+  }
+
+  static async getStats(
+    id: string,
+    period: '7d' | '30d' | '90d' = '7d'
+  ): Promise<SuccessResponse<AutomationStatsResponse>> {
+    const response = await httpClient.get<AutomationStatsResponse>(
+      `${AUTOMATIONS_BASE_URL}/${id}/stats`,
+      { params: { period } }
+    );
+    return response.data!;
+  }
+
+  static async activate(id: string): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/activate`
+    );
+    return response.data!;
+  }
+
+  static async deactivate(id: string): Promise<SuccessResponse<Automation>> {
+    const response = await httpClient.post<Automation>(
+      `${AUTOMATIONS_BASE_URL}/${id}/deactivate`
     );
     return response.data!;
   }
@@ -313,4 +398,8 @@ export const automationsApi = {
   get: AutomationsApi.get,
   list: AutomationsApi.list,
   getHistory: AutomationsApi.getHistory,
+  getStats: AutomationsApi.getStats,
+  activate: AutomationsApi.activate,
+  deactivate: AutomationsApi.deactivate,
+  retryExecution: AutomationsApi.retryExecution,
 };

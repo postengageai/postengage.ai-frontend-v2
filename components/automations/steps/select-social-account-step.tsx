@@ -10,6 +10,7 @@ import {
   SocialAccountsApi,
   type SocialAccount,
 } from '@/lib/api/social-accounts';
+import { parseApiError } from '@/lib/http/errors';
 import { useToast } from '@/components/ui/use-toast';
 import { AutomationPlatform } from '@/lib/constants/automations';
 
@@ -38,10 +39,11 @@ export function SelectSocialAccountStep({
       try {
         const response = await SocialAccountsApi.list({ status: 'connected' });
         setAccounts(response.data ?? []);
-      } catch {
+      } catch (error) {
+        const err = parseApiError(error);
         toast({
-          title: 'Error',
-          description: 'Failed to load social accounts. Please try again.',
+          title: err.title,
+          description: err.message,
           variant: 'destructive',
         });
       } finally {
@@ -102,7 +104,9 @@ export function SelectSocialAccountStep({
           <Button
             size='sm'
             className='sm:size-default'
-            onClick={() => (window.location.href = '/dashboard/settings')}
+            onClick={() =>
+              (window.location.href = '/dashboard/settings/social-accounts')
+            }
           >
             Connect Account
           </Button>

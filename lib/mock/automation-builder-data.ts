@@ -34,7 +34,6 @@ export const mockAutomation: AutomationBuilder = {
   description: 'Automatically reply and DM users who comment on our posts',
   platform: 'instagram',
   status: 'active',
-  executionMode: 'real_time',
 
   trigger: {
     id: 'trg_1',
@@ -129,7 +128,6 @@ export const mockEmptyAutomation: AutomationBuilder = {
   name: 'Untitled Automation',
   platform: 'instagram',
   status: 'draft',
-  executionMode: 'real_time',
 
   trigger: {
     id: 'trg_new',
@@ -186,10 +184,7 @@ export const mockBuilderUIState: BuilderUIState = {
 export function getTriggerTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     new_comment: 'New Comment',
-    keyword_mention: 'Keyword Mention',
     new_dm: 'New DM',
-    story_reply: 'Story Reply',
-    new_follower: 'New Follower',
   };
   return labels[type] || type;
 }
@@ -199,9 +194,7 @@ export function getActionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     reply_comment: 'Reply to Comment',
     send_dm: 'Send DM',
-    like_comment: 'Like Comment',
-    hide_comment: 'Hide Comment',
-    add_tag: 'Add Tag',
+    private_reply: 'Private Reply',
   };
   return labels[type] || type;
 }

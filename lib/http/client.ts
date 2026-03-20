@@ -6,6 +6,7 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosHeaders,
 } from 'axios';
+import { ErrorCodes, INLINE_AUTH_ERROR_CODES } from '../error-codes';
 
 export interface PaginationMeta {
   total?: number;
@@ -42,7 +43,6 @@ import {
   BackendErrorResponse,
   ErrorResponseDetails,
 } from './errors';
-
 // Callback for handling 401 responses
 let onUnauthorized: (() => void) | null = null;
 
@@ -142,8 +142,20 @@ export class HttpClient {
 
         // Handle 401 Unauthorized responses
         if (error.response?.status === 401) {
-          // Call the unauthorized handler if set
-          if (onUnauthorized) {
+          // Only fire the global logout handler for genuine session-level 401s
+          // (expired token, missing token, revoked token).
+          //
+          // Domain-level 401s (wrong TOTP code, wrong password, etc.) should
+          // NOT trigger a logout — the calling component handles them inline.
+          // The set of codes to skip is defined in `lib/error-codes.ts`.
+          const responseCode = (
+            error.response.data as { error?: { code?: string } }
+          )?.error?.code;
+
+          if (
+            !INLINE_AUTH_ERROR_CODES.has(responseCode ?? '') &&
+            onUnauthorized
+          ) {
             onUnauthorized();
           }
         }
@@ -180,12 +192,13 @@ export class HttpClient {
     } catch (error) {
       const axiosError = error as AxiosError;
 
-      // Don't retry on client errors (4xx) except 429 (Too Many Requests)
+      // Don't retry on client errors (4xx).
+      // 429 (Too Many Requests) must NOT be retried — retrying a rate-limited
+      // request immediately makes the problem worse and creates a flood cascade.
       if (
         axiosError.response &&
         axiosError.response.status >= 400 &&
-        axiosError.response.status < 500 &&
-        axiosError.response.status !== 429
+        axiosError.response.status < 500
       ) {
         throw error;
       }
@@ -214,8 +227,11 @@ export class HttpClient {
       success?: boolean;
       error?: {
         code?: string;
+        type?: string;
         message?: string;
-        details?: Record<string, unknown>;
+        // New format: array of field errors for validation failures.
+        // Old format (kept for compat): object with documentation_url etc.
+        details?: unknown;
         documentation_url?: string;
       };
       meta?: {
@@ -231,27 +247,44 @@ export class HttpClient {
       return undefined;
     }
 
-    const rawDetails = (payload.error.details ?? {}) as Record<string, unknown>;
+    const rawDetails = payload.error.details;
 
-    const documentationUrlFromError =
-      typeof payload.error.documentation_url === 'string'
-        ? payload.error.documentation_url
-        : undefined;
-    const documentationUrlFromDetails =
-      typeof rawDetails.documentation_url === 'string'
-        ? rawDetails.documentation_url
-        : undefined;
+    // ── New format: details is an array of { field, message, code } ──────────
+    const fieldErrors: import('./errors').FieldError[] = Array.isArray(
+      rawDetails
+    )
+      ? (rawDetails as import('./errors').FieldError[])
+      : [];
+
+    // ── Build a flat field→message map for easy form library integration ─────
+    const fields: Record<string, string> = {};
+    for (const fe of fieldErrors) {
+      if (fe.field) fields[fe.field] = fe.message;
+    }
+
+    // ── documentation_url: check error level, then legacy details object ─────
+    const detailsObj =
+      !Array.isArray(rawDetails) &&
+      typeof rawDetails === 'object' &&
+      rawDetails !== null
+        ? (rawDetails as Record<string, unknown>)
+        : {};
 
     const documentationUrl =
-      documentationUrlFromError ??
-      documentationUrlFromDetails ??
+      (typeof payload.error.documentation_url === 'string'
+        ? payload.error.documentation_url
+        : undefined) ??
+      (typeof detailsObj.documentation_url === 'string'
+        ? detailsObj.documentation_url
+        : undefined) ??
       'https://docs.postengage.ai/errors';
 
     const details: ErrorResponseDetails = {
       documentation_url: documentationUrl,
-      action: rawDetails.action as string | undefined,
-      support_reference: rawDetails.support_reference as string | undefined,
-      ...rawDetails,
+      fields: Object.keys(fields).length > 0 ? fields : undefined,
+      action: detailsObj.action as string | undefined,
+      support_reference: detailsObj.support_reference as string | undefined,
+      // Include meta for traceability
       request_id: payload.meta?.request_id,
       api_version: payload.meta?.api_version,
       path: payload.meta?.path,
@@ -260,7 +293,9 @@ export class HttpClient {
 
     return {
       message: payload.error.message ?? 'An unexpected error occurred',
-      code: payload.error.code ?? 'internal_server_error',
+      code: payload.error.code ?? ErrorCodes.INTERNAL.UNEXPECTED,
+      type: payload.error.type,
+      fieldErrors: fieldErrors.length > 0 ? fieldErrors : undefined,
       details,
       timestamp: payload.meta?.timestamp ?? new Date().toISOString(),
     };

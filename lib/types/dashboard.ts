@@ -69,3 +69,20 @@ export interface PerformanceMetrics {
   conversion_rate: number;
   average_response_time: number;
 }
+
+export interface DailyImpact {
+  replies_handled_today: number;
+  hours_saved_today: number;
+  hot_leads_today: number;
+  weekly_replies: number;
+  weekly_replies_growth_pct: number;
+}
+
+export interface Activity {
+  id: string;
+  type: string;
+  description?: string;
+  timestamp: Date;
+  automationName?: string;
+  creditCost: number;
+}

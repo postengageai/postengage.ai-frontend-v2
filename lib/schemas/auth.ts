@@ -25,6 +25,12 @@ export const UserSchema = z.object({
   timezone: z.string().nullable(),
   language: z.string(),
   role: z.string(),
+  tour_enabled: z.boolean().optional().default(true),
+  tours_seen: z.array(z.string()).optional().default([]),
+  tours_skipped: z.array(z.string()).optional().default([]),
+  onboarding_completed_at: z.string().nullable().optional().default(null),
+  sound_notifications_enabled: z.boolean().optional().default(false),
+  totp_enabled: z.boolean().optional().default(false),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -54,6 +60,8 @@ export const SignupRequestSchema = z.object({
       /[^A-Za-z0-9]/,
       'Password must contain at least one special character'
     ),
+  /** Optional referral code from an affiliate link */
+  ref: z.string().max(20).optional(),
 });
 
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
@@ -67,13 +75,49 @@ export const SignupResponseSchema = z.object({
 
 export type SignupResponse = z.infer<typeof SignupResponseSchema>;
 
-// Login response schema
-export const LoginResponseSchema = z.object({
+// Login response schema — discriminated union for two-step 2FA flow
+export const LoginResponseSchema = z.discriminatedUnion('requires_2fa', [
+  // Step 1 — 2FA required: frontend redirects to TOTP page
+  z.object({
+    requires_2fa: z.literal(true),
+    challenge_token: z.string(),
+    /** Unix timestamp (ms) when the challenge token expires — used for countdown.
+     *  Optional for backward compat: older backend builds omit it; in that case
+     *  the frontend skips the timer rather than failing. */
+    challenge_expires_at: z.number().optional(),
+  }),
+  // Step 1 — No 2FA: login complete, user returned
+  z.object({
+    requires_2fa: z.literal(false),
+    user: UserSchema,
+    message: z.string(),
+  }),
+]);
+
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+
+// 2FA TOTP challenge request
+export const TotpChallengeRequestSchema = z.object({
+  challenge_token: z.string(),
+  code: z.string().length(6),
+});
+
+export type TotpChallengeRequest = z.infer<typeof TotpChallengeRequestSchema>;
+
+// 2FA TOTP challenge response (same as a successful login)
+export const TotpChallengeResponseSchema = z.object({
   user: UserSchema,
   message: z.string(),
 });
 
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type TotpChallengeResponse = z.infer<typeof TotpChallengeResponseSchema>;
+
+// 2FA setup response
+export const TotpSetupResponseSchema = z.object({
+  otpauth_url: z.string(),
+});
+
+export type TotpSetupResponse = z.infer<typeof TotpSetupResponseSchema>;
 
 // Verify email request schema
 export const VerifyEmailRequestSchema = z.object({

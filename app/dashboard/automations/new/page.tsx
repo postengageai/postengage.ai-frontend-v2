@@ -1,34 +1,20 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/components/ui/use-toast';
-import { AutomationWizard } from '@/components/automations/automation-wizard';
+import { AutomationFormPage } from '@/components/automations/automation-form-page';
 import {
   AutomationsApi,
   type CreateAutomationRequest,
 } from '@/lib/api/automations';
+import { toast } from 'sonner';
 
 export default function NewAutomationPage() {
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleComplete = async (request: CreateAutomationRequest) => {
-    try {
-      await AutomationsApi.create(request);
-
-      toast({
-        title: 'Success',
-        description: 'Automation created successfully',
-      });
-
-      router.push('/dashboard/automations');
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to create automation',
-        variant: 'destructive',
-      });
-    }
+    await AutomationsApi.create(request);
+    toast.success('Automation created successfully');
+    router.push('/dashboard/automations');
   };
 
   const handleCancel = () => {
@@ -36,6 +22,6 @@ export default function NewAutomationPage() {
   };
 
   return (
-    <AutomationWizard onComplete={handleComplete} onCancel={handleCancel} />
+    <AutomationFormPage onComplete={handleComplete} onCancel={handleCancel} />
   );
 }

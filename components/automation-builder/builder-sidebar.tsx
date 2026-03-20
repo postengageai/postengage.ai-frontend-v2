@@ -5,9 +5,6 @@ import {
   Instagram,
   Play,
   Pause,
-  Clock,
-  Zap,
-  Timer,
   TrendingUp,
   TrendingDown,
   CheckCircle2,
@@ -21,18 +18,10 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type {
   AutomationBuilder,
-  ExecutionMode,
   BuilderUIState,
 } from '@/lib/types/automation-builder';
 
@@ -160,63 +149,6 @@ export function BuilderSidebar({
           </div>
         </div>
 
-        {/* Execution Mode */}
-        <div className='space-y-2'>
-          <Label className='text-xs text-muted-foreground uppercase tracking-wide'>
-            Execution Mode
-          </Label>
-          <Select
-            value={automation.executionMode}
-            onValueChange={(value: ExecutionMode) =>
-              onUpdate({ executionMode: value })
-            }
-          >
-            <SelectTrigger className='bg-background/50'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='real_time'>
-                <div className='flex items-center gap-2'>
-                  <Zap className='h-4 w-4 text-amber-500' />
-                  <span>Real-time</span>
-                </div>
-              </SelectItem>
-              <SelectItem value='delayed'>
-                <div className='flex items-center gap-2'>
-                  <Timer className='h-4 w-4 text-blue-500' />
-                  <span>Delayed</span>
-                </div>
-              </SelectItem>
-              <SelectItem value='scheduled'>
-                <div className='flex items-center gap-2'>
-                  <Clock className='h-4 w-4 text-purple-500' />
-                  <span>Scheduled</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {automation.executionMode === 'delayed' && (
-            <div className='pt-2'>
-              <Label className='text-xs text-muted-foreground'>
-                Delay (seconds)
-              </Label>
-              <Input
-                type='number'
-                value={automation.delaySeconds || 30}
-                onChange={e =>
-                  onUpdate({
-                    delaySeconds: Number.parseInt(e.target.value) || 30,
-                  })
-                }
-                className='mt-1 bg-background/50'
-                min={1}
-                max={3600}
-              />
-            </div>
-          )}
-        </div>
-
         {/* Description */}
         <div className='space-y-2'>
           <Label className='text-xs text-muted-foreground uppercase tracking-wide'>
@@ -306,7 +238,7 @@ export function BuilderSidebar({
                 Est. per execution
               </span>
               <Badge variant='secondary' className='font-mono'>
-                {automation.estimatedCreditCost} credits
+                ~{automation.estimatedCreditCost} credits
               </Badge>
             </div>
           </CardContent>

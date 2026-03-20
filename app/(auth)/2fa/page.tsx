@@ -1,0 +1,542 @@
+'use client';
+
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Loader2,
+  ShieldCheck,
+  AlertCircle,
+  ArrowLeft,
+  Clock,
+} from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { AuthLogo } from '@/components/auth/auth-logo';
+import { AuthApi } from '@/lib/api/auth';
+import { useAuthStore } from '@/lib/auth/store';
+import { useUserStore } from '@/lib/user/store';
+import { ApiError, parseApiError } from '@/lib/http/errors';
+import { ErrorCodes } from '@/lib/error-codes';
+import { cn } from '@/lib/utils';
+
+// ── Constants ───────────────────────────────────────────────────────────────────
+const DIGITS = 6;
+// NOTE: No hardcoded TTL here — the actual expiry always comes from the backend
+// via `challenge_expires_at` stored in sessionStorage. This way the frontend
+// stays correct even if the backend changes the challenge duration.
+
+// ── OTP digit input ────────────────────────────────────────────────────────────
+
+interface OtpInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  hasError?: boolean;
+}
+
+function OtpInput({ value, onChange, disabled, hasError }: OtpInputProps) {
+  const inputs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const digits = Array.from({ length: DIGITS }, (_, i) => value[i] ?? '');
+
+  const focus = (index: number) => {
+    inputs.current[index]?.focus();
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const next = digits.map((d, i) => (i === index ? '' : d));
+      if (next[index] === '') {
+        if (index > 0) focus(index - 1);
+      }
+      onChange(next.join(''));
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      focus(index - 1);
+    } else if (e.key === 'ArrowRight' && index < DIGITS - 1) {
+      focus(index + 1);
+    }
+  };
+
+  const handleInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    if (!raw) return;
+
+    if (raw.length > 1) {
+      const pasted = raw.slice(0, DIGITS);
+      onChange(pasted.padEnd(DIGITS, '').slice(0, DIGITS));
+      focus(Math.min(pasted.length, DIGITS - 1));
+      return;
+    }
+
+    const next = digits.map((d, i) => (i === index ? raw[0] : d));
+    onChange(next.join(''));
+    if (index < DIGITS - 1) focus(index + 1);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '');
+    if (!pasted) return;
+    const code = pasted.slice(0, DIGITS).padEnd(DIGITS, '');
+    onChange(code);
+    focus(Math.min(pasted.length, DIGITS - 1));
+  };
+
+  return (
+    <div className='flex gap-2.5 justify-center' onPaste={handlePaste}>
+      {digits.map((digit, i) => (
+        <input
+          key={i}
+          ref={el => {
+            inputs.current[i] = el;
+          }}
+          type='text'
+          inputMode='numeric'
+          pattern='[0-9]*'
+          maxLength={1}
+          value={digit}
+          disabled={disabled}
+          autoFocus={i === 0}
+          autoComplete='one-time-code'
+          onChange={e => handleInput(e, i)}
+          onKeyDown={e => handleKeyDown(e, i)}
+          className={cn(
+            'h-14 w-12 rounded-xl border bg-card text-center text-xl font-bold tracking-tight',
+            'transition-all duration-150 outline-none',
+            'focus:ring-2 focus:ring-primary focus:border-primary',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            hasError
+              ? 'border-error text-error ring-1 ring-error/40 animate-shake'
+              : digit
+                ? 'border-primary/60 text-foreground'
+                : 'border-border text-foreground'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Countdown timer ─────────────────────────────────────────────────────────────
+
+function useCountdown(expiresAt: number | null) {
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  // Capture the remaining seconds at the moment the timer first starts —
+  // used as the "total" for the progress bar without any hardcoded TTL.
+  const initialSecondsRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (expiresAt === null) return;
+
+    const compute = () =>
+      Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+
+    const first = compute();
+    initialSecondsRef.current = first;
+    setSecondsLeft(first);
+
+    const interval = setInterval(() => {
+      const remaining = compute();
+      setSecondsLeft(remaining);
+      if (remaining === 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  return { secondsLeft, initialSeconds: initialSecondsRef.current };
+}
+
+interface CountdownBadgeProps {
+  secondsLeft: number;
+  /** Total seconds when the timer started — drives the progress bar width */
+  totalSeconds: number;
+}
+
+function CountdownBadge({ secondsLeft, totalSeconds }: CountdownBadgeProps) {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+  // Progress drains from 1 → 0 based on the actual token lifetime, not a
+  // hardcoded constant. If the backend ever changes the TTL, this still works.
+  const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
+
+  const isUrgent = secondsLeft <= 120; // < 2 min
+  const isWarning = secondsLeft <= 600 && secondsLeft > 120; // 2-10 min
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border',
+        'transition-colors duration-500',
+        secondsLeft === 0
+          ? 'border-error/40 bg-error/10 text-error'
+          : isUrgent
+            ? 'border-error/40 bg-error/10 text-error'
+            : isWarning
+              ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+              : 'border-border bg-muted/30 text-muted-foreground'
+      )}
+    >
+      <Clock className='h-3.5 w-3.5 shrink-0' />
+      <span className='tabular-nums'>{display}</span>
+      {/* Thin progress bar */}
+      <div className='flex-1 h-1 rounded-full bg-border/50 overflow-hidden min-w-[40px]'>
+        <div
+          className={cn(
+            'h-full rounded-full transition-all duration-1000',
+            secondsLeft === 0
+              ? 'bg-error w-0'
+              : isUrgent
+                ? 'bg-error'
+                : isWarning
+                  ? 'bg-amber-400'
+                  : 'bg-primary'
+          )}
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+      <span className='text-xs opacity-70'>
+        {secondsLeft === 0 ? 'Expired' : 'remaining'}
+      </span>
+    </div>
+  );
+}
+
+// ── Inner page ─────────────────────────────────────────────────────────────────
+
+function TwoFactorContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') ?? '/dashboard';
+
+  const { actions } = useAuthStore();
+  const { actions: userActions } = useUserStore();
+
+  const [code, setCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  // Read challenge token + expiry from sessionStorage
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [tokenMissing, setTokenMissing] = useState(false);
+
+  const { secondsLeft, initialSeconds } = useCountdown(expiresAt);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('totp_challenge_token');
+    const expStr = sessionStorage.getItem('totp_challenge_expires_at');
+
+    if (!token) {
+      setTokenMissing(true);
+      return;
+    }
+
+    setChallengeToken(token);
+
+    if (expStr) {
+      const exp = parseInt(expStr, 10);
+      // If already expired when we load the page, treat as missing
+      if (exp <= Date.now()) {
+        sessionStorage.removeItem('totp_challenge_token');
+        sessionStorage.removeItem('totp_challenge_expires_at');
+        setTokenMissing(true);
+        return;
+      }
+      setExpiresAt(exp);
+    }
+    // If no expiry stored (e.g. older session before this feature), we simply
+    // skip the countdown — no hardcoded fallback that could drift from backend.
+  }, []);
+
+  // Auto-redirect when timer hits 0
+  useEffect(() => {
+    if (secondsLeft === 0 && expiresAt !== null) {
+      sessionStorage.removeItem('totp_challenge_token');
+      sessionStorage.removeItem('totp_challenge_expires_at');
+      setError('Your verification session has expired. Please sign in again.');
+      setTimeout(() => router.push('/login'), 2500);
+    }
+  }, [secondsLeft, expiresAt, router]);
+
+  // Auto-submit when all 6 digits are entered
+  const handleVerify = useCallback(
+    async (currentCode: string) => {
+      if (!challengeToken) return;
+      if (currentCode.replace(/\D/g, '').length !== DIGITS) return;
+
+      setIsSubmitting(true);
+      setError(null);
+      setHasError(false);
+
+      try {
+        const response = await AuthApi.verifyTotpChallenge({
+          challenge_token: challengeToken,
+          code: currentCode,
+        });
+
+        // Success — clean up and authenticate
+        sessionStorage.removeItem('totp_challenge_token');
+        sessionStorage.removeItem('totp_challenge_expires_at');
+        const user = response.data.user;
+        userActions.setUser(user);
+        actions.setIsAuthenticated(true);
+
+        if (!user.onboarding_completed_at) {
+          router.push('/dashboard/onboarding');
+        } else {
+          router.push(redirectTo);
+        }
+        router.refresh();
+      } catch (err) {
+        setHasError(true);
+        setCode('');
+
+        if (err instanceof ApiError) {
+          // Token expired or challenge no longer valid — clear state and send
+          // the user back to login so they can restart the auth flow.
+          const CHALLENGE_EXPIRED_CODES = new Set<string>([
+            ErrorCodes.AUTH.SOCIAL_LOGIN_FAILED,
+            ErrorCodes.AUTH.SOCIAL_ACCOUNT_CONFLICT,
+            ErrorCodes.AUTH.TOTP_REQUIRED,
+          ]);
+          if (CHALLENGE_EXPIRED_CODES.has(err.code ?? '')) {
+            sessionStorage.removeItem('totp_challenge_token');
+            sessionStorage.removeItem('totp_challenge_expires_at');
+            // Use the backend's message directly — no frontend override.
+            setError(err.message);
+            setTimeout(() => router.push('/login'), 2500);
+            return;
+          }
+          const parsed = parseApiError(err);
+          setError(parsed.message);
+        } else {
+          setError('Something went wrong. Please try again.');
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [challengeToken, redirectTo, router, actions, userActions]
+  );
+
+  useEffect(() => {
+    if (code.replace(/\D/g, '').length === DIGITS && challengeToken) {
+      void handleVerify(code);
+    }
+  }, [code, challengeToken, handleVerify]);
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void handleVerify(code);
+  };
+
+  if (tokenMissing) {
+    return (
+      <div className='min-h-screen bg-background flex items-center justify-center px-4'>
+        <div className='w-full max-w-[400px] text-center space-y-5'>
+          <div className='mx-auto h-14 w-14 rounded-full bg-error/10 flex items-center justify-center'>
+            <AlertCircle className='h-7 w-7 text-error' />
+          </div>
+          <div>
+            <h2 className='text-xl font-bold text-foreground'>
+              Session not found
+            </h2>
+            <p className='mt-2 text-sm text-muted-foreground'>
+              This page requires a valid login session. Please sign in again.
+            </p>
+          </div>
+          <Button asChild className='w-full'>
+            <Link href='/login'>Back to sign in</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className='min-h-screen bg-background flex'>
+      {/* ── Left panel (desktop only) ──────────────────────────────────── */}
+      <div className='hidden lg:flex lg:w-[44%] shrink-0 relative flex-col overflow-hidden'>
+        <div className='absolute inset-0 bg-grid-faint' />
+        <div className='absolute inset-0 bg-hero-radial' />
+        <div className='absolute inset-0 bg-auth-glow-bottom' />
+
+        <div className='relative z-10 p-9'>
+          <AuthLogo />
+        </div>
+
+        <div className='relative z-10 flex-1 flex flex-col justify-center px-10 xl:px-14 pb-16'>
+          <div className='mb-6 h-16 w-16 rounded-2xl bg-white/10 backdrop-blur border border-white/15 flex items-center justify-center'>
+            <ShieldCheck className='h-8 w-8 text-white' />
+          </div>
+          <h2 className='text-[2.75rem] font-bold leading-[1.1] tracking-tight text-white mb-4'>
+            Two-factor
+            <br />
+            authentication
+          </h2>
+          <p className='text-white/55 text-base leading-relaxed max-w-xs'>
+            Your account is protected with an extra layer of security. Enter the
+            code from your authenticator app to continue.
+          </p>
+        </div>
+
+        <div className='relative z-10 px-10 xl:px-14 pb-9'>
+          <p className='text-xs text-white/35'>
+            Lost access to your authenticator?{' '}
+            <Link
+              href='/login'
+              className='text-white/55 hover:text-white/80 transition-colors'
+            >
+              Contact support
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      {/* ── Right panel ─────────────────────────────────────────────────── */}
+      <div className='flex-1 flex flex-col'>
+        <header className='flex items-center justify-between px-6 pt-6 pb-4'>
+          <div className='lg:hidden'>
+            <AuthLogo size='sm' />
+          </div>
+          <Link
+            href='/login'
+            className='flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors ml-auto'
+          >
+            <ArrowLeft className='h-3.5 w-3.5' />
+            Back to sign in
+          </Link>
+        </header>
+
+        <main className='flex-1 flex items-center justify-center px-4 py-10'>
+          <div className='w-full max-w-[420px] rounded-2xl border border-border bg-card p-5 sm:p-10 shadow-xl shadow-black/40'>
+            {/* Icon */}
+            <div className='mb-6 flex justify-center'>
+              <div className='h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center'>
+                <ShieldCheck className='h-7 w-7 text-primary' />
+              </div>
+            </div>
+
+            <h1 className='text-[1.625rem] font-bold text-foreground tracking-tight text-center'>
+              Verify your identity
+            </h1>
+            <p className='mt-2 text-sm text-muted-foreground text-center mb-6'>
+              Enter the 6-digit code from your authenticator app.
+            </p>
+
+            {/* Countdown timer — only shown when we have a real expiry from the backend */}
+            {secondsLeft !== null && initialSeconds !== null && (
+              <div className='mb-6'>
+                <CountdownBadge
+                  secondsLeft={secondsLeft}
+                  totalSeconds={initialSeconds}
+                />
+              </div>
+            )}
+
+            {/* Error banner */}
+            {error && (
+              <div className='mb-6 flex items-start gap-2.5 rounded-lg border border-error/40 bg-error-muted px-4 py-3 text-sm text-error'>
+                <AlertCircle className='h-4 w-4 mt-0.5 shrink-0' />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleManualSubmit} className='space-y-6'>
+              {/* OTP digits */}
+              <OtpInput
+                value={code}
+                onChange={setCode}
+                disabled={isSubmitting || secondsLeft === 0}
+                hasError={hasError}
+              />
+
+              {isSubmitting && (
+                <div className='flex items-center justify-center gap-2 text-sm text-muted-foreground'>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  Verifying…
+                </div>
+              )}
+
+              {!isSubmitting &&
+                code.replace(/\D/g, '').length === DIGITS &&
+                secondsLeft !== 0 && (
+                  <Button
+                    type='submit'
+                    className='w-full h-10 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[--radius-md]'
+                    disabled={isSubmitting}
+                  >
+                    Verify &amp; Sign In
+                  </Button>
+                )}
+
+              {!isSubmitting && code.replace(/\D/g, '').length < DIGITS && (
+                <p className='text-center text-xs text-muted-foreground'>
+                  Code auto-submits when all 6 digits are entered
+                </p>
+              )}
+            </form>
+
+            <p className='mt-8 text-xs text-center text-muted-foreground'>
+              Open{' '}
+              <span className='font-medium text-foreground'>
+                Google Authenticator
+              </span>
+              , <span className='font-medium text-foreground'>Authy</span>, or
+              any TOTP app and enter the current 6-digit code.
+            </p>
+          </div>
+        </main>
+
+        <footer className='px-6 pb-6 text-center'>
+          <p className='text-xs text-muted-foreground/50'>
+            <Link
+              href='https://postengage.ai/privacy'
+              className='hover:text-muted-foreground transition-colors'
+            >
+              Privacy
+            </Link>
+            <span className='mx-2'>·</span>
+            <Link
+              href='https://postengage.ai/terms'
+              className='hover:text-muted-foreground transition-colors'
+            >
+              Terms
+            </Link>
+          </p>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export default function TwoFactorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen bg-background flex items-center justify-center'>
+          <Loader2 className='h-8 w-8 animate-spin text-primary' />
+        </div>
+      }
+    >
+      <TwoFactorContent />
+    </Suspense>
+  );
+}

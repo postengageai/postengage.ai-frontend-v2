@@ -1,227 +1,114 @@
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useReducer,
-  useEffect,
-  useRef,
-} from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { AuthSession, AuthActions } from '../schemas/auth';
-import { ApiError } from '../http/errors';
+import React, { createContext, useContext, useEffect } from 'react';
 import { AuthApi } from '../api/auth';
 import { useUserStore } from '../user/store';
 import { useAuthStore } from './store';
 import { setLogoutHandler } from '../http/setup';
+import { useRouter } from 'next/navigation';
 
-// Omit user from AuthState as it is managed by UserStore
-interface AuthState extends Omit<AuthSession, 'user'> {
-  errors: {
-    loginError?: ApiError;
-    signupError?: ApiError;
-    verificationError?: ApiError;
-    resetPasswordError?: ApiError;
-  };
-}
+// ── Types ──────────────────────────────────────────────────────────────────────
 
-type AuthAction =
-  | { type: 'SET_AUTHENTICATED'; payload: boolean }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'UPDATE_LAST_ACTIVITY' }
-  | { type: 'CLEAR_AUTH' }
-  | { type: 'CLEAR_ERRORS' }
-  | {
-      type: 'SET_ERROR';
-      payload: { type: keyof AuthState['errors']; error: ApiError };
-    };
-
-const initialState: AuthState = {
-  isAuthenticated: false,
-  isLoading: true, // Start loading by default
-  lastActivity: undefined,
-  errors: {},
-};
-
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'SET_AUTHENTICATED':
-      return {
-        ...state,
-        isAuthenticated: action.payload,
-        lastActivity: action.payload ? Date.now() : undefined,
-      };
-
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
-
-    case 'UPDATE_LAST_ACTIVITY':
-      return {
-        ...state,
-        lastActivity: Date.now(),
-      };
-
-    case 'CLEAR_AUTH':
-      return {
-        ...initialState,
-        isLoading: false,
-      };
-
-    case 'CLEAR_ERRORS':
-      return {
-        ...state,
-        errors: {},
-      };
-
-    case 'SET_ERROR':
-      return {
-        ...state,
-        errors: {
-          ...state.errors,
-          [action.payload.type]: action.payload.error,
-        },
-      };
-
-    default:
-      return state;
-  }
-}
-
-interface AuthContextType extends AuthState {
-  actions: AuthActions;
-  dispatch: React.Dispatch<AuthAction>;
+interface AuthContextType {
+  /** True while the initial session check is in flight */
+  isLoading: boolean;
+  /** True once the backend confirmed a valid session */
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_ROUTES = [
-  '/login',
-  '/signup',
-  '/verify-email',
-  '/forgot-password',
-  '/reset-password',
-  '/resend-verification',
-  '/', // Landing page often public
-];
+// ── Provider ───────────────────────────────────────────────────────────────────
 
+/**
+ * AuthProvider is intentionally lean — route protection is handled server-side
+ * by middleware.ts (checks for the `access_token` cookie before rendering).
+ *
+ * This provider's only jobs are:
+ *  1. Resolve the current user from the backend once on mount
+ *  2. Expose isAuthenticated / isLoading to the rest of the app
+ *  3. Wire up the global logout handler so any 401 response clears state
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
-  const pathname = usePathname();
   const { setUser } = useUserStore(state => state.actions);
-  const { setIsAuthenticated, setLoading: setAuthLoading } = useAuthStore(
-    state => state.actions
-  );
+  const {
+    isAuthenticated,
+    isLoading,
+    actions: { setIsAuthenticated, setLoading },
+  } = useAuthStore();
 
-  // Use ref to track initialization without affecting dependency array
-  const isInitializedRef = useRef(false);
-
-  // Setup logout handler for HTTP client
+  // Wire up the HTTP-client logout handler so 401 responses clear auth state.
+  // Auth pages (/login, /2fa, /register, etc.) make unauthenticated requests by
+  // design — don't redirect to /login if we're already on one of those pages.
   useEffect(() => {
+    const AUTH_PAGES = ['/login', '/2fa', '/register', '/forgot-password'];
     setLogoutHandler(() => {
-      // Clear auth state and redirect to login
       setUser(null);
       setIsAuthenticated(false);
-      dispatch({ type: 'CLEAR_AUTH' });
-      router.push('/login');
+      const isAuthPage = AUTH_PAGES.some(p =>
+        window.location.pathname.startsWith(p)
+      );
+      if (!isAuthPage) {
+        router.push('/login');
+      }
     });
   }, [setUser, setIsAuthenticated, router]);
 
-  // Initialize auth state by checking session with backend
+  // Resolve the user once on mount — single network call, no polling
   useEffect(() => {
+    let cancelled = false;
+
     const initAuth = async () => {
-      // Only check auth if not already initialized
-      if (!isInitializedRef.current) {
-        setAuthLoading(true);
-        try {
-          const user = await AuthApi.checkAuth();
-          if (user) {
-            setUser(user);
-            setIsAuthenticated(true);
-            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
-
-            // Redirect authenticated users from public routes to dashboard
-            if (PUBLIC_ROUTES.includes(pathname) && pathname !== '/') {
-              router.push('/dashboard');
-            }
-          } else {
-            setUser(null);
-            setIsAuthenticated(false);
-            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-            // Redirect if not on a public route
-            if (!PUBLIC_ROUTES.includes(pathname)) {
-              router.push('/login');
-            }
-          }
-        } catch (_error) {
-          // console.warn('Failed to check auth status:', _error);
+      setLoading(true);
+      try {
+        const user = await AuthApi.checkAuth();
+        if (cancelled) return;
+        if (user) {
+          setUser(user);
+          setIsAuthenticated(true);
+        } else {
           setUser(null);
           setIsAuthenticated(false);
-          dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-
-          if (!PUBLIC_ROUTES.includes(pathname)) {
-            router.push('/login');
-          }
-        } finally {
-          dispatch({ type: 'SET_LOADING', payload: false });
-          setAuthLoading(false);
-          isInitializedRef.current = true; // Mark as initialized
         }
+      } catch {
+        if (!cancelled) {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
     initAuth();
-  }, [dispatch, pathname, router, setUser, setIsAuthenticated, setAuthLoading]);
+    return () => {
+      cancelled = true;
+    };
+  }, []); // intentionally empty — run once on mount
 
-  const value: AuthContextType = {
-    ...state,
-    actions: {
-      login: async () => {},
-      signup: async () => {},
-      logout: async () => {},
-      verifyEmail: async () => {},
-      resendVerification: async () => {},
-      forgotPassword: async () => {},
-      resetPassword: async () => {},
-      refreshSession: async () => {},
-    },
-    dispatch,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ isLoading, isAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
+
+// ── Hooks ──────────────────────────────────────────────────────────────────────
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }
 
-// Re-export user hook from store for backward compatibility and convenience
-export { useUser } from '../user/store';
-
 export function useIsAuthenticated() {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated;
+  return useAuth().isAuthenticated;
 }
 
 export function useIsLoading() {
-  const { isLoading } = useAuth();
-  return isLoading;
+  return useAuth().isLoading;
 }
 
-export function useAuthActions() {
-  const { actions } = useAuth();
-  return actions;
-}
-
-export function useAuthErrors() {
-  const { errors } = useAuth();
-  return errors;
-}
+// Re-export for backward compatibility
+export { useUser } from '../user/store';

@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Music } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaApi, Media } from '@/lib/api/media';
+import { parseApiError } from '@/lib/http/errors';
 
 interface MediaEditDialogProps {
   media: Media | null;
@@ -66,11 +67,12 @@ export function MediaEditDialog({
       });
       onUpdate(updatedMedia.data);
       onOpenChange(false);
-    } catch {
+    } catch (error) {
+      const err = parseApiError(error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update media',
+        title: err.title,
+        description: err.message,
       });
     } finally {
       setIsSaving(false);

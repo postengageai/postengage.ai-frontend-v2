@@ -1,0 +1,149 @@
+'use client';
+
+import { useCallback, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
+import { useUser, useUserActions, useUserStore } from '@/lib/user/store';
+import { UserApi } from '@/lib/api/user';
+import { PAGE_TOURS, getPageKeyFromPath } from '@/lib/tour/tours';
+import type { TourPageKey } from '@/lib/tour/tours';
+import type { Driver } from 'driver.js';
+
+export function useTour() {
+  const pathname = usePathname();
+  const user = useUser();
+  const userActions = useUserActions();
+  const driverRef = useRef<Driver | null>(null);
+  const autoStartedRef = useRef<Set<string>>(new Set());
+
+  const pageKey = getPageKeyFromPath(pathname) as TourPageKey | null;
+  const tourEnabled = user?.tour_enabled ?? true;
+  const toursSeen = user?.tours_seen ?? [];
+  const toursSkipped = user?.tours_skipped ?? [];
+
+  const hasSeenTour = pageKey ? toursSeen.includes(pageKey) : true;
+  const hasSkippedTour = pageKey ? toursSkipped.includes(pageKey) : true;
+  const isFirstVisit = pageKey ? !hasSeenTour && !hasSkippedTour : false;
+
+  const markTourStatus = useCallback(
+    async (page: TourPageKey, action: 'seen' | 'skipped') => {
+      // Optimistically update local state BEFORE the API call so that
+      // isFirstVisit flips to false immediately. Without this, if the API call
+      // fails (e.g. 429), tours_seen is never updated in the store, the tour
+      // keeps re-triggering on every remount, and each dismiss fires another
+      // API call — creating a self-reinforcing flood.
+      const currentUser = useUserStore.getState().user;
+      const currentSeen = currentUser?.tours_seen ?? [];
+      const currentSkipped = currentUser?.tours_skipped ?? [];
+      userActions.updateUser({
+        tours_seen: action === 'seen' ? [...currentSeen, page] : currentSeen,
+        tours_skipped:
+          action === 'skipped' ? [...currentSkipped, page] : currentSkipped,
+      });
+
+      try {
+        const updated = await UserApi.updateTourStatus({
+          tour_page: page,
+          action,
+        });
+        // Reconcile with server response to stay in sync
+        if (updated?.data) {
+          userActions.updateUser({
+            tours_seen: updated.data.tours_seen,
+            tours_skipped: updated.data.tours_skipped,
+          });
+        }
+      } catch {
+        // fail silently — local state already updated optimistically above
+      }
+    },
+    [userActions]
+  );
+
+  const startTour = useCallback(async () => {
+    if (!pageKey) return;
+    const tourDef = PAGE_TOURS[pageKey];
+    if (!tourDef || tourDef.steps.length === 0) return;
+
+    // Dynamically import driver.js to avoid SSR issues
+    const { driver } = await import('driver.js');
+
+    if (driverRef.current) {
+      driverRef.current.destroy();
+    }
+
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      smoothScroll: true,
+      allowClose: true,
+      overlayOpacity: 0.6,
+      stagePadding: 8,
+      stageRadius: 8,
+      popoverClass: 'postengage-tour-popover',
+      progressText: '{{current}} of {{total}}',
+      nextBtnText: 'Next →',
+      prevBtnText: '← Back',
+      doneBtnText: 'Done ✓',
+      steps: tourDef.steps,
+      onDestroyStarted: () => {
+        // Check if user finished all steps or closed early
+        const isLastStep = driverObj.isLastStep();
+        if (isLastStep) {
+          void markTourStatus(pageKey, 'seen');
+        } else {
+          void markTourStatus(pageKey, 'skipped');
+        }
+        // In Driver.js v1.4, onDestroyStarted is a PRE-DESTROY hook.
+        // When this callback is defined, Driver.js calls it and RETURNS without
+        // continuing the destroy sequence — the tour stays open until YOU call
+        // destroy() explicitly. driverObj.destroy() maps to g(false) internally
+        // which skips re-triggering this callback, so there is no loop.
+        driverObj.destroy();
+      },
+    });
+
+    driverRef.current = driverObj;
+    driverObj.drive();
+  }, [pageKey, markTourStatus]);
+
+  // Auto-start tour for first-time visitors
+  useEffect(() => {
+    if (
+      !tourEnabled ||
+      !pageKey ||
+      !isFirstVisit ||
+      autoStartedRef.current.has(pageKey)
+    ) {
+      return;
+    }
+
+    // Only auto-start if user data is loaded
+    if (!user) return;
+
+    // Small delay to let page render
+    autoStartedRef.current.add(pageKey);
+    const timer = setTimeout(() => {
+      void startTour();
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [tourEnabled, pageKey, isFirstVisit, user, startTour]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (driverRef.current) {
+        driverRef.current.destroy();
+      }
+    };
+  }, []);
+
+  return {
+    startTour,
+    tourEnabled,
+    hasSeenTour,
+    hasSkippedTour,
+    isFirstVisit,
+    pageKey,
+  };
+}

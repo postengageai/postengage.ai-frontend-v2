@@ -80,6 +80,228 @@ class SocketService {
     this.socket.off('notification', callback);
   }
 
+  // ─── Voice DNA events ─────────────────────────────────────────────────────
+
+  /** Real-time analysis progress (0–100). */
+  subscribeToVoiceDnaProgress(
+    callback: (data: {
+      voice_dna_id: string;
+      step: string;
+      progress: number;
+      message: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:progress', callback);
+  }
+
+  unsubscribeFromVoiceDnaProgress(
+    callback: (data: {
+      voice_dna_id: string;
+      step: string;
+      progress: number;
+      message: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:progress', callback);
+  }
+
+  /** Fired when analysis completes successfully. */
+  subscribeToVoiceDnaComplete(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      status: 'ready';
+      confidence_level?: string;
+      examples_count: number;
+      primary_language?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:complete', callback);
+  }
+
+  unsubscribeFromVoiceDnaComplete(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      status: 'ready';
+      confidence_level?: string;
+      examples_count: number;
+      primary_language?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:complete', callback);
+  }
+
+  /** Fired when analysis fails. */
+  subscribeToVoiceDnaFailed(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      error: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:failed', callback);
+  }
+
+  unsubscribeFromVoiceDnaFailed(
+    callback: (data: {
+      voice_dna_id: string;
+      brand_voice_id: string;
+      error: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:failed', callback);
+  }
+
+  /** Legacy: generic status change event (backward compat). */
+  subscribeToVoiceDnaStatus(
+    callback: (data: {
+      voice_dna_id: string;
+      status: string;
+      brand_voice_id?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:status-changed', callback);
+  }
+
+  unsubscribeFromVoiceDnaStatus(
+    callback: (data: {
+      voice_dna_id: string;
+      status: string;
+      brand_voice_id?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:status-changed', callback);
+  }
+
+  // Flagged replies events (Phase 4)
+  subscribeToFlaggedReplies(
+    callback: (data: {
+      bot_id: string;
+      flagged_count: number;
+      reply_id: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('flagged-reply:new', callback);
+  }
+
+  unsubscribeFromFlaggedReplies(
+    callback: (data: {
+      bot_id: string;
+      flagged_count: number;
+      reply_id: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('flagged-reply:new', callback);
+  }
+
+  // Auto-infer events (Phase 5)
+  subscribeToAutoInfer(
+    callback: (data: {
+      voice_dna_id: string;
+      status: 'started' | 'complete' | 'failed';
+      bot_id?: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:auto-infer-started', data =>
+      callback({ ...data, status: 'started' })
+    );
+    this.socket.on('voice-dna:auto-infer-complete', data =>
+      callback({ ...data, status: 'complete' })
+    );
+    this.socket.on('voice-dna:auto-infer-failed', data =>
+      callback({ ...data, status: 'failed' })
+    );
+  }
+
+  unsubscribeFromAutoInfer(): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:auto-infer-started');
+    this.socket.off('voice-dna:auto-infer-complete');
+    this.socket.off('voice-dna:auto-infer-failed');
+  }
+
+  // Refinement events (Phase 5)
+  subscribeToRefinement(
+    callback: (data: {
+      voice_dna_id: string;
+      status: 'triggered' | 'complete';
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('voice-dna:refinement-triggered', data =>
+      callback({ ...data, status: 'triggered' })
+    );
+    this.socket.on('voice-dna:refinement-complete', data =>
+      callback({ ...data, status: 'complete' })
+    );
+  }
+
+  unsubscribeFromRefinement(): void {
+    if (!this.socket) return;
+    this.socket.off('voice-dna:refinement-triggered');
+    this.socket.off('voice-dna:refinement-complete');
+  }
+
+  // ─── Support ticket real-time events ─────────────────────────────────────
+
+  subscribeToSupportMessage(
+    callback: (msg: {
+      id: string;
+      ticket_id: string;
+      sender_type: string;
+      sender_id: string;
+      sender_name: string;
+      content: string;
+      created_at: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('support_message', callback);
+  }
+
+  unsubscribeFromSupportMessage(
+    callback: (msg: {
+      id: string;
+      ticket_id: string;
+      sender_type: string;
+      sender_id: string;
+      sender_name: string;
+      content: string;
+      created_at: string;
+    }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('support_message', callback);
+  }
+
+  subscribeToSupportTicketResolved(
+    callback: (data: { ticketId: string }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.on('support_ticket_resolved', callback);
+    this.socket.on('support_ticket_closed', callback);
+  }
+
+  unsubscribeFromSupportTicketResolved(
+    callback: (data: { ticketId: string }) => void
+  ): void {
+    if (!this.socket) return;
+    this.socket.off('support_ticket_resolved', callback);
+    this.socket.off('support_ticket_closed', callback);
+  }
+
   // Join user-specific rooms
   joinUserRoom(userId: string): void {
     if (!this.socket) {

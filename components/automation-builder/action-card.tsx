@@ -5,9 +5,7 @@ import type React from 'react';
 import {
   MessageCircle,
   Send,
-  Heart,
-  EyeOff,
-  Tag,
+  Mail,
   GripVertical,
   Sparkles,
   Clock,
@@ -39,9 +37,7 @@ interface ActionCardProps {
 const actionIcons: Record<ActionType, React.ReactNode> = {
   reply_comment: <MessageCircle className='h-4 w-4' />,
   send_dm: <Send className='h-4 w-4' />,
-  like_comment: <Heart className='h-4 w-4' />,
-  hide_comment: <EyeOff className='h-4 w-4' />,
-  add_tag: <Tag className='h-4 w-4' />,
+  private_reply: <Mail className='h-4 w-4' />,
 };
 
 const actionColors: Record<
@@ -58,20 +54,10 @@ const actionColors: Record<
     text: 'text-purple-500',
     border: 'border-purple-500/20',
   },
-  like_comment: {
-    bg: 'bg-pink-500/10',
-    text: 'text-pink-500',
-    border: 'border-pink-500/20',
-  },
-  hide_comment: {
+  private_reply: {
     bg: 'bg-slate-500/10',
     text: 'text-slate-500',
     border: 'border-slate-500/20',
-  },
-  add_tag: {
-    bg: 'bg-blue-500/10',
-    text: 'text-blue-500',
-    border: 'border-blue-500/20',
   },
 };
 
@@ -92,7 +78,7 @@ export function ActionCard({
 
   // Determine if action is properly configured
   const isConfigured = () => {
-    if (action.type === 'reply_comment') {
+    if (action.type === 'reply_comment' || action.type === 'private_reply') {
       return (
         hasAI ||
         (action.config.replyTemplates &&
@@ -261,23 +247,13 @@ export function ActionCard({
               </div>
             )}
 
-            {action.type === 'like_comment' && (
-              <p className='text-sm text-muted-foreground'>
-                Automatically like the triggering comment
-              </p>
-            )}
-
-            {action.type === 'hide_comment' && (
-              <p className='text-sm text-muted-foreground'>
-                Hide comment from public view
-              </p>
-            )}
-
-            {action.type === 'add_tag' && (
+            {action.type === 'private_reply' && (
               <div className='space-y-1'>
-                <p className='text-xs text-muted-foreground'>Tag user as:</p>
-                <p className='text-sm font-medium'>
-                  {action.config.tagName || 'No tag specified'}
+                <p className='text-xs text-muted-foreground'>
+                  Private reply template:
+                </p>
+                <p className='text-sm truncate'>
+                  {action.config.replyTemplates?.[0] || 'No templates added'}
                 </p>
               </div>
             )}
