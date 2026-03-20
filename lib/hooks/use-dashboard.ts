@@ -17,6 +17,29 @@ export function useDashboardStats() {
   });
 }
 
+export function useConversationChart(days: 7 | 30 = 7) {
+  return useQuery({
+    queryKey: queryKeys.dashboard.conversationChart(days),
+    queryFn: async () => {
+      const res = await DashboardApi.getConversationChart(days);
+      return res.data;
+    },
+    staleTime: 5 * 60 * 1_000,
+  });
+}
+
+export function useDashboardHealth() {
+  return useQuery({
+    queryKey: queryKeys.dashboard.health(),
+    queryFn: async () => {
+      const res = await DashboardApi.getHealth();
+      return res.data;
+    },
+    staleTime: 60 * 1_000,
+    refetchInterval: 60 * 1_000, // re-fetch health every minute
+  });
+}
+
 // ── Credits balance ────────────────────────────────────────────────────────────
 
 export function useCreditsBalance() {

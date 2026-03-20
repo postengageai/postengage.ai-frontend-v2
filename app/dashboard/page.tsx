@@ -8,16 +8,17 @@ import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
 import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
 import { DashboardSkeleton } from '@/components/dashboard/skeleton';
+import { GreetingBanner } from '@/components/dashboard/greeting-banner';
+import { HeroConversationChart } from '@/components/dashboard/hero-conversation-chart';
 import { notificationsApi } from '@/lib/api/notifications';
 import { automationsApi } from '@/lib/api/automations';
 import { useToast } from '@/components/ui/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 import type { Automation, ConnectedAccount } from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
-import { ImpactCard } from '@/components/dashboard/impact-card';
 import type { Notification } from '@/lib/types/notifications';
 import { analytics } from '@/lib/analytics';
-import { useDashboardStats, queryKeys } from '@/lib/hooks';
+import { useDashboardStats, useDashboardHealth, queryKeys } from '@/lib/hooks';
 import { Zap, AlertTriangle, Plus } from 'lucide-react';
 import {
   AlertDialog,
@@ -38,6 +39,7 @@ export default function DashboardPage() {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useDashboardStats();
+  const { data: health } = useDashboardHealth();
 
   // ── First reply analytics tracking ────────────────────────────────────────
   const hasTrackedRef = React.useRef(false);
@@ -170,7 +172,6 @@ export default function DashboardPage() {
   const handleToggleAutomation = (id: string) => {
     const automation = automations.find(a => a.id === id);
     if (!automation) return;
-    // Only warn for AI automations being activated when credits are low
     if (
       automation.status === 'paused' &&
       isAiAutomation(automation) &&
@@ -233,6 +234,16 @@ export default function DashboardPage() {
   return (
     <>
       <main className='p-4 sm:p-6 lg:p-8 space-y-6' data-tour='dashboard-stats'>
+
+        {/* ── ZONE 1: Status Bar ─────────────────────────────────────────────── */}
+        <SystemHealthBar
+          health={health}
+          isConnected={connectedAccount?.isConnected ?? false}
+          activeAutomations={activeAutomationCount}
+          creditsRemaining={credits.remaining}
+          lastActivityTime={lastActivity}
+        />
+
         {/* Paused automations banner */}
         {hasAllPaused && lowCredits && (
           <div className='flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3'>
@@ -251,23 +262,27 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* System Health Bar */}
-        <SystemHealthBar
-          isConnected={connectedAccount?.isConnected ?? false}
-          activeAutomations={activeAutomationCount}
-          creditsRemaining={credits.remaining}
-          lastActivityTime={lastActivity}
-        />
+        {/* ── ZONE 2: Greeting + Hero Chart ─────────────────────────────────── */}
+        <div className='space-y-4'>
+          <GreetingBanner
+            username={data?.connected_account?.username}
+            impact={data?.impact}
+            topIntentToday={data?.overview.top_intent_today}
+            uniquePeopleEngaged={data?.overview.unique_people_engaged}
+          />
 
-        {/* Impact Card */}
-        {data?.impact && <ImpactCard impact={data.impact} />}
+          {/* Hero conversation chart — always shown, handles empty state internally */}
+          <HeroConversationChart />
+        </div>
 
-        {/* Quick Insights */}
+        {/* ── ZONE 3: Secondary Metrics (TrendStatCards) ───────────────────── */}
         <QuickInsights
           credits={credits}
-          todayReplies={data?.overview.credits_used_today ?? 0}
-          weeklyGrowth={data?.overview.weekly_growth ?? 0}
+          autoReplyRate={data?.overview.auto_reply_rate ?? 0}
           totalLeads={data?.overview.total_leads ?? 0}
+          timeSavedWeekHours={data?.overview.time_saved_week_hours ?? 0}
+          uniquePeopleEngaged={data?.overview.unique_people_engaged ?? 0}
+          weeklyGrowth={data?.overview.weekly_growth ?? 0}
         />
 
         {/* Performance Metrics */}
@@ -301,7 +316,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Main content grid */}
+        {/* ── ZONE 4: Activity + Automations ───────────────────────────────── */}
         <div className='grid gap-6 lg:grid-cols-5'>
           <div className='lg:col-span-3 space-y-6'>
             <RecentActivity

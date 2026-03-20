@@ -16,6 +16,27 @@ export interface DashboardOverview {
   credits_used_today: number;
   credits_used_this_month: number;
   weekly_growth: number;
+  auto_reply_rate: number;
+  unique_people_engaged: number;
+  fallback_rate: number;
+  time_saved_week_hours: number;
+  top_intent_today: string | null;
+}
+
+export interface ConversationChartPoint {
+  date: string;
+  conversations: number;
+  auto_reply_rate: number;
+}
+
+export interface DashboardHealth {
+  status: 'healthy' | 'warning' | 'error';
+  status_message: string;
+  is_connected: boolean;
+  active_automations: number;
+  last_activity_at: string | null;
+  credits_remaining: number;
+  burn_rate_daily: number;
 }
 
 export interface DashboardAutomation {
@@ -91,6 +112,22 @@ export class DashboardApi {
   static async getStats(): Promise<SuccessResponse<DashboardStatsResponse>> {
     const response = await httpClient.get<DashboardStatsResponse>(
       'api/v1/dashboard/stats'
+    );
+    return response.data!;
+  }
+
+  static async getConversationChart(
+    days: 7 | 30 = 7
+  ): Promise<SuccessResponse<ConversationChartPoint[]>> {
+    const response = await httpClient.get<ConversationChartPoint[]>(
+      `api/v1/dashboard/conversation-chart?days=${days}`
+    );
+    return response.data!;
+  }
+
+  static async getHealth(): Promise<SuccessResponse<DashboardHealth>> {
+    const response = await httpClient.get<DashboardHealth>(
+      'api/v1/dashboard/health'
     );
     return response.data!;
   }
