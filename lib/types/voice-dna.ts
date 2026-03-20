@@ -82,6 +82,11 @@ export interface VoiceDna {
   feedback_signals_processed: number;
   auto_refinement_count: number;
   last_feedback_at?: string;
+  /**
+   * Learning mode toggle. Default: true.
+   * When false, no new data is ingested, fingerprint is frozen.
+   */
+  learning_mode_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -181,4 +186,78 @@ export interface AdjustVoiceDto {
   remove_few_shot_indices?: string[];
   add_negative_examples?: string[];
   trigger_reanalysis?: boolean;
+}
+
+// === V2: Metrics (Feature 9) ===
+// Matches backend VoiceDnaMetrics exactly.
+// Returned by GET /voice-dna/:id/metrics
+export interface VoiceDnaMetrics {
+  voice_quality_score: number;          // 0–100
+  voice_consistency_score: number;      // decimal, e.g. 0.85
+  confidence_level: 'low' | 'medium' | 'high';
+  total_training_samples: number;
+  total_feedback_signals: number;
+  high_quality_examples: number;
+  examples_in_pool: number;
+  last_analyzed_at: string | null;      // ISO string from backend
+  daily_refresh_count: number;
+  drift_status: string;                 // 'healthy' | 'significant_drift'
+  primary_language: string;
+  /** Whether the learning loop is currently active */
+  learning_mode_enabled: boolean;
+}
+
+// === V2: Timeline (Feature 10) ===
+// One entry per day in the Voice Learning Graph.
+export interface TimelineSnapshot {
+  date: string;                         // YYYY-MM-DD
+  voice_quality_score: number;
+  voice_consistency_score: number;
+  examples_in_pool: number;
+  high_quality_examples: number;
+  feedback_signals_today: number;
+  events: string[];                     // humanized event strings
+}
+
+// A marked milestone on the timeline chart (e.g. first analysis, drift alert).
+export interface ChartMilestone {
+  date: string;                         // YYYY-MM-DD
+  label: string | undefined;
+  type: string | undefined;
+}
+
+// Full response from GET /voice-dna/:id/timeline
+export interface VoiceDnaTimelineResponse {
+  voice_dna_id: string;
+  period_days: number;
+  current: VoiceDnaMetrics;
+  timeline: TimelineSnapshot[];
+  milestones: ChartMilestone[];
+  insight: string;
+}
+
+// === V2: Manual Settings Update (Feature 8) ===
+// Matches backend UpdateVoiceDnaDto.
+// Sent via PATCH /voice-dna/:id/settings
+export interface VoiceDnaCustomExampleDto {
+  context: string;   // min 10, max 500 chars
+  reply: string;     // min 5, max 500 chars
+}
+
+export interface UpdateVoiceDnaDto {
+  // Tone sliders — 1–5 scale (backend maps to 0–10 internally)
+  humor_level?: number;
+  warmth?: number;
+  directness?: number;
+  assertiveness?: number;
+  emoji_intensity?: number;
+  // Language & vocabulary
+  vocabulary_complexity?: 'simple' | 'moderate' | 'advanced';
+  primary_language?: string;
+  // Sample injection
+  new_sample?: string;
+  custom_examples?: VoiceDnaCustomExampleDto[];
+  custom_negatives?: string[];
+  // Learning mode
+  learning_mode_enabled?: boolean;
 }

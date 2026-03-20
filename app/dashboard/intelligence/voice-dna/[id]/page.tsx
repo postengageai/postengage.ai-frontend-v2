@@ -45,8 +45,10 @@ import { NegativeExamples } from '@/components/intelligence/voice-dna/negative-e
 import { VoiceReviewPanel } from '@/components/intelligence/voice-dna/voice-review-panel';
 import { SampleReplyGenerator } from '@/components/intelligence/voice-dna/sample-reply-generator';
 import { ContinuousLearningDashboard } from '@/components/intelligence/voice-dna/continuous-learning-dashboard';
-import { VoiceAdjustmentPanel } from '@/components/intelligence/voice-dna/voice-adjustment-panel';
 import { VoiceTuneUpBanner } from '@/components/intelligence/voice-dna/voice-tuneup-banner';
+import { VoiceDnaMetricsCard } from '@/components/intelligence/voice-dna/voice-dna-metrics-card';
+import { VoiceDnaTimelineChart } from '@/components/intelligence/voice-dna/voice-dna-timeline-chart';
+import { VoiceDnaSettingsPanel } from '@/components/intelligence/voice-dna/voice-dna-settings-panel';
 import type {
   VoiceDna,
   VoiceDnaStatus,
@@ -301,11 +303,6 @@ export default function VoiceDnaDetailPage() {
     if (response?.data) setVoiceDna(response.data);
   };
 
-  const handleAdjustUpdate = (updated: VoiceDna) => {
-    setVoiceDna(updated);
-    setAdjustSheetOpen(false);
-  };
-
   if (isLoading) {
     return (
       <div className='p-4 sm:p-6 space-y-6'>
@@ -540,6 +537,7 @@ export default function VoiceDnaDetailPage() {
         <Tabs defaultValue='overview' className='space-y-6'>
           <TabsList>
             <TabsTrigger value='overview'>Overview</TabsTrigger>
+            <TabsTrigger value='metrics'>Metrics</TabsTrigger>
             <TabsTrigger value='examples'>
               Examples ({voiceDna.few_shot_examples.length})
             </TabsTrigger>
@@ -656,6 +654,52 @@ export default function VoiceDnaDetailPage() {
             )}
           </TabsContent>
 
+          {/* Metrics Tab — voice health + learning graph */}
+          <TabsContent value='metrics' className='space-y-6'>
+            <div className='grid gap-6 md:grid-cols-2'>
+              <VoiceDnaMetricsCard voiceDnaId={voiceDna._id} />
+              <Card>
+                <CardHeader>
+                  <CardTitle className='text-lg'>Quick Stats</CardTitle>
+                  <CardDescription>
+                    Training data at a glance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-3'>
+                  <div className='flex justify-between items-center text-sm'>
+                    <span className='text-muted-foreground'>Samples analyzed</span>
+                    <span className='font-medium'>{voiceDna.samples_analyzed}</span>
+                  </div>
+                  <div className='flex justify-between items-center text-sm'>
+                    <span className='text-muted-foreground'>Few-shot examples</span>
+                    <span className='font-medium'>{voiceDna.few_shot_examples.length}</span>
+                  </div>
+                  <div className='flex justify-between items-center text-sm'>
+                    <span className='text-muted-foreground'>Negative examples</span>
+                    <span className='font-medium'>{voiceDna.negative_examples.length}</span>
+                  </div>
+                  <div className='flex justify-between items-center text-sm'>
+                    <span className='text-muted-foreground'>Feedback signals</span>
+                    <span className='font-medium'>{voiceDna.feedback_signals_processed}</span>
+                  </div>
+                  <div className='flex justify-between items-center text-sm'>
+                    <span className='text-muted-foreground'>Auto-refinements</span>
+                    <span className='font-medium'>{voiceDna.auto_refinement_count}</span>
+                  </div>
+                  {voiceDna.confidence_level && (
+                    <div className='flex justify-between items-center text-sm'>
+                      <span className='text-muted-foreground'>Confidence</span>
+                      <Badge variant='outline' className='capitalize'>
+                        {voiceDna.confidence_level}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            <VoiceDnaTimelineChart voiceDnaId={voiceDna._id} />
+          </TabsContent>
+
           {/* Examples Tab */}
           <TabsContent value='examples' className='space-y-6'>
             <Card>
@@ -722,17 +766,21 @@ export default function VoiceDnaDetailPage() {
         </Card>
       )}
 
-      {/* Voice Adjustment Sheet (Phase 5) */}
+      {/* Voice Settings Sheet — manual tone + sample injection (Feature 8) */}
       <Sheet open={adjustSheetOpen} onOpenChange={setAdjustSheetOpen}>
         <SheetContent className='sm:max-w-lg w-full p-0'>
           <SheetHeader className='px-6 pt-6 pb-4 border-b'>
-            <SheetTitle>Adjust Voice</SheetTitle>
+            <SheetTitle>Voice DNA Settings</SheetTitle>
           </SheetHeader>
           <ScrollArea className='h-[calc(100vh-5rem)]'>
             <div className='px-6 py-4'>
-              <VoiceAdjustmentPanel
+              <VoiceDnaSettingsPanel
                 voiceDna={voiceDna}
-                onUpdate={handleAdjustUpdate}
+                onSaved={() => {
+                  setAdjustSheetOpen(false);
+                  // Refresh voice DNA data to reflect any changes
+                  fetchVoiceDna();
+                }}
                 onClose={() => setAdjustSheetOpen(false)}
               />
             </div>

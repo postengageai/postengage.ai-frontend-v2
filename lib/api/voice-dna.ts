@@ -9,6 +9,9 @@ import {
   VoiceReview,
   VoiceFeedbackDto,
   AdjustVoiceDto,
+  VoiceDnaMetrics,
+  VoiceDnaTimelineResponse,
+  UpdateVoiceDnaDto,
 } from '../types/voice-dna';
 
 const VOICE_DNA_BASE_URL = '/api/v1/intelligence/voice-dna';
@@ -202,6 +205,44 @@ export class VoiceDnaApi {
       success: boolean;
       message: string;
     }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/test`);
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // ─── V2: Metrics, Timeline, Settings ────────────────────────────────────
+
+  // GET /voice-dna/:id/metrics — current Voice DNA health snapshot
+  static async getMetrics(
+    voiceDnaId: string
+  ): Promise<SuccessResponse<VoiceDnaMetrics>> {
+    const response = await httpClient.get<VoiceDnaMetrics>(
+      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/metrics`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // GET /voice-dna/:id/timeline?days=30 — timeline chart data
+  static async getTimeline(
+    voiceDnaId: string,
+    days = 30
+  ): Promise<SuccessResponse<VoiceDnaTimelineResponse>> {
+    const response = await httpClient.get<VoiceDnaTimelineResponse>(
+      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/timeline?days=${days}`
+    );
+    if (response.error) throw response.error;
+    return response.data;
+  }
+
+  // PATCH /voice-dna/:id/settings — manual tone/style update
+  static async updateSettings(
+    voiceDnaId: string,
+    dto: UpdateVoiceDnaDto
+  ): Promise<SuccessResponse<{ success: boolean; message: string }>> {
+    const response = await httpClient.patch<{ success: boolean; message: string }>(
+      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/settings`,
+      dto
+    );
     if (response.error) throw response.error;
     return response.data;
   }
