@@ -2,12 +2,22 @@ export interface CreditPackage {
   id: string;
   name: string;
   description: string;
-  credits: number;
-  price: number;
+  credits: number | null;
+  price: number | null;
   currency: string;
   popular: boolean;
   savings: string;
-  approx_actions: number;
+  approx_actions: number | null;
+  /** Display badge, e.g. "Most Popular" or "Best Value" */
+  badge?: string;
+  /** True for the Enterprise tier — no payment flow, shows Contact Sales CTA */
+  is_enterprise?: boolean;
+  /** CTA label, e.g. "Buy Now" or "Contact Sales" */
+  cta?: string;
+  /** Credits hint for Enterprise, e.g. "50,000+ credits" */
+  credits_hint?: string;
+  /** Feature list for Enterprise card */
+  features?: string[];
 }
 
 export interface CreditCosts {

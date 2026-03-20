@@ -29,21 +29,21 @@ export default function BuyCreditsPage() {
       followers: '10K',
       commentsPerDay: '20-30',
       creditsPerMonth: '~270',
-      recommendation: 'Starter Pack (500)',
+      recommendation: 'Starter (650 credits)',
     },
     {
       persona: 'Growing Creator',
       followers: '50K',
       commentsPerDay: '50-100',
       creditsPerMonth: '~900',
-      recommendation: 'Pro Pack (2,800)',
+      recommendation: 'Growth (3,500 credits)',
     },
     {
       persona: 'Brand / Agency',
       followers: '100K+',
       commentsPerDay: '100-200',
       creditsPerMonth: '~2,000',
-      recommendation: 'Pro Pack (2,800)',
+      recommendation: 'Agency (10,000 credits)',
     },
   ];
 
