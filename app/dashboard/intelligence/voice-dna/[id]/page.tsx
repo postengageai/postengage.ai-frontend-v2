@@ -661,30 +661,48 @@ export default function VoiceDnaDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className='text-lg'>Quick Stats</CardTitle>
-                  <CardDescription>
-                    Training data at a glance
-                  </CardDescription>
+                  <CardDescription>Training data at a glance</CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-3'>
                   <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Samples analyzed</span>
-                    <span className='font-medium'>{voiceDna.samples_analyzed}</span>
+                    <span className='text-muted-foreground'>
+                      Samples analyzed
+                    </span>
+                    <span className='font-medium'>
+                      {voiceDna.samples_analyzed}
+                    </span>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Few-shot examples</span>
-                    <span className='font-medium'>{voiceDna.few_shot_examples.length}</span>
+                    <span className='text-muted-foreground'>
+                      Few-shot examples
+                    </span>
+                    <span className='font-medium'>
+                      {voiceDna.few_shot_examples.length}
+                    </span>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Negative examples</span>
-                    <span className='font-medium'>{voiceDna.negative_examples.length}</span>
+                    <span className='text-muted-foreground'>
+                      Negative examples
+                    </span>
+                    <span className='font-medium'>
+                      {voiceDna.negative_examples.length}
+                    </span>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Feedback signals</span>
-                    <span className='font-medium'>{voiceDna.feedback_signals_processed}</span>
+                    <span className='text-muted-foreground'>
+                      Feedback signals
+                    </span>
+                    <span className='font-medium'>
+                      {voiceDna.feedback_signals_processed}
+                    </span>
                   </div>
                   <div className='flex justify-between items-center text-sm'>
-                    <span className='text-muted-foreground'>Auto-refinements</span>
-                    <span className='font-medium'>{voiceDna.auto_refinement_count}</span>
+                    <span className='text-muted-foreground'>
+                      Auto-refinements
+                    </span>
+                    <span className='font-medium'>
+                      {voiceDna.auto_refinement_count}
+                    </span>
                   </div>
                   {voiceDna.confidence_level && (
                     <div className='flex justify-between items-center text-sm'>

@@ -192,16 +192,16 @@ export interface AdjustVoiceDto {
 // Matches backend VoiceDnaMetrics exactly.
 // Returned by GET /voice-dna/:id/metrics
 export interface VoiceDnaMetrics {
-  voice_quality_score: number;          // 0–100
-  voice_consistency_score: number;      // decimal, e.g. 0.85
+  voice_quality_score: number; // 0–100
+  voice_consistency_score: number; // decimal, e.g. 0.85
   confidence_level: 'low' | 'medium' | 'high';
   total_training_samples: number;
   total_feedback_signals: number;
   high_quality_examples: number;
   examples_in_pool: number;
-  last_analyzed_at: string | null;      // ISO string from backend
+  last_analyzed_at: string | null; // ISO string from backend
   daily_refresh_count: number;
-  drift_status: string;                 // 'healthy' | 'significant_drift'
+  drift_status: string; // 'healthy' | 'significant_drift'
   primary_language: string;
   /** Whether the learning loop is currently active */
   learning_mode_enabled: boolean;
@@ -210,18 +210,18 @@ export interface VoiceDnaMetrics {
 // === V2: Timeline (Feature 10) ===
 // One entry per day in the Voice Learning Graph.
 export interface TimelineSnapshot {
-  date: string;                         // YYYY-MM-DD
+  date: string; // YYYY-MM-DD
   voice_quality_score: number;
   voice_consistency_score: number;
   examples_in_pool: number;
   high_quality_examples: number;
   feedback_signals_today: number;
-  events: string[];                     // humanized event strings
+  events: string[]; // humanized event strings
 }
 
 // A marked milestone on the timeline chart (e.g. first analysis, drift alert).
 export interface ChartMilestone {
-  date: string;                         // YYYY-MM-DD
+  date: string; // YYYY-MM-DD
   label: string | undefined;
   type: string | undefined;
 }
@@ -240,8 +240,8 @@ export interface VoiceDnaTimelineResponse {
 // Matches backend UpdateVoiceDnaDto.
 // Sent via PATCH /voice-dna/:id/settings
 export interface VoiceDnaCustomExampleDto {
-  context: string;   // min 10, max 500 chars
-  reply: string;     // min 5, max 500 chars
+  context: string; // min 10, max 500 chars
+  reply: string; // min 5, max 500 chars
 }
 
 export interface UpdateVoiceDnaDto {

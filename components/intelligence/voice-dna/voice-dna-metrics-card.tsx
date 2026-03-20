@@ -45,7 +45,10 @@ function confidenceLabel(level: VoiceDnaMetrics['confidence_level']): string {
 
 function driftBadge(drift: string): { label: string; color: string } {
   if (drift === 'significant_drift')
-    return { label: 'Voice drift detected', color: 'text-orange-600 dark:text-orange-400' };
+    return {
+      label: 'Voice drift detected',
+      color: 'text-orange-600 dark:text-orange-400',
+    };
   return { label: 'Healthy', color: 'text-green-600 dark:text-green-400' };
 }
 
@@ -132,9 +135,13 @@ export function VoiceDnaMetricsCard({ voiceDnaId }: VoiceDnaMetricsCardProps) {
               <BarChart2 className='h-3.5 w-3.5' />
               Voice Quality Score
             </span>
-            <span className={`text-2xl font-bold tabular-nums ${vqsColor(metrics.voice_quality_score)}`}>
+            <span
+              className={`text-2xl font-bold tabular-nums ${vqsColor(metrics.voice_quality_score)}`}
+            >
               {metrics.voice_quality_score}
-              <span className='text-sm font-normal text-muted-foreground'>/100</span>
+              <span className='text-sm font-normal text-muted-foreground'>
+                /100
+              </span>
             </span>
           </div>
           <Progress value={metrics.voice_quality_score} className='h-2' />

@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, AlertCircle, XCircle, Zap, Activity } from 'lucide-react';
+import { AlertCircle, XCircle, Zap, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DashboardHealth } from '@/lib/api/dashboard';
 
@@ -33,13 +33,20 @@ export function SystemHealthBar({
   lastActivityTime,
 }: SystemHealthBarProps) {
   // Prefer health endpoint data if available, fall back to legacy props
-  const status = health?.status ?? (legacyConnected && (legacyActive ?? 0) > 0 && (legacyCredits ?? 0) > 10 ? 'healthy' : 'warning');
-  const statusMessage = health?.status_message ?? (status === 'healthy' ? 'Everything is working' : 'Needs attention');
+  const status =
+    health?.status ??
+    (legacyConnected && (legacyActive ?? 0) > 0 && (legacyCredits ?? 0) > 10
+      ? 'healthy'
+      : 'warning');
+  const statusMessage =
+    health?.status_message ??
+    (status === 'healthy' ? 'Everything is working' : 'Needs attention');
   const isConnected = health?.is_connected ?? legacyConnected ?? false;
   const activeCount = health?.active_automations ?? legacyActive ?? 0;
   const creditsLeft = health?.credits_remaining ?? legacyCredits ?? 0;
   const burnRate = health?.burn_rate_daily;
-  const lastActivityStr = health?.last_activity_at ?? lastActivityTime?.toISOString();
+  const lastActivityStr =
+    health?.last_activity_at ?? lastActivityTime?.toISOString();
 
   return (
     <div
@@ -90,7 +97,8 @@ export function SystemHealthBar({
         <div className='flex items-center gap-1.5'>
           <Activity className='h-3.5 w-3.5' />
           <span>
-            {activeCount} {activeCount === 1 ? 'automation' : 'automations'} active
+            {activeCount} {activeCount === 1 ? 'automation' : 'automations'}{' '}
+            active
           </span>
         </div>
 

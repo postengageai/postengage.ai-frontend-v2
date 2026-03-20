@@ -1,7 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Plus, X, Save, BrainCircuit, SnowflakeIcon } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  X,
+  Save,
+  BrainCircuit,
+  SnowflakeIcon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -82,7 +89,10 @@ function SliderRow({
 
 // ── Defaults from existing fingerprint (map 0–10 scale back to 1–5) ────────
 
-function fingerprintToSlider(value: number | undefined, defaultVal = 3): number {
+function fingerprintToSlider(
+  value: number | undefined,
+  defaultVal = 3
+): number {
   if (value === undefined) return defaultVal;
   return Math.max(1, Math.min(5, Math.round(value / 2)));
 }
@@ -111,8 +121,12 @@ export function VoiceDnaSettingsPanel({
   // Tone sliders (1–5 scale)
   const [humor, setHumor] = useState(fingerprintToSlider(fp?.humor_level));
   const [warmth, setWarmth] = useState(fingerprintToSlider(fp?.warmth));
-  const [directness, setDirectness] = useState(fingerprintToSlider(fp?.directness));
-  const [assertiveness, setAssertiveness] = useState(fingerprintToSlider(fp?.assertiveness));
+  const [directness, setDirectness] = useState(
+    fingerprintToSlider(fp?.directness)
+  );
+  const [assertiveness, setAssertiveness] = useState(
+    fingerprintToSlider(fp?.assertiveness)
+  );
   const [emojiIntensity, setEmojiIntensity] = useState(
     emojiFrequencyToIntensity(fp?.emoji_frequency)
   );
@@ -131,7 +145,9 @@ export function VoiceDnaSettingsPanel({
   // Custom examples
   const [exampleContext, setExampleContext] = useState('');
   const [exampleReply, setExampleReply] = useState('');
-  const [customExamples, setCustomExamples] = useState<VoiceDnaCustomExampleDto[]>([]);
+  const [customExamples, setCustomExamples] = useState<
+    VoiceDnaCustomExampleDto[]
+  >([]);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -140,12 +156,12 @@ export function VoiceDnaSettingsPanel({
   const addCustomNegative = () => {
     const trimmed = customNegativeInput.trim();
     if (!trimmed) return;
-    setCustomNegatives((prev) => [...prev, trimmed]);
+    setCustomNegatives(prev => [...prev, trimmed]);
     setCustomNegativeInput('');
   };
 
   const removeCustomNegative = (index: number) => {
-    setCustomNegatives((prev) => prev.filter((_, i) => i !== index));
+    setCustomNegatives(prev => prev.filter((_, i) => i !== index));
   };
 
   const addCustomExample = () => {
@@ -157,7 +173,7 @@ export function VoiceDnaSettingsPanel({
       });
       return;
     }
-    setCustomExamples((prev) => [
+    setCustomExamples(prev => [
       ...prev,
       { context: exampleContext.trim(), reply: exampleReply.trim() },
     ]);
@@ -166,7 +182,7 @@ export function VoiceDnaSettingsPanel({
   };
 
   const removeCustomExample = (index: number) => {
-    setCustomExamples((prev) => prev.filter((_, i) => i !== index));
+    setCustomExamples(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -181,9 +197,15 @@ export function VoiceDnaSettingsPanel({
         emoji_intensity: emojiIntensity,
         ...(vocabulary ? { vocabulary_complexity: vocabulary } : {}),
         ...(language.trim() ? { primary_language: language.trim() } : {}),
-        ...(newSample.trim().length >= 20 ? { new_sample: newSample.trim() } : {}),
-        ...(customExamples.length > 0 ? { custom_examples: customExamples } : {}),
-        ...(customNegatives.length > 0 ? { custom_negatives: customNegatives } : {}),
+        ...(newSample.trim().length >= 20
+          ? { new_sample: newSample.trim() }
+          : {}),
+        ...(customExamples.length > 0
+          ? { custom_examples: customExamples }
+          : {}),
+        ...(customNegatives.length > 0
+          ? { custom_negatives: customNegatives }
+          : {}),
       };
 
       await VoiceDnaApi.updateSettings(voiceDna._id, dto);
@@ -312,7 +334,7 @@ export function VoiceDnaSettingsPanel({
           <Label className='text-sm'>Vocabulary complexity</Label>
           <Select
             value={vocabulary}
-            onValueChange={(v) =>
+            onValueChange={v =>
               setVocabulary(v as 'simple' | 'moderate' | 'advanced')
             }
           >
@@ -320,9 +342,15 @@ export function VoiceDnaSettingsPanel({
               <SelectValue placeholder='Keep current' />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='simple'>Simple — easy, everyday words</SelectItem>
-              <SelectItem value='moderate'>Moderate — balanced vocabulary</SelectItem>
-              <SelectItem value='advanced'>Advanced — richer, more varied</SelectItem>
+              <SelectItem value='simple'>
+                Simple — easy, everyday words
+              </SelectItem>
+              <SelectItem value='moderate'>
+                Moderate — balanced vocabulary
+              </SelectItem>
+              <SelectItem value='advanced'>
+                Advanced — richer, more varied
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -332,7 +360,7 @@ export function VoiceDnaSettingsPanel({
           <Input
             placeholder='e.g. en, hi, es'
             value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            onChange={e => setLanguage(e.target.value)}
             maxLength={20}
           />
           <p className='text-xs text-muted-foreground'>
@@ -352,7 +380,7 @@ export function VoiceDnaSettingsPanel({
         <Textarea
           placeholder='Paste a reply you would write to a DM or comment…'
           value={newSample}
-          onChange={(e) => setNewSample(e.target.value)}
+          onChange={e => setNewSample(e.target.value)}
           rows={3}
           maxLength={500}
         />
@@ -377,13 +405,13 @@ export function VoiceDnaSettingsPanel({
           <Input
             placeholder='Context (e.g. "Someone asks about pricing")'
             value={exampleContext}
-            onChange={(e) => setExampleContext(e.target.value)}
+            onChange={e => setExampleContext(e.target.value)}
             maxLength={500}
           />
           <Textarea
             placeholder='Your ideal reply…'
             value={exampleReply}
-            onChange={(e) => setExampleReply(e.target.value)}
+            onChange={e => setExampleReply(e.target.value)}
             rows={2}
             maxLength={500}
           />
@@ -393,7 +421,8 @@ export function VoiceDnaSettingsPanel({
             size='sm'
             onClick={addCustomExample}
             disabled={
-              exampleContext.trim().length < 10 || exampleReply.trim().length < 5
+              exampleContext.trim().length < 10 ||
+              exampleReply.trim().length < 5
             }
           >
             <Plus className='h-3.5 w-3.5 mr-1.5' />
@@ -437,8 +466,8 @@ export function VoiceDnaSettingsPanel({
           <Input
             placeholder='e.g. "No worries at all!" or formal closings'
             value={customNegativeInput}
-            onChange={(e) => setCustomNegativeInput(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setCustomNegativeInput(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 addCustomNegative();

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   ComposedChart,
-  Bar,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useConversationChart } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
+import { BarChart2 } from 'lucide-react';
 
 function formatDate(dateStr: string, days: number) {
   const date = new Date(dateStr);
@@ -35,28 +36,51 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const conversations = payload.find(p => p.name === 'conversations');
   const rate = payload.find(p => p.name === 'auto_reply_rate');
   return (
-    <div className='bg-card border border-border rounded-lg px-3 py-2 text-xs shadow-lg'>
-      <p className='text-muted-foreground mb-1'>{label}</p>
+    <div className='bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs shadow-xl shadow-black/30 min-w-[148px]'>
+      <p className='text-muted-foreground mb-2 font-medium'>{label}</p>
       {conversations && (
-        <p className='text-foreground font-medium'>
-          {conversations.value} conversation{conversations.value !== 1 ? 's' : ''}
-        </p>
+        <div className='flex items-center gap-2 mb-1'>
+          <div className='w-2 h-2 rounded-sm bg-primary/80 flex-shrink-0' />
+          <p className='text-foreground font-semibold'>
+            {conversations.value}{' '}
+            <span className='font-normal text-muted-foreground'>
+              conversation{conversations.value !== 1 ? 's' : ''}
+            </span>
+          </p>
+        </div>
       )}
       {rate && rate.value > 0 && (
-        <p className='text-green-400'>{rate.value}% auto-replied</p>
+        <div className='flex items-center gap-2'>
+          <div className='w-2 h-0.5 rounded bg-success flex-shrink-0' />
+          <p className='text-success font-semibold'>
+            {rate.value}%{' '}
+            <span className='font-normal text-muted-foreground'>
+              auto-replied
+            </span>
+          </p>
+        </div>
       )}
     </div>
   );
 }
 
-export function HeroConversationChart() {
+interface HeroConversationChartProps {
+  uniquePeopleEngaged?: number;
+}
+
+export function HeroConversationChart({
+  uniquePeopleEngaged,
+}: HeroConversationChartProps) {
   const [days, setDays] = useState<7 | 30>(7);
   const { data, isLoading } = useConversationChart(days);
 
-  const totalConversations = data?.reduce((s, d) => s + d.conversations, 0) ?? 0;
+  const totalConversations =
+    data?.reduce((s, d) => s + d.conversations, 0) ?? 0;
   const avgAutoReplyRate =
     data && data.length > 0
-      ? Math.round(data.reduce((s, d) => s + d.auto_reply_rate, 0) / data.length)
+      ? Math.round(
+          data.reduce((s, d) => s + d.auto_reply_rate, 0) / data.length
+        )
       : 0;
 
   const chartData = data?.map(d => ({
@@ -65,38 +89,51 @@ export function HeroConversationChart() {
   }));
 
   return (
-    <Card>
+    <Card className='overflow-hidden'>
       <CardHeader className='pb-2'>
-        <div className='flex items-start justify-between gap-4'>
-          <div>
-            <CardTitle className='text-base font-semibold'>
+        <div className='flex items-start justify-between gap-4 flex-wrap'>
+          <div className='min-w-0'>
+            <CardTitle className='text-base font-semibold leading-snug'>
               {isLoading ? (
-                <Skeleton className='h-5 w-48' />
+                <Skeleton className='h-5 w-56' />
               ) : (
                 <>
-                  Your bot had conversations with{' '}
-                  <span className='text-primary'>{totalConversations} people</span>{' '}
+                  Your bot handled{' '}
+                  <span className='text-primary'>
+                    {totalConversations}{' '}
+                    {totalConversations === 1
+                      ? 'conversation'
+                      : 'conversations'}
+                  </span>{' '}
                   {days === 7 ? 'this week' : 'this month'}
                 </>
               )}
             </CardTitle>
-            {!isLoading && avgAutoReplyRate > 0 && (
+            {!isLoading && (
               <p className='text-xs text-muted-foreground mt-0.5'>
-                {avgAutoReplyRate}% average auto-reply rate
+                {avgAutoReplyRate > 0
+                  ? `${avgAutoReplyRate}% average auto-reply rate`
+                  : 'Set up automations to start auto-replying'}
+                {uniquePeopleEngaged != null && uniquePeopleEngaged > 0 && (
+                  <span className='ml-2 text-muted-foreground/60'>
+                    · {uniquePeopleEngaged} unique{' '}
+                    {uniquePeopleEngaged === 1 ? 'person' : 'people'} this month
+                  </span>
+                )}
               </p>
             )}
           </div>
 
           {/* Period toggle */}
-          <div className='flex items-center bg-secondary/50 rounded-lg p-0.5 shrink-0'>
+          <div className='flex items-center bg-secondary/60 rounded-lg p-0.5 shrink-0 border border-border/50'>
             {([7, 30] as const).map(d => (
               <button
                 key={d}
                 onClick={() => setDays(d)}
                 className={cn(
-                  'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150',
                   days === d
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-card text-foreground shadow-sm border border-border/60'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -109,77 +146,110 @@ export function HeroConversationChart() {
 
       <CardContent className='pt-0'>
         {isLoading ? (
-          <Skeleton className='h-[200px] w-full rounded-lg' />
+          <Skeleton className='h-[260px] w-full rounded-lg mt-2' />
         ) : totalConversations === 0 ? (
-          <div className='h-[200px] flex flex-col items-center justify-center text-center'>
-            <p className='text-sm text-muted-foreground'>
-              No conversations yet in this period.
-            </p>
-            <p className='text-xs text-muted-foreground/70 mt-1'>
-              Data will fill in once your automations start replying.
-            </p>
+          <div className='h-[260px] flex flex-col items-center justify-center text-center gap-3'>
+            <div className='h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center'>
+              <BarChart2 className='h-6 w-6 text-primary/60' />
+            </div>
+            <div>
+              <p className='text-sm font-medium text-foreground'>
+                No conversations yet
+              </p>
+              <p className='text-xs text-muted-foreground mt-1 max-w-xs'>
+                Data will appear once your automations start handling messages.
+              </p>
+            </div>
           </div>
         ) : (
-          <ResponsiveContainer width='100%' height={200}>
-            <ComposedChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid
-                strokeDasharray='3 3'
-                stroke='hsl(var(--border))'
-                vertical={false}
-              />
-              <XAxis
-                dataKey='date'
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                yAxisId='left'
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <YAxis
-                yAxisId='right'
-                orientation='right'
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                domain={[0, 100]}
-                tickFormatter={v => `${v}%`}
-                hide
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                yAxisId='left'
-                dataKey='conversations'
-                fill='hsl(var(--primary))'
-                radius={[4, 4, 0, 0]}
-                opacity={0.85}
-              />
-              <Line
-                yAxisId='right'
-                type='monotone'
-                dataKey='auto_reply_rate'
-                stroke='#22c55e'
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: '#22c55e' }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div className='mt-2'>
+            <ResponsiveContainer width='100%' height={260}>
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 8, right: 4, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id='convAreaGrad' x1='0' y1='0' x2='0' y2='1'>
+                    <stop offset='0%' stopColor='#6c47ff' stopOpacity={0.3} />
+                    <stop offset='85%' stopColor='#6c47ff' stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray='3 3'
+                  stroke='hsl(var(--border))'
+                  vertical={false}
+                  opacity={0.6}
+                />
+                <XAxis
+                  dataKey='date'
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={6}
+                />
+                <YAxis
+                  yAxisId='left'
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                  width={32}
+                />
+                <YAxis
+                  yAxisId='right'
+                  orientation='right'
+                  domain={[0, 100]}
+                  axisLine={false}
+                  tickLine={false}
+                  hide
+                />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
+                />
+                <Area
+                  yAxisId='left'
+                  type='monotone'
+                  dataKey='conversations'
+                  stroke='#6c47ff'
+                  strokeWidth={2}
+                  fill='url(#convAreaGrad)'
+                  dot={false}
+                  activeDot={{
+                    r: 4,
+                    fill: '#6c47ff',
+                    stroke: '#fff',
+                    strokeWidth: 2,
+                  }}
+                />
+                <Line
+                  yAxisId='right'
+                  type='monotone'
+                  dataKey='auto_reply_rate'
+                  stroke='#22c55e'
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{
+                    r: 4,
+                    fill: '#22c55e',
+                    stroke: '#fff',
+                    strokeWidth: 2,
+                  }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         )}
 
         {/* Legend */}
         {!isLoading && totalConversations > 0 && (
-          <div className='flex items-center gap-4 mt-2 text-xs text-muted-foreground'>
+          <div className='flex items-center gap-5 mt-1 text-xs text-muted-foreground'>
             <div className='flex items-center gap-1.5'>
-              <div className='w-3 h-3 rounded-sm bg-primary/85' />
+              <div className='w-3 h-3 rounded-sm bg-primary/75' />
               <span>Conversations</span>
             </div>
             <div className='flex items-center gap-1.5'>
-              <div className='w-4 h-0.5 bg-green-500 rounded' />
+              <div className='w-4 h-0.5 bg-success rounded-full' />
               <span>Auto-reply rate</span>
             </div>
           </div>

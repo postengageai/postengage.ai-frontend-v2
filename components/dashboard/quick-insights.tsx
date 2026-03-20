@@ -77,11 +77,24 @@ export function QuickInsights({
         label='Credits Left'
         value={credits.remaining}
         subValue={
-          isLowCredits
-            ? <Link href='/dashboard/credits' className='text-warning hover:underline'>Running low — top up</Link>
-            : `${uniquePeopleEngaged} people this month`
+          isLowCredits ? (
+            <Link
+              href='/dashboard/credits'
+              className='text-warning hover:underline'
+            >
+              Running low — top up
+            </Link>
+          ) : (
+            `${uniquePeopleEngaged} people this month`
+          )
         }
-        icon={isLowCredits ? <AlertCircle className='h-4 w-4' /> : <Zap className='h-4 w-4' />}
+        icon={
+          isLowCredits ? (
+            <AlertCircle className='h-4 w-4' />
+          ) : (
+            <Zap className='h-4 w-4' />
+          )
+        }
         accentColor={isLowCredits ? 'orange' : 'blue'}
       />
     </div>

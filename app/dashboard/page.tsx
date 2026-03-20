@@ -233,8 +233,10 @@ export default function DashboardPage() {
 
   return (
     <>
-      <main className='p-4 sm:p-6 lg:p-8 space-y-6' data-tour='dashboard-stats'>
-
+      <main
+        className='p-4 sm:p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto'
+        data-tour='dashboard-stats'
+      >
         {/* ── ZONE 1: Status Bar ─────────────────────────────────────────────── */}
         <SystemHealthBar
           health={health}
@@ -272,7 +274,9 @@ export default function DashboardPage() {
           />
 
           {/* Hero conversation chart — always shown, handles empty state internally */}
-          <HeroConversationChart />
+          <HeroConversationChart
+            uniquePeopleEngaged={data?.overview.unique_people_engaged}
+          />
         </div>
 
         {/* ── ZONE 3: Secondary Metrics (TrendStatCards) ───────────────────── */}
@@ -317,15 +321,15 @@ export default function DashboardPage() {
         )}
 
         {/* ── ZONE 4: Activity + Automations ───────────────────────────────── */}
-        <div className='grid gap-6 lg:grid-cols-5'>
-          <div className='lg:col-span-3 space-y-6'>
+        <div className='grid gap-6 md:grid-cols-2 xl:grid-cols-5'>
+          <div className='md:col-span-1 xl:col-span-3'>
             <RecentActivity
               notifications={notifications}
               onMarkAsRead={id => markAsReadMutation.mutate(id)}
               onMarkAllAsRead={() => markAllAsReadMutation.mutate()}
             />
           </div>
-          <div className='lg:col-span-2 space-y-6'>
+          <div className='md:col-span-1 xl:col-span-2'>
             <AutomationSummary
               automations={automations}
               onToggle={handleToggleAutomation}

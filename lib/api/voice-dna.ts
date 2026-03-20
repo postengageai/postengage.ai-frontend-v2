@@ -239,10 +239,10 @@ export class VoiceDnaApi {
     voiceDnaId: string,
     dto: UpdateVoiceDnaDto
   ): Promise<SuccessResponse<{ success: boolean; message: string }>> {
-    const response = await httpClient.patch<{ success: boolean; message: string }>(
-      `${VOICE_DNA_BASE_URL}/${voiceDnaId}/settings`,
-      dto
-    );
+    const response = await httpClient.patch<{
+      success: boolean;
+      message: string;
+    }>(`${VOICE_DNA_BASE_URL}/${voiceDnaId}/settings`, dto);
     if (response.error) throw response.error;
     return response.data;
   }

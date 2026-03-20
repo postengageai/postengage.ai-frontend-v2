@@ -162,9 +162,7 @@ export function PricingCard({ pack }: PricingCardProps) {
         <div className='space-y-3 mb-8 pb-8 border-b border-border'>
           <div className='flex items-center justify-between'>
             <span className='text-muted-foreground'>Credits</span>
-            <span className='font-semibold'>
-              {credits.toLocaleString()}
-            </span>
+            <span className='font-semibold'>{credits.toLocaleString()}</span>
           </div>
           <div className='flex items-center justify-between'>
             <span className='text-muted-foreground'>Basic actions</span>

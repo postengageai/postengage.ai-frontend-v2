@@ -23,16 +23,43 @@ export const CREDIT_COSTS = {
 // API values always take precedence at runtime.
 // Savings % calculated from Starter per-credit rate — no hardcoded strings.
 const _fallbackPacks = [
-  { id: 'starter_in', name: 'Starter', credits: 650,  price: 749,  currency: 'INR', popular: false, badge: undefined as string | undefined },
-  { id: 'growth_in',  name: 'Growth',  credits: 3500, price: 3299, currency: 'INR', popular: true,  badge: 'Most Popular' },
-  { id: 'agency_in',  name: 'Agency',  credits: 10000,price: 8299, currency: 'INR', popular: false, badge: 'Best Value' },
+  {
+    id: 'starter_in',
+    name: 'Starter',
+    credits: 650,
+    price: 749,
+    currency: 'INR',
+    popular: false,
+    badge: undefined as string | undefined,
+  },
+  {
+    id: 'growth_in',
+    name: 'Growth',
+    credits: 3500,
+    price: 3299,
+    currency: 'INR',
+    popular: true,
+    badge: 'Most Popular',
+  },
+  {
+    id: 'agency_in',
+    name: 'Agency',
+    credits: 10000,
+    price: 8299,
+    currency: 'INR',
+    popular: false,
+    badge: 'Best Value',
+  },
 ];
 
-const _starterRatePerCredit = _fallbackPacks[0].price / _fallbackPacks[0].credits;
+const _starterRatePerCredit =
+  _fallbackPacks[0].price / _fallbackPacks[0].credits;
 
 export const CREDIT_PACKS = _fallbackPacks.map(p => {
   const ratePerCredit = p.price / p.credits;
-  const savingsPct = Math.round((1 - ratePerCredit / _starterRatePerCredit) * 100);
+  const savingsPct = Math.round(
+    (1 - ratePerCredit / _starterRatePerCredit) * 100
+  );
   const aiActions = calculateActions(p.credits, true);
   return {
     ...p,

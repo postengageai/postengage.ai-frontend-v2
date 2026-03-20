@@ -1,7 +1,8 @@
 'use client';
 
 import type React from 'react';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -9,51 +10,22 @@ interface TrendStatCardProps {
   label: string;
   value: string | number;
   subValue?: React.ReactNode;
-  delta?: number;
+  delta?: number; // % change vs previous period, positive = good
   deltaLabel?: string;
-  sparkData?: number[];
+  sparkData?: number[]; // 7 data points for sparkline
+  sparkColor?: string;
   icon?: React.ReactNode;
-  invertDelta?: boolean;
+  invertDelta?: boolean; // true = lower is better (e.g. fallback rate)
   accentColor?: 'blue' | 'green' | 'violet' | 'orange' | 'red';
-  empty?: boolean;
-  emptyMessage?: string;
   onClick?: () => void;
 }
 
-const accentMap: Record<
-  NonNullable<TrendStatCardProps['accentColor']>,
-  { border: string; icon: string; spark: string; glow: string }
-> = {
-  violet: {
-    border: 'border-l-violet-500',
-    icon: 'bg-violet-500/10 text-violet-400',
-    spark: '#8b5cf6',
-    glow: 'shadow-[0_0_12px_0_rgba(139,92,246,0.12)]',
-  },
-  green: {
-    border: 'border-l-emerald-500',
-    icon: 'bg-emerald-500/10 text-emerald-400',
-    spark: '#10b981',
-    glow: 'shadow-[0_0_12px_0_rgba(16,185,129,0.12)]',
-  },
-  blue: {
-    border: 'border-l-blue-500',
-    icon: 'bg-blue-500/10 text-blue-400',
-    spark: '#3b82f6',
-    glow: 'shadow-[0_0_12px_0_rgba(59,130,246,0.12)]',
-  },
-  orange: {
-    border: 'border-l-amber-500',
-    icon: 'bg-amber-500/10 text-amber-400',
-    spark: '#f59e0b',
-    glow: 'shadow-[0_0_12px_0_rgba(245,158,11,0.12)]',
-  },
-  red: {
-    border: 'border-l-red-500',
-    icon: 'bg-red-500/10 text-red-400',
-    spark: '#ef4444',
-    glow: 'shadow-[0_0_12px_0_rgba(239,68,68,0.12)]',
-  },
+const accentMap = {
+  blue: { icon: 'bg-info/10 text-info', spark: '#3b82f6' },
+  green: { icon: 'bg-success/10 text-success', spark: '#22c55e' },
+  violet: { icon: 'bg-primary/10 text-primary', spark: '#6c47ff' },
+  orange: { icon: 'bg-warning/10 text-warning', spark: '#f97316' },
+  red: { icon: 'bg-destructive/10 text-destructive', spark: '#ef4444' },
 };
 
 export function TrendStatCard({
@@ -63,101 +35,95 @@ export function TrendStatCard({
   delta,
   deltaLabel = 'vs last week',
   sparkData,
+  sparkColor,
   icon,
   invertDelta = false,
-  accentColor = 'violet',
-  empty = false,
-  emptyMessage,
+  accentColor = 'blue',
   onClick,
 }: TrendStatCardProps) {
   const accent = accentMap[accentColor];
-  const chartData = sparkData?.map((v, i) => ({ i, v }));
+  const lineColor = sparkColor ?? accent.spark;
 
-  const isPositive = delta !== undefined
-    ? (invertDelta ? delta < 0 : delta > 0)
-    : null;
+  const isPositive =
+    delta !== undefined ? (invertDelta ? delta < 0 : delta > 0) : null;
   const isNeutral = delta === undefined || delta === 0;
 
   const deltaColor = isNeutral
     ? 'text-muted-foreground'
     : isPositive
-      ? 'text-emerald-400'
-      : 'text-red-400';
+      ? 'text-success'
+      : 'text-destructive';
 
   const DeltaIcon = isNeutral ? Minus : isPositive ? TrendingUp : TrendingDown;
 
+  const chartData = sparkData?.map((v, i) => ({ i, v }));
+
   return (
-    <div
-      onClick={onClick}
+    <Card
       className={cn(
-        'relative flex flex-col bg-card border border-border border-l-2 rounded-xl p-5',
-        'transition-all duration-200',
-        accent.border,
-        onClick && 'cursor-pointer hover:border-border/60 hover:-translate-y-0.5',
-        onClick && accent.glow,
+        'overflow-hidden transition-all duration-200',
+        onClick &&
+          'cursor-pointer hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20'
       )}
+      onClick={onClick}
     >
-      {/* Header */}
-      <div className='flex items-center justify-between mb-3'>
+      <CardContent className='p-4 space-y-2.5'>
+        {/* Header row */}
         <div className='flex items-center gap-2'>
           {icon && (
-            <div className={cn('p-1.5 rounded-lg', accent.icon)}>
-              {icon}
-            </div>
+            <div className={cn('p-1.5 rounded-lg', accent.icon)}>{icon}</div>
           )}
-          <span className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
-            {label}
-          </span>
+          <p className='text-sm text-muted-foreground font-medium'>{label}</p>
         </div>
-        {/* Mini sparkline in top-right */}
+
+        {/* Value + sub */}
+        <div>
+          <p className='text-2xl font-bold text-foreground tracking-tight leading-none'>
+            {value}
+          </p>
+          {subValue && (
+            <p className='text-xs text-muted-foreground mt-1'>{subValue}</p>
+          )}
+        </div>
+
+        {/* Sparkline */}
         {chartData && chartData.length > 0 && (
-          <div className='w-14 h-6 opacity-60'>
+          <div className='h-9 -mx-1'>
             <ResponsiveContainer width='100%' height='100%'>
               <LineChart data={chartData}>
                 <Line
                   type='monotone'
                   dataKey='v'
-                  stroke={accent.spark}
+                  stroke={lineColor}
                   strokeWidth={1.5}
                   dot={false}
                   isAnimationActive={false}
                 />
+                <Tooltip content={() => null} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         )}
-      </div>
 
-      {/* Value */}
-      {empty ? (
-        <div className='flex-1 flex flex-col justify-center py-2'>
-          <p className='text-2xl font-bold text-foreground tabular-nums'>—</p>
-          {emptyMessage && (
-            <p className='text-xs text-muted-foreground mt-1 leading-snug'>{emptyMessage}</p>
-          )}
-        </div>
-      ) : (
-        <div className='flex-1'>
-          <p className='text-3xl font-bold tracking-tight text-foreground tabular-nums leading-none'>
-            {value}
-          </p>
-          {subValue && (
-            <div className='text-xs text-muted-foreground mt-1.5 leading-snug'>
-              {subValue}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Delta */}
-      {!empty && delta !== undefined && (
-        <div className={cn('flex items-center gap-1 mt-3 text-xs font-medium', deltaColor)}>
-          <DeltaIcon className='h-3 w-3 shrink-0' />
-          <span>
-            {delta > 0 ? '+' : ''}{delta}% {deltaLabel}
-          </span>
-        </div>
-      )}
-    </div>
+        {/* Delta badge */}
+        {delta !== undefined && (
+          <div
+            className={cn(
+              'inline-flex items-center gap-1 text-xs font-semibold',
+              deltaColor
+            )}
+          >
+            <DeltaIcon className='h-3 w-3' />
+            <span>
+              {delta > 0 ? '+' : ''}
+              {delta}%{' '}
+              <span className='font-normal text-muted-foreground'>
+                {deltaLabel}
+              </span>
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
