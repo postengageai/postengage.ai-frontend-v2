@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { SystemHealthBar } from '@/components/dashboard/system-health-bar';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
 import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
@@ -14,11 +13,11 @@ import { notificationsApi } from '@/lib/api/notifications';
 import { automationsApi } from '@/lib/api/automations';
 import { useToast } from '@/components/ui/use-toast';
 import { parseApiError } from '@/lib/http/errors';
-import type { Automation, ConnectedAccount } from '@/lib/types/dashboard';
+import type { Automation } from '@/lib/types/dashboard';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import type { Notification } from '@/lib/types/notifications';
 import { analytics } from '@/lib/analytics';
-import { useDashboardStats, useDashboardHealth, queryKeys } from '@/lib/hooks';
+import { useDashboardStats, queryKeys } from '@/lib/hooks';
 import { ImpactHero } from '@/components/dashboard/impact-hero';
 import { GrowthChart } from '@/components/dashboard/growth-chart';
 import { WinsFeed } from '@/components/dashboard/wins-feed';
@@ -46,7 +45,6 @@ export default function DashboardPage() {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useDashboardStats();
-  const { data: health } = useDashboardHealth();
   const { data: impactData, isLoading: impactLoading } = useImpactSummary();
 
   // ── First reply analytics tracking ────────────────────────────────────────
@@ -192,17 +190,6 @@ export default function DashboardPage() {
   };
 
   // ── Derived display data ───────────────────────────────────────────────────
-  const connectedAccount: ConnectedAccount | null = data?.connected_account
-    ? {
-        id: 'instagram_1',
-        platform: 'instagram',
-        username: data.connected_account.username,
-        isConnected: data.connected_account.status === 'connected',
-        lastSync: new Date(data.connected_account.last_sync),
-        profilePicture: data.connected_account.avatar_url,
-      }
-    : null;
-
   const credits = {
     remaining: data?.overview.credits_remaining ?? 0,
     estimatedReplies: data?.overview.credits_remaining ?? 0,
@@ -232,13 +219,6 @@ export default function DashboardPage() {
       target_channels: a.target_channels ?? [],
     })
   );
-  const activeAutomationCount = automations.filter(
-    a => a.status === 'running'
-  ).length;
-  const lastActivity = notifications[0]?.created_at
-    ? new Date(notifications[0].created_at)
-    : undefined;
-
   if (isLoading) return <DashboardSkeleton />;
 
   const hasNoAutomations = automations.length === 0;
@@ -253,15 +233,6 @@ export default function DashboardPage() {
         className='p-4 sm:p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto'
         data-tour='dashboard-stats'
       >
-        {/* ── ZONE 1: Status Bar ─────────────────────────────────────────────── */}
-        <SystemHealthBar
-          health={health}
-          isConnected={connectedAccount?.isConnected ?? false}
-          activeAutomations={activeAutomationCount}
-          creditsRemaining={credits.remaining}
-          lastActivityTime={lastActivity}
-        />
-
         {/* Paused automations banner */}
         {hasAllPaused && lowCredits && (
           <div className='flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3'>
@@ -279,9 +250,6 @@ export default function DashboardPage() {
             </Button>
           </div>
         )}
-
-        {/* ── ZONE 1b: PostEngage Impact Hero ────────────────────────────────── */}
-        <ImpactHero data={impactData} isLoading={impactLoading} />
 
         {/* ── ZONE 2: Greeting + Hero Chart ─────────────────────────────────── */}
         <div className='space-y-4'>
@@ -341,6 +309,9 @@ export default function DashboardPage() {
 
         {/* ── ZONE 3b: Growth Chart ─────────────────────────────────────────── */}
         <GrowthChart />
+
+        {/* ── ZONE 3b2: PostEngage Impact Hero ────────────────────────────────── */}
+        <ImpactHero data={impactData} isLoading={impactLoading} />
 
         {/* ── ZONE 3c: Wins Feed + ROI (2-col) ──────────────────────────────── */}
         <div className='grid gap-6 md:grid-cols-2'>

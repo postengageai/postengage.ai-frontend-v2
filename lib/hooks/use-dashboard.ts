@@ -28,18 +28,6 @@ export function useConversationChart(days: 7 | 30 = 7) {
   });
 }
 
-export function useDashboardHealth() {
-  return useQuery({
-    queryKey: queryKeys.dashboard.health(),
-    queryFn: async () => {
-      const res = await DashboardApi.getHealth();
-      return res.data;
-    },
-    staleTime: 60 * 1_000,
-    refetchInterval: 60 * 1_000, // re-fetch health every minute
-  });
-}
-
 // ── Credits balance ────────────────────────────────────────────────────────────
 
 export function useCreditsBalance() {

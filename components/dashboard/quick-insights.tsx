@@ -68,6 +68,8 @@ export function QuickInsights({
         label='Time Saved'
         value={`~${timeSavedWeekHours}h`}
         subValue='saved this week'
+        sparkData={conversationSpark}
+        sparkColor='#a78bfa'
         icon={<Clock className='h-4 w-4' />}
         accentColor='violet'
       />
@@ -76,6 +78,8 @@ export function QuickInsights({
       <TrendStatCard
         label='Credits Left'
         value={credits.remaining}
+        sparkData={autoReplySpark}
+        sparkColor={isLowCredits ? '#f97316' : '#3b82f6'}
         subValue={
           isLowCredits ? (
             <Link

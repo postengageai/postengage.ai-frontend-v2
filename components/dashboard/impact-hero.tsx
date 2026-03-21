@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, TrendingUp, Target, Clock } from 'lucide-react';
+import { Users, TrendingUp, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { ImpactSummaryResponse } from '@/lib/api/value-analytics';
@@ -104,7 +104,7 @@ export function ImpactHero({ data, isLoading }: ImpactHeroProps) {
       </div>
 
       {/* Stat grid */}
-      <div className='grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-border/60'>
+      <div className='grid grid-cols-1 sm:grid-cols-3 divide-x divide-y sm:divide-y-0 divide-border/60'>
         <ImpactStatCard
           isLoading={isLoading}
           icon={<Users className='h-3 w-3' />}
@@ -128,14 +128,6 @@ export function ImpactHero({ data, isLoading }: ImpactHeroProps) {
               : ''
           }
           accentClass='text-success'
-        />
-        <ImpactStatCard
-          isLoading={isLoading}
-          icon={<Target className='h-3 w-3' />}
-          label='Leads captured'
-          value={data ? data.total_leads_captured.toLocaleString() : '—'}
-          subtext='from DM & comment automations'
-          accentClass='text-primary'
         />
         <ImpactStatCard
           isLoading={isLoading}

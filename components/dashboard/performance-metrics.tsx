@@ -1,13 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  TrendingUp,
-  MessageCircle,
-  MousePointerClick,
-  Clock,
-  Info,
-} from 'lucide-react';
+import { MessageCircle, MousePointerClick, Clock, Info } from 'lucide-react';
 import type { PerformanceMetrics as IPerformanceMetrics } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
@@ -141,7 +135,6 @@ function MetricCard({
 }
 
 export function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
-  const engagementThreshold = getThreshold(metrics.engagement_rate, 3, 1);
   const replyThreshold = getThreshold(metrics.reply_rate, 10, 3);
   const conversionThreshold = getThreshold(metrics.conversion_rate, 5, 1);
 
@@ -154,23 +147,6 @@ export function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
   })();
 
   const items: MetricCardProps[] = [
-    {
-      title: 'Engagement Rate',
-      rawValue: metrics.engagement_rate,
-      displayValue: `${metrics.engagement_rate}%`,
-      icon: TrendingUp,
-      iconColor: 'text-info',
-      iconBg: 'bg-info/10',
-      description: 'Interactions per impression',
-      hint:
-        metrics.engagement_rate === 0
-          ? 'Connect Instagram Insights to track reach & engagement data.'
-          : metrics.engagement_rate < 3
-            ? 'Instagram average is 1–5%. More Reel posts typically boost this.'
-            : 'Above average! Keep posting consistently to maintain momentum.',
-      threshold: engagementThreshold,
-      progress: Math.min(metrics.engagement_rate * 10, 100),
-    },
     {
       title: 'Reply Rate',
       rawValue: metrics.reply_rate,
@@ -244,7 +220,7 @@ export function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+        <div className='grid gap-3 sm:grid-cols-3'>
           {items.map(item => (
             <MetricCard key={item.title} {...item} />
           ))}
