@@ -846,7 +846,7 @@ export function AutomationFormPage({
         {
           action_type: type,
           execution_order: formData.actions.length + 1,
-          delay_seconds: formData.actions.length === 0 ? 2 : 5,
+          delay_seconds: 5,
           status: 'active',
           action_payload: payload,
           bot_id: undefined,
@@ -1539,13 +1539,13 @@ export function AutomationFormPage({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {[0, 2, 5, 10, 30, 60].map(s => (
+                              {[5, 10, 30, 60, 120, 300].map(s => (
                                 <SelectItem
                                   key={s}
                                   value={String(s)}
                                   className='text-xs'
                                 >
-                                  {s === 0 ? 'instant' : `${s}s`}
+                                  {s < 60 ? `${s}s` : `${s / 60}m`}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1617,7 +1617,9 @@ export function AutomationFormPage({
                 })}
 
                 {/* Add action */}
-                {formData.actions.length < 2 && (
+                {getAvailableActionTypes().some(
+                  a => !formData.actions.find(x => x.action_type === a.type)
+                ) && (
                   <div className='space-y-2'>
                     {getAvailableActionTypes()
                       .filter(
