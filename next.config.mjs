@@ -39,6 +39,9 @@ const nextConfig = {
       // ── PostEngage CDN / S3 ──────────────────────────────────────────
       { protocol: 'https', hostname: 'cdn.postengage.ai' },
       { protocol: 'https', hostname: 'media.postengage.ai' },
+      // MinIO object storage -- user-uploaded media (social profile avatars, brand assets).
+      // Without this entry the Next.js Image component refuses to optimise the URL.
+      { protocol: 'https', hostname: 'minio.postengage.ai' },
       { protocol: 'https', hostname: '*.s3.amazonaws.com' },
       { protocol: 'https', hostname: '*.s3.*.amazonaws.com' },
       { protocol: 'https', hostname: 'storage.googleapis.com' },
