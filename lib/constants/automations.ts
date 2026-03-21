@@ -6,6 +6,7 @@ export const AutomationTriggerType = {
   LIVE_COMMENT: 'live_comment',
   MESSAGE_REACTION: 'message_reaction',
   COMMENT_MENTION: 'comment_mention',
+  MESSAGING_REFERRAL: 'messaging_referral',
 } as const;
 
 export type AutomationTriggerTypeType =
@@ -37,6 +38,7 @@ export const AutomationActionType = {
   PRIVATE_REPLY: 'private_reply',
   HIDE_COMMENT: 'hide_comment',
   DELETE_COMMENT: 'delete_comment',
+  REACT_TO_DM: 'react_to_dm',
 } as const;
 
 export type AutomationActionTypeType =
@@ -69,6 +71,7 @@ export const AutomationConditionType = {
   TIME_RANGE: 'time_range',
   FOLLOWER_COUNT: 'follower_count',
   ENGAGEMENT_HISTORY: 'engagement_history',
+  FIRST_CONTACT: 'first_contact',
 } as const;
 
 export type AutomationConditionTypeType =

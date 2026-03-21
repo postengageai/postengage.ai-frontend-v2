@@ -94,10 +94,20 @@ export interface PrivateReplyPayload {
   use_ai_reply?: boolean;
 }
 
+export interface HideCommentPayload {
+  hide: boolean;
+}
+
+export interface ReactToDmPayload {
+  reaction: string;
+}
+
 export type AutomationActionPayload =
   | ReplyCommentPayload
   | SendDmPayload
-  | PrivateReplyPayload;
+  | PrivateReplyPayload
+  | HideCommentPayload
+  | ReactToDmPayload;
 
 export interface AutomationAction {
   action_type: AutomationActionType;

@@ -31,6 +31,7 @@
     "prefer-const": "error",
     "no-var": "error",
     "no-console": "warn",
+    "no-redeclare": "off",
     "prettier/prettier": "error"
   },
   "settings": {

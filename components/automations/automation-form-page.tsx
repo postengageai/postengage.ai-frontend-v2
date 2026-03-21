@@ -1,17 +1,22 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import {
   ArrowLeft,
+  AtSign,
   Check,
   ChevronDown,
   ChevronRight,
+  EyeOff,
+  Heart,
   ImageIcon,
+  ImagePlay,
   Loader2,
   MessageCircle,
   Mail,
   MessageSquare,
+  Radio,
   Send,
   Plus,
   Trash2,
@@ -20,6 +25,7 @@ import {
   Sparkles,
   Info,
   Bot as BotIcon,
+  Link,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -67,6 +73,8 @@ import type {
   SendDmPayload,
   ReplyCommentPayload,
   PrivateReplyPayload,
+  HideCommentPayload,
+  ReactToDmPayload,
 } from '@/lib/api/automations';
 import type { AutomationFormData } from './automation-wizard';
 
@@ -417,6 +425,90 @@ function DmActionEditor({
   );
 }
 
+function HideCommentActionEditor({
+  payload,
+  onUpdate,
+}: {
+  payload: HideCommentPayload;
+  onUpdate: (p: HideCommentPayload) => void;
+}) {
+  return (
+    <div className='space-y-3'>
+      <p className='text-sm text-muted-foreground'>
+        Choose whether to hide or unhide the comment that triggered this
+        automation.
+      </p>
+      <div className='flex gap-3'>
+        {[
+          {
+            value: true,
+            label: 'Hide comment',
+            description: 'Remove from public view',
+          },
+          {
+            value: false,
+            label: 'Unhide comment',
+            description: 'Make visible again',
+          },
+        ].map(({ value, label, description }) => (
+          <button
+            key={String(value)}
+            onClick={() => onUpdate({ hide: value })}
+            className={cn(
+              'flex flex-1 flex-col items-start rounded-xl border px-4 py-3 text-left transition-all',
+              payload.hide === value
+                ? 'border-primary bg-primary/5'
+                : 'border-border bg-card hover:border-primary/30'
+            )}
+          >
+            <p className='text-sm font-medium text-foreground'>{label}</p>
+            <p className='text-xs text-muted-foreground'>{description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍'];
+
+function ReactToDmActionEditor({
+  payload,
+  onUpdate,
+}: {
+  payload: ReactToDmPayload;
+  onUpdate: (p: ReactToDmPayload) => void;
+}) {
+  return (
+    <div className='space-y-3'>
+      <p className='text-sm text-muted-foreground'>
+        React to the message that triggered this automation.
+      </p>
+      <div className='flex flex-wrap gap-2'>
+        {REACTION_EMOJIS.map(emoji => (
+          <button
+            key={emoji}
+            onClick={() => onUpdate({ reaction: emoji })}
+            className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-xl border-2 text-xl transition-all',
+              payload.reaction === emoji
+                ? 'border-primary bg-primary/10'
+                : 'border-border bg-card hover:border-primary/40'
+            )}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+      {payload.reaction && (
+        <p className='text-xs text-muted-foreground'>
+          Selected: <span className='text-base'>{payload.reaction}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Section wrapper
 // ─────────────────────────────────────────────────────────────────────────────
@@ -590,10 +682,16 @@ export function AutomationFormPage({
   };
 
   const selectTrigger = (type: AutomationTriggerTypeType) => {
-    const source =
-      type === AutomationTriggerType.DM_RECEIVED
-        ? AutomationTriggerSource.DIRECT_MESSAGE
-        : AutomationTriggerSource.POST;
+    const dmTriggers: AutomationTriggerTypeType[] = [
+      AutomationTriggerType.DM_RECEIVED,
+      AutomationTriggerType.STORY_REPLY,
+      AutomationTriggerType.STORY_MENTION,
+      AutomationTriggerType.MESSAGE_REACTION,
+      AutomationTriggerType.MESSAGING_REFERRAL,
+    ];
+    const source = dmTriggers.includes(type)
+      ? AutomationTriggerSource.DIRECT_MESSAGE
+      : AutomationTriggerSource.POST;
     update({
       trigger_type: type,
       trigger_source: source,
@@ -667,36 +765,80 @@ export function AutomationFormPage({
   };
 
   // Actions
-  const getAvailableActionTypes = () =>
-    formData.trigger_type === AutomationTriggerType.NEW_COMMENT
-      ? [
-          {
-            type: AutomationActionType.REPLY_COMMENT,
-            label: 'Reply to comment',
-            icon: MessageSquare,
-            description: 'Post a public reply on the comment',
-          },
-          {
-            type: AutomationActionType.PRIVATE_REPLY,
-            label: 'Send private DM',
-            icon: Mail,
-            description: 'Send a private message to the commenter',
-          },
-        ]
-      : [
-          {
-            type: AutomationActionType.SEND_DM,
-            label: 'Send DM reply',
-            icon: Send,
-            description: 'Reply to the direct message',
-          },
-        ];
+  const getAvailableActionTypes = () => {
+    const commentTriggers: AutomationTriggerTypeType[] = [
+      AutomationTriggerType.NEW_COMMENT,
+      AutomationTriggerType.LIVE_COMMENT,
+      AutomationTriggerType.COMMENT_MENTION,
+    ];
+    const dmTriggers: AutomationTriggerTypeType[] = [
+      AutomationTriggerType.DM_RECEIVED,
+      AutomationTriggerType.STORY_REPLY,
+      AutomationTriggerType.STORY_MENTION,
+      AutomationTriggerType.MESSAGE_REACTION,
+      AutomationTriggerType.MESSAGING_REFERRAL,
+    ];
+    const triggerType = formData.trigger_type;
+
+    if (triggerType && commentTriggers.includes(triggerType)) {
+      return [
+        {
+          type: AutomationActionType.REPLY_COMMENT as AutomationActionTypeType,
+          label: 'Reply to comment',
+          icon: MessageSquare,
+          description: 'Post a public reply on the comment',
+        },
+        {
+          type: AutomationActionType.PRIVATE_REPLY as AutomationActionTypeType,
+          label: 'Send private DM',
+          icon: Mail,
+          description: 'Send a private message to the commenter',
+        },
+        {
+          type: AutomationActionType.HIDE_COMMENT as AutomationActionTypeType,
+          label: 'Hide comment',
+          icon: EyeOff,
+          description: 'Hide the comment from public view',
+        },
+      ];
+    }
+
+    if (triggerType && dmTriggers.includes(triggerType)) {
+      return [
+        {
+          type: AutomationActionType.SEND_DM as AutomationActionTypeType,
+          label: 'Send DM reply',
+          icon: Send,
+          description: 'Reply to the direct message',
+        },
+        {
+          type: AutomationActionType.REACT_TO_DM as AutomationActionTypeType,
+          label: 'React to message',
+          icon: Heart,
+          description: 'React with an emoji to the message',
+        },
+      ];
+    }
+
+    return [
+      {
+        type: AutomationActionType.SEND_DM as AutomationActionTypeType,
+        label: 'Send DM reply',
+        icon: Send,
+        description: 'Reply to the direct message',
+      },
+    ];
+  };
 
   const addAction = (type: AutomationActionTypeType) => {
     const payload: AutomationActionPayload =
       type === AutomationActionType.SEND_DM
         ? ({ message: { type: 'text', text: '' } } as SendDmPayload)
-        : ({ text: '' } as ReplyCommentPayload | PrivateReplyPayload);
+        : type === AutomationActionType.HIDE_COMMENT
+          ? ({ hide: true } as HideCommentPayload)
+          : type === AutomationActionType.REACT_TO_DM
+            ? ({ reaction: '❤️' } as ReactToDmPayload)
+            : ({ text: '' } as ReplyCommentPayload | PrivateReplyPayload);
 
     update({
       actions: [
@@ -793,9 +935,18 @@ export function AutomationFormPage({
           trigger_type: formData.trigger_type,
           trigger_source:
             formData.trigger_source ??
-            (formData.trigger_type === AutomationTriggerType.DM_RECEIVED
-              ? AutomationTriggerSource.DIRECT_MESSAGE
-              : AutomationTriggerSource.POST),
+            (() => {
+              const dmTriggerTypes: AutomationTriggerTypeType[] = [
+                AutomationTriggerType.DM_RECEIVED,
+                AutomationTriggerType.STORY_REPLY,
+                AutomationTriggerType.STORY_MENTION,
+                AutomationTriggerType.MESSAGE_REACTION,
+                AutomationTriggerType.MESSAGING_REFERRAL,
+              ];
+              return dmTriggerTypes.includes(formData.trigger_type!)
+                ? AutomationTriggerSource.DIRECT_MESSAGE
+                : AutomationTriggerSource.POST;
+            })(),
           ...(formData.trigger_type === AutomationTriggerType.NEW_COMMENT
             ? {
                 trigger_scope:
@@ -1000,22 +1151,72 @@ export function AutomationFormPage({
             <div className='space-y-3'>
               {/* Trigger cards */}
               <div className='grid grid-cols-2 gap-3'>
-                {[
-                  {
-                    type: AutomationTriggerType.NEW_COMMENT as AutomationTriggerTypeType,
-                    label: 'New Comment',
-                    description: 'Someone comments on your posts or reels',
-                    icon: MessageCircle,
-                    badge: 'Popular',
-                  },
-                  {
-                    type: AutomationTriggerType.DM_RECEIVED as AutomationTriggerTypeType,
-                    label: 'Direct Message',
-                    description: 'Someone sends you a DM',
-                    icon: Mail,
-                    badge: null,
-                  },
-                ].map(({ type, label, description, icon: Icon, badge }) => {
+                {(
+                  [
+                    {
+                      type: AutomationTriggerType.NEW_COMMENT as AutomationTriggerTypeType,
+                      label: 'New Comment',
+                      description: 'Someone comments on your posts or reels',
+                      icon: MessageCircle,
+                      badge: 'Popular',
+                    },
+                    {
+                      type: AutomationTriggerType.DM_RECEIVED as AutomationTriggerTypeType,
+                      label: 'Direct Message',
+                      description: 'Someone sends you a DM',
+                      icon: Mail,
+                      badge: null,
+                    },
+                    {
+                      type: AutomationTriggerType.STORY_REPLY as AutomationTriggerTypeType,
+                      label: 'Story Reply',
+                      description: 'Someone replies to your story',
+                      icon: ImagePlay,
+                      badge: null,
+                    },
+                    {
+                      type: AutomationTriggerType.STORY_MENTION as AutomationTriggerTypeType,
+                      label: 'Story Mention',
+                      description: 'Someone mentions you in their story',
+                      icon: AtSign,
+                      badge: null,
+                    },
+                    {
+                      type: AutomationTriggerType.LIVE_COMMENT as AutomationTriggerTypeType,
+                      label: 'Live Comment',
+                      description: 'Someone comments during your live',
+                      icon: Radio,
+                      badge: 'Live',
+                    },
+                    {
+                      type: AutomationTriggerType.MESSAGE_REACTION as AutomationTriggerTypeType,
+                      label: 'DM Reaction',
+                      description: 'Someone reacts to your message',
+                      icon: Heart,
+                      badge: null,
+                    },
+                    {
+                      type: AutomationTriggerType.COMMENT_MENTION as AutomationTriggerTypeType,
+                      label: 'Comment Mention',
+                      description: 'Someone mentions you in a comment',
+                      icon: Tag,
+                      badge: null,
+                    },
+                    {
+                      type: AutomationTriggerType.MESSAGING_REFERRAL as AutomationTriggerTypeType,
+                      label: 'Click to DM',
+                      description: 'Someone clicks your ad or link to DM',
+                      icon: Link,
+                      badge: 'New',
+                    },
+                  ] satisfies {
+                    type: AutomationTriggerTypeType;
+                    label: string;
+                    description: string;
+                    icon: React.ElementType;
+                    badge: string | null;
+                  }[]
+                ).map(({ type, label, description, icon: Icon, badge }) => {
                   const active = formData.trigger_type === type;
                   return (
                     <button
@@ -1373,6 +1574,24 @@ export function AutomationFormPage({
                               updateAction(idx, { bot_id: id })
                             }
                             socialAccountId={formData.social_account_id}
+                          />
+                        ) : action.action_type ===
+                          AutomationActionType.HIDE_COMMENT ? (
+                          <HideCommentActionEditor
+                            payload={
+                              action.action_payload as HideCommentPayload
+                            }
+                            onUpdate={p =>
+                              updateAction(idx, { action_payload: p })
+                            }
+                          />
+                        ) : action.action_type ===
+                          AutomationActionType.REACT_TO_DM ? (
+                          <ReactToDmActionEditor
+                            payload={action.action_payload as ReactToDmPayload}
+                            onUpdate={p =>
+                              updateAction(idx, { action_payload: p })
+                            }
                           />
                         ) : (
                           <CommentActionEditor

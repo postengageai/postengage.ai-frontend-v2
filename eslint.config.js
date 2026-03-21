@@ -71,6 +71,7 @@ export default [
       'no-console': 'warn',
       'prettier/prettier': 'error',
       'no-undef': 'off', // TypeScript handles this
+      'no-redeclare': 'off', // @typescript-eslint/recommended handles const+type pattern
     },
     settings: {
       react: {
