@@ -73,9 +73,9 @@ export default function BuyCreditsPage() {
                   <Skeleton className='h-4 w-full' />
                 </div>
               ))
-            : data?.packs.map(pack => (
-                <PricingCard key={pack.id} pack={pack} />
-              ))}
+            : data?.packs
+                .filter(pack => !pack.is_enterprise)
+                .map(pack => <PricingCard key={pack.id} pack={pack} />)}
         </div>
       </section>
 
