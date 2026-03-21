@@ -55,6 +55,7 @@ import type {
   AutomationExecution,
 } from '@/lib/api/automations';
 import { automationsApi } from '@/lib/api/automations';
+import type { AutomationTriggerTypeType } from '@/lib/constants/automations';
 
 // ─── Preserved AutomationData interface (backward compat) ────────────────────
 
@@ -71,12 +72,7 @@ export interface AutomationData {
     avatar: string;
   };
   trigger: {
-    type:
-      | 'new_comment'
-      | 'dm_received'
-      | 'story_reply'
-      | 'mention'
-      | 'new_follower';
+    type: AutomationTriggerTypeType;
     scope?: 'all' | 'specific';
     content_count?: number;
   };
@@ -140,8 +136,14 @@ function getTriggerLabel(type: string, scope?: string): string {
       return 'New DM Received';
     case 'story_reply':
       return 'Story Reply';
-    case 'mention':
-      return 'Mention';
+    case 'story_mention':
+      return 'Story Mention';
+    case 'live_comment':
+      return 'Live Comment';
+    case 'message_reaction':
+      return 'DM Reaction';
+    case 'comment_mention':
+      return 'Comment Mention';
     case 'new_follower':
       return 'New Follower';
     default:

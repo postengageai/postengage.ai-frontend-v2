@@ -32,7 +32,7 @@ import {
   useCreditsActions,
 } from '@/lib/credits/store';
 import { DateRange } from '@/lib/types/credits';
-import { CreditsApi, Invoice, InvoicesResponse } from '@/lib/api/credits';
+import { CreditsApi, Invoice } from '@/lib/api/credits';
 import { useToast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 
@@ -54,10 +54,10 @@ function InvoicesTab() {
     async (page = 1) => {
       setIsLoading(true);
       try {
-        const res = (await CreditsApi.getInvoices({
+        const res = await CreditsApi.getInvoices({
           page,
           limit: 10,
-        })) as unknown as InvoicesResponse;
+        });
         setInvoices(res.data ?? []);
         setMeta(res.meta ?? { total: 0, page: 1, limit: 10, total_pages: 1 });
       } catch (_err) {

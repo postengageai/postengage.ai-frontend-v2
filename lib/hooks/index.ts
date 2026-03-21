@@ -10,3 +10,5 @@ export * from './use-dashboard';
 export * from './use-leads';
 export * from './use-bots';
 export * from './use-social-accounts';
+export * from './use-value-analytics';
+export * from './use-scheduler';

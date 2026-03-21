@@ -1,6 +1,11 @@
 export const AutomationTriggerType = {
   NEW_COMMENT: 'new_comment',
   DM_RECEIVED: 'dm_received',
+  STORY_REPLY: 'story_reply',
+  STORY_MENTION: 'story_mention',
+  LIVE_COMMENT: 'live_comment',
+  MESSAGE_REACTION: 'message_reaction',
+  COMMENT_MENTION: 'comment_mention',
 } as const;
 
 export type AutomationTriggerTypeType =
@@ -30,6 +35,8 @@ export const AutomationActionType = {
   REPLY_COMMENT: 'reply_comment',
   SEND_DM: 'send_dm',
   PRIVATE_REPLY: 'private_reply',
+  HIDE_COMMENT: 'hide_comment',
+  DELETE_COMMENT: 'delete_comment',
 } as const;
 
 export type AutomationActionTypeType =

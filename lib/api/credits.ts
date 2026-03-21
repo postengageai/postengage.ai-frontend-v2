@@ -96,7 +96,7 @@ export class CreditsApi {
       `${CREDITS_BASE_URL}/invoices`,
       { params: query }
     );
-    return response.data!.data as unknown as InvoicesResponse;
+    return response.data!.data;
   }
 
   static downloadInvoice(invoiceId: string): void {

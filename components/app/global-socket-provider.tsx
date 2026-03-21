@@ -6,6 +6,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { useUser } from '@/lib/user/store';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/hooks';
+import { usePrependWinItem } from '@/lib/hooks';
+import type { WinsFeedItem } from '@/lib/api/value-analytics';
 
 // ─── Web Audio beep ───────────────────────────────────────────────────────────
 
@@ -53,6 +55,7 @@ export function GlobalSocketProvider({
   const { toast } = useToast();
   const user = useUser();
   const qc = useQueryClient();
+  const prependWin = usePrependWinItem();
   const reconnectToastShown = useRef(false);
   const disconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -117,16 +120,59 @@ export function GlobalSocketProvider({
       maybePlaySound('notification');
     };
 
+    // ─── Value: live wins feed ─────────────────────────────────────────────
+    const handleWinsUpdate = (item: WinsFeedItem) => {
+      prependWin(item);
+    };
+
+    // ─── Value: milestone achieved ─────────────────────────────────────────
+    const handleMilestone = (payload: {
+      milestone_id: string;
+      title: string;
+      description: string;
+      celebration: 'toast' | 'confetti' | 'badge';
+    }) => {
+      const celebrationEmoji =
+        payload.celebration === 'confetti'
+          ? '🎉'
+          : payload.celebration === 'badge'
+            ? '🏅'
+            : '✅';
+      toast({
+        title: `${celebrationEmoji} ${payload.title}`,
+        description: payload.description,
+        duration: 8_000,
+      });
+      qc.invalidateQueries({ queryKey: queryKeys.value.milestones() });
+      if (payload.celebration === 'confetti') {
+        void import('canvas-confetti')
+          .then(m => m.default)
+          .then(confetti =>
+            confetti({
+              particleCount: 160,
+              spread: 80,
+              origin: { y: 0.55 },
+              colors: ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
+            })
+          )
+          .catch(() => undefined);
+      }
+    };
+
     socketService.subscribeToNotifications(handleNotification);
+    socketService.subscribeToWinsUpdate(handleWinsUpdate);
+    socketService.subscribeToMilestoneAchieved(handleMilestone);
 
     return () => {
       socketService.unsubscribeFromNotifications(handleNotification);
+      socketService.unsubscribeFromWinsUpdate(handleWinsUpdate);
+      socketService.unsubscribeFromMilestoneAchieved(handleMilestone);
       if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
     };
-  }, [user, toast, qc, maybePlaySound]);
+  }, [user, toast, qc, maybePlaySound, prependWin]);
 
   return <>{children}</>;
 }

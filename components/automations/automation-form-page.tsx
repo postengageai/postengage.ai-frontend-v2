@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ImageIcon,
   Loader2,
   MessageCircle,
   Mail,
@@ -22,7 +23,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -169,14 +169,19 @@ function DmActionEditor({
   bots,
   botId,
   onBotChange,
+  socialAccountId,
 }: {
   payload: SendDmPayload;
   onUpdate: (p: SendDmPayload) => void;
   bots: Bot[];
   botId?: string;
   onBotChange: (id: string | undefined) => void;
+  socialAccountId?: string;
 }) {
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const isText = payload.message?.type === 'text' || !payload.message;
+  const mediaUrl =
+    (payload.message as { payload?: { url?: string } })?.payload?.url ?? '';
   const uid = 'ai-dm';
   return (
     <div className='space-y-4'>
@@ -287,23 +292,103 @@ function DmActionEditor({
               className='resize-none text-sm'
             />
           ) : (
-            <Input
-              placeholder='Media URL…'
-              value={
-                (payload.message as { payload?: { url?: string } })?.payload
-                  ?.url || ''
-              }
-              onChange={e =>
-                onUpdate({
-                  ...payload,
-                  message: {
-                    type: 'image',
-                    payload: { url: e.target.value, is_reusable: true },
-                  },
-                } as SendDmPayload)
-              }
-              className='text-sm'
-            />
+            <div className='space-y-2'>
+              {mediaUrl ? (
+                <div className='relative w-full overflow-hidden rounded-lg border border-border'>
+                  {/* Preview */}
+                  <div className='flex items-center gap-3 p-3'>
+                    <div className='relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted'>
+                      {mediaUrl.match(/\.(mp4|mov|webm)$/i) ? (
+                        <div className='flex h-full w-full items-center justify-center text-2xl'>
+                          🎬
+                        </div>
+                      ) : (
+                        <Image
+                          src={mediaUrl}
+                          alt='Selected media'
+                          fill
+                          className='object-cover'
+                          unoptimized
+                        />
+                      )}
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <p className='truncate text-xs text-muted-foreground'>
+                        {mediaUrl}
+                      </p>
+                    </div>
+                    <button
+                      type='button'
+                      onClick={() =>
+                        onUpdate({
+                          ...payload,
+                          message: {
+                            type: 'image',
+                            payload: { url: '', is_reusable: true },
+                          },
+                        } as SendDmPayload)
+                      }
+                      className='shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    >
+                      <X className='h-4 w-4' />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type='button'
+                  onClick={() => setMediaPickerOpen(true)}
+                  className='flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 py-6 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/50'
+                >
+                  <ImageIcon className='h-8 w-8 opacity-40' />
+                  <span className='text-xs font-medium'>
+                    Click to select from your Instagram media
+                  </span>
+                </button>
+              )}
+
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='w-full gap-2 text-xs'
+                onClick={() => setMediaPickerOpen(true)}
+              >
+                <ImageIcon className='h-3.5 w-3.5' />
+                {mediaUrl ? 'Change media' : 'Browse library'}
+              </Button>
+
+              {/* Media picker modal */}
+              {mediaPickerOpen && socialAccountId && (
+                <MediaSelectorModal
+                  open={mediaPickerOpen}
+                  onOpenChange={setMediaPickerOpen}
+                  selectedIds={mediaUrl ? [] : []}
+                  onSelect={selected => {
+                    const picked = selected[0];
+                    if (picked) {
+                      onUpdate({
+                        ...payload,
+                        message: {
+                          type: picked.mime_type.startsWith('video')
+                            ? 'video'
+                            : 'image',
+                          payload: { url: picked.url, is_reusable: true },
+                        },
+                      } as SendDmPayload);
+                    }
+                    setMediaPickerOpen(false);
+                  }}
+                  socialAccountId={socialAccountId}
+                />
+              )}
+
+              {!socialAccountId && (
+                <p className='text-center text-xs text-muted-foreground'>
+                  Connect an Instagram account to browse media.
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -1287,6 +1372,7 @@ export function AutomationFormPage({
                             onBotChange={id =>
                               updateAction(idx, { bot_id: id })
                             }
+                            socialAccountId={formData.social_account_id}
                           />
                         ) : (
                           <CommentActionEditor

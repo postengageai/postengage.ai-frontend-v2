@@ -19,6 +19,13 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import type { Notification } from '@/lib/types/notifications';
 import { analytics } from '@/lib/analytics';
 import { useDashboardStats, useDashboardHealth, queryKeys } from '@/lib/hooks';
+import { ImpactHero } from '@/components/dashboard/impact-hero';
+import { GrowthChart } from '@/components/dashboard/growth-chart';
+import { WinsFeed } from '@/components/dashboard/wins-feed';
+import { AutomationPerformanceCards } from '@/components/dashboard/automation-performance-cards';
+import { ROICalculatorWidget } from '@/components/dashboard/roi-calculator';
+import { MilestoneBanner } from '@/components/dashboard/milestone-banner';
+import { useImpactSummary } from '@/lib/hooks';
 import { Zap, AlertTriangle, Plus } from 'lucide-react';
 import {
   AlertDialog,
@@ -40,6 +47,7 @@ export default function DashboardPage() {
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useDashboardStats();
   const { data: health } = useDashboardHealth();
+  const { data: impactData, isLoading: impactLoading } = useImpactSummary();
 
   // ── First reply analytics tracking ────────────────────────────────────────
   const hasTrackedRef = React.useRef(false);
@@ -214,8 +222,16 @@ export default function DashboardPage() {
     createdAt: new Date(a.created_at),
   }));
 
-  const notifications = (data?.recent_activity ??
-    []) as unknown as Notification[];
+  const notifications: Notification[] = (data?.recent_activity ?? []).map(
+    a => ({
+      ...a,
+      tags: a.tags ?? [],
+      dismissible: a.dismissible ?? false,
+      click_count: a.click_count ?? 0,
+      is_broadcast: a.is_broadcast ?? false,
+      target_channels: a.target_channels ?? [],
+    })
+  );
   const activeAutomationCount = automations.filter(
     a => a.status === 'running'
   ).length;
@@ -263,6 +279,9 @@ export default function DashboardPage() {
             </Button>
           </div>
         )}
+
+        {/* ── ZONE 1b: PostEngage Impact Hero ────────────────────────────────── */}
+        <ImpactHero data={impactData} isLoading={impactLoading} />
 
         {/* ── ZONE 2: Greeting + Hero Chart ─────────────────────────────────── */}
         <div className='space-y-4'>
@@ -319,6 +338,21 @@ export default function DashboardPage() {
             </p>
           </div>
         )}
+
+        {/* ── ZONE 3b: Growth Chart ─────────────────────────────────────────── */}
+        <GrowthChart />
+
+        {/* ── ZONE 3c: Wins Feed + ROI (2-col) ──────────────────────────────── */}
+        <div className='grid gap-6 md:grid-cols-2'>
+          <WinsFeed />
+          <ROICalculatorWidget />
+        </div>
+
+        {/* ── ZONE 3d: Automation Performance Cards ─────────────────────────── */}
+        <AutomationPerformanceCards />
+
+        {/* ── ZONE 3e: Milestone Achievements ───────────────────────────────── */}
+        <MilestoneBanner />
 
         {/* ── ZONE 4: Activity + Automations ───────────────────────────────── */}
         <div className='grid gap-6 md:grid-cols-2 xl:grid-cols-5'>

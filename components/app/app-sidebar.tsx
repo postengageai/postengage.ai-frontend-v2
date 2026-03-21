@@ -44,6 +44,8 @@ import {
   Dna,
   Users,
   Gift,
+  CalendarDays,
+  Trophy,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -85,6 +87,18 @@ const navItems = [
     href: '/dashboard/media',
     icon: Sparkles,
     tourId: 'sidebar-media',
+  },
+  {
+    title: 'Scheduler',
+    href: '/dashboard/scheduler',
+    icon: CalendarDays,
+    tourId: 'sidebar-scheduler',
+  },
+  {
+    title: 'Achievements',
+    href: '/dashboard/achievements',
+    icon: Trophy,
+    tourId: 'sidebar-achievements',
   },
   {
     title: 'Affiliate',

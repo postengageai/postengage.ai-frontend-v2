@@ -73,4 +73,37 @@ export const queryKeys = {
     all: ['notifications'] as const,
     list: () => [...queryKeys.notifications.all, 'list'] as const,
   },
+
+  // ── Scheduler ──────────────────────────────────────────────────────────────
+  scheduler: {
+    all: ['scheduler'] as const,
+    calendar: (from: string, to: string) =>
+      ['scheduler', 'calendar', from, to] as const,
+    posts: (params: {
+      status?: string;
+      from?: string;
+      to?: string;
+      page?: number;
+      limit?: number;
+    }) => ['scheduler', 'posts', params] as const,
+    post: (id: string) => ['scheduler', 'post', id] as const,
+    bestTimes: () => ['scheduler', 'best-times'] as const,
+    publishingLimit: () => ['scheduler', 'publishing-limit'] as const,
+    postAnalytics: (id: string) => ['scheduler', 'analytics', id] as const,
+  },
+
+  // ── Value Analytics ────────────────────────────────────────────────────────
+  value: {
+    all: ['value'] as const,
+    impactSummary: () => [...queryKeys.value.all, 'impact-summary'] as const,
+    growthChart: (metric: string, from: string, to: string) =>
+      [...queryKeys.value.all, 'growth-chart', metric, from, to] as const,
+    winsFeed: () => [...queryKeys.value.all, 'wins-feed'] as const,
+    roiSummary: () => [...queryKeys.value.all, 'roi-summary'] as const,
+    baselineComparison: () =>
+      [...queryKeys.value.all, 'baseline-comparison'] as const,
+    milestones: () => [...queryKeys.value.all, 'milestones'] as const,
+    automationCards: () =>
+      [...queryKeys.value.all, 'automation-cards'] as const,
+  },
 } as const;

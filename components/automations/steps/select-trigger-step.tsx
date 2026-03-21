@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -19,6 +19,11 @@ import {
   X,
   Check,
   Loader2,
+  ImagePlay,
+  AtSign,
+  Radio,
+  Heart,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaSelectorModal } from '../media-selector-modal';
@@ -48,6 +53,8 @@ const TRIGGERS = [
     icon: MessageCircle,
     description: 'Someone comments on your posts or reels',
     badge: 'Most Popular',
+    source: AutomationTriggerSource.POST,
+    hasScope: true,
   },
   {
     type: AutomationTriggerType.DM_RECEIVED,
@@ -55,8 +62,63 @@ const TRIGGERS = [
     icon: Mail,
     description: 'Someone sends you a direct message',
     badge: null,
+    source: AutomationTriggerSource.DIRECT_MESSAGE,
+    hasScope: false,
   },
-] as const;
+  {
+    type: AutomationTriggerType.STORY_REPLY,
+    label: 'Story Reply',
+    icon: ImagePlay,
+    description: 'Someone replies to your story',
+    badge: null,
+    source: AutomationTriggerSource.DIRECT_MESSAGE,
+    hasScope: false,
+  },
+  {
+    type: AutomationTriggerType.STORY_MENTION,
+    label: 'Story Mention',
+    icon: AtSign,
+    description: 'Someone mentions you in their story',
+    badge: null,
+    source: AutomationTriggerSource.DIRECT_MESSAGE,
+    hasScope: false,
+  },
+  {
+    type: AutomationTriggerType.LIVE_COMMENT,
+    label: 'Live Comment',
+    icon: Radio,
+    description: 'Someone comments during your live broadcast',
+    badge: 'Live Only',
+    source: AutomationTriggerSource.POST,
+    hasScope: false,
+  },
+  {
+    type: AutomationTriggerType.MESSAGE_REACTION,
+    label: 'DM Reaction',
+    icon: Heart,
+    description: 'Someone reacts to one of your messages',
+    badge: null,
+    source: AutomationTriggerSource.DIRECT_MESSAGE,
+    hasScope: false,
+  },
+  {
+    type: AutomationTriggerType.COMMENT_MENTION,
+    label: 'Comment Mention',
+    icon: Tag,
+    description: 'Someone mentions you in a comment',
+    badge: null,
+    source: AutomationTriggerSource.POST,
+    hasScope: false,
+  },
+] satisfies {
+  type: AutomationTriggerTypeType;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+  badge: string | null;
+  source: AutomationTriggerSourceType;
+  hasScope: boolean;
+}[];
 
 export function SelectTriggerStep({
   formData,
@@ -142,17 +204,14 @@ export function SelectTriggerStep({
     setSelectedMediaIds([]);
     setSelectedMedia([]);
 
+    const triggerDef = TRIGGERS.find(t => t.type === trigger);
     const source: AutomationTriggerSourceType =
-      trigger === AutomationTriggerType.DM_RECEIVED
-        ? AutomationTriggerSource.DIRECT_MESSAGE
-        : AutomationTriggerSource.POST;
+      triggerDef?.source ?? AutomationTriggerSource.POST;
 
     updateFormData({
       trigger_type: trigger,
       trigger_source: source,
-      ...(trigger === AutomationTriggerType.NEW_COMMENT && {
-        trigger_scope: AutomationTriggerScope.ALL,
-      }),
+      trigger_scope: AutomationTriggerScope.ALL,
       content_ids: [],
       selected_media: [],
     });
@@ -199,15 +258,11 @@ export function SelectTriggerStep({
 
   const handleNext = () => {
     if (selectedTrigger) {
-      const isCommentTrigger =
-        selectedTrigger === AutomationTriggerType.NEW_COMMENT;
+      const triggerDef = TRIGGERS.find(t => t.type === selectedTrigger);
       updateFormData({
         trigger_type: selectedTrigger,
-        trigger_source:
-          selectedTrigger === AutomationTriggerType.DM_RECEIVED
-            ? AutomationTriggerSource.DIRECT_MESSAGE
-            : AutomationTriggerSource.POST,
-        ...(isCommentTrigger && {
+        trigger_source: triggerDef?.source ?? AutomationTriggerSource.POST,
+        ...(triggerDef?.hasScope && {
           trigger_scope: scope,
           content_ids: selectedMediaIds,
           selected_media: selectedMedia,
@@ -217,9 +272,10 @@ export function SelectTriggerStep({
     }
   };
 
+  const selectedTriggerDef = TRIGGERS.find(t => t.type === selectedTrigger);
   const canContinue =
     selectedTrigger &&
-    (selectedTrigger !== AutomationTriggerType.NEW_COMMENT ||
+    (!selectedTriggerDef?.hasScope ||
       scope === AutomationTriggerScope.ALL ||
       selectedMediaIds.length > 0);
 
@@ -251,7 +307,7 @@ export function SelectTriggerStep({
             >
               <div
                 className={cn(
-                  'flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                  'shrink-0 flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
                   isSelected
                     ? 'bg-primary text-white'
                     : 'bg-muted text-muted-foreground'
@@ -275,7 +331,7 @@ export function SelectTriggerStep({
                 </p>
               </div>
               {isSelected && (
-                <div className='flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white'>
+                <div className='shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white'>
                   <Check className='h-3 w-3' />
                 </div>
               )}
@@ -284,8 +340,8 @@ export function SelectTriggerStep({
         })}
       </div>
 
-      {/* Trigger Configuration (only for New Comment) */}
-      {selectedTrigger === AutomationTriggerType.NEW_COMMENT && (
+      {/* Trigger Configuration (only for triggers with scope selection) */}
+      {selectedTriggerDef?.hasScope && (
         <div className='mb-8 rounded-xl border border-border bg-card/50 p-5'>
           <h3 className='mb-4 text-sm font-semibold text-foreground'>
             Trigger Configuration
