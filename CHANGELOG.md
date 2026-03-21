@@ -3,6 +3,13 @@
 All notable changes to **postengage.ai-frontend** are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.0](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.1.0...v1.2.0) (2026-03-21)
+
+### ✨ Features
+
+- **media:** add edit/delete actions to uploaded media view page ([42576c4](https://github.com/postengageai/postengage.ai-frontend-v2/commit/42576c4e065cdb8e539669cc02df21dacfc11c36))
+- **media:** instagram post detail page with paginated comments ([2c0743b](https://github.com/postengageai/postengage.ai-frontend-v2/commit/2c0743bcd60b0043c4b11ec1db72b40a3dc292c1))
+
 ## [1.1.0](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.0.2...v1.1.0) (2026-03-21)
 
 ### ✨ Features
