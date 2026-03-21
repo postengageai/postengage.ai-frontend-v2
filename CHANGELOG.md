@@ -3,6 +3,12 @@
 All notable changes to **postengage.ai-frontend** are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.1](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.0.0...v1.0.1) (2026-03-21)
+
+### 🐛 Bug Fixes
+
+- **images:** add minio.postengage.ai to Next.js remotePatterns ([c9beed6](https://github.com/postengageai/postengage.ai-frontend-v2/commit/c9beed6beae75a9912ff323a0393240c818cb6c9))
+
 ## 1.0.0 (2026-03-21)
 
 ### ✨ Features
