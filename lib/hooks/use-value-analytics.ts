@@ -65,7 +65,7 @@ export function useWinsFeed() {
       return res.data;
     },
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: lastPage => lastPage.next_cursor ?? undefined,
+    getNextPageParam: lastPage => lastPage?.next_cursor ?? undefined,
     staleTime: 30 * 1_000,
   });
 }
@@ -87,7 +87,7 @@ export function usePrependWinItem() {
         return {
           ...old,
           pages: [
-            { ...pages[0], items: [item, ...pages[0].items] },
+            { ...pages[0], items: [item, ...(pages[0]?.items ?? [])] },
             ...pages.slice(1),
           ],
         };

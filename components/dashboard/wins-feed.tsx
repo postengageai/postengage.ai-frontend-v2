@@ -86,7 +86,7 @@ export function WinsFeed() {
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useWinsFeed();
 
-  const allItems = data?.pages.flatMap(p => p.items) ?? [];
+  const allItems = data?.pages.flatMap(p => p?.items ?? []) ?? [];
 
   // WebSocket: subscribe on mount, unsubscribe on unmount
   const handleWinsUpdate = useCallback(
