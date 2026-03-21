@@ -3,6 +3,12 @@
 All notable changes to **postengage.ai-frontend** are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.0](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.0.2...v1.1.0) (2026-03-21)
+
+### ✨ Features
+
+- **pricing:** hide enterprise card from buy credits page ([007f09f](https://github.com/postengageai/postengage.ai-frontend-v2/commit/007f09fe51fe85868fd45f42083a86e77ea0c0d0))
+
 ## [1.0.2](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.0.1...v1.0.2) (2026-03-21)
 
 ### 🐛 Bug Fixes
