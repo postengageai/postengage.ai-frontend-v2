@@ -5,7 +5,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { MediaApi, Media } from '@/lib/api/media';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Download, FileText, Loader2, X } from 'lucide-react';
+import { MediaEditDialog } from '@/components/media/media-edit-dialog';
+import {
+  ArrowLeft,
+  Download,
+  FileText,
+  Loader2,
+  X,
+  Edit,
+  Trash,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
 import axios from 'axios';
@@ -18,6 +27,8 @@ export default function MediaViewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -121,6 +132,25 @@ export default function MediaViewPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!media || !confirm('Delete this file? This cannot be undone.')) return;
+    setIsDeleting(true);
+    try {
+      await MediaApi.delete(media.id);
+      toast({ title: 'Deleted', description: 'File removed successfully.' });
+      router.push('/dashboard/media');
+    } catch (_error) {
+      const err = parseApiError(_error);
+      toast({
+        variant: 'destructive',
+        title: err.title,
+        description: err.message,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!media) {
     return null;
   }
@@ -145,27 +175,47 @@ export default function MediaViewPage() {
             </p>
           </div>
         </div>
-        {isDownloading ? (
-          <div className='flex flex-col gap-2 w-48'>
-            <div className='flex items-center justify-between text-xs'>
-              <span>Downloading... {downloadProgress}%</span>
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={handleCancelDownload}
-                className='h-4 w-4 text-muted-foreground hover:text-foreground'
-              >
-                <X className='h-3 w-3' />
-              </Button>
-            </div>
-            <Progress value={downloadProgress} className='h-2' />
-          </div>
-        ) : (
-          <Button variant='outline' onClick={handleDownload}>
-            <Download className='mr-2 h-4 w-4' />
-            Download
+        <div className='flex items-center gap-2'>
+          <Button variant='ghost' size='sm' onClick={() => setEditOpen(true)}>
+            <Edit className='mr-2 h-4 w-4' />
+            Edit
           </Button>
-        )}
+          <Button
+            variant='ghost'
+            size='sm'
+            className='text-destructive hover:text-destructive'
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+            ) : (
+              <Trash className='mr-2 h-4 w-4' />
+            )}
+            Delete
+          </Button>
+          {isDownloading ? (
+            <div className='flex flex-col gap-2 w-40'>
+              <div className='flex items-center justify-between text-xs'>
+                <span>Downloading... {downloadProgress}%</span>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={handleCancelDownload}
+                  className='h-4 w-4 text-muted-foreground hover:text-foreground'
+                >
+                  <X className='h-3 w-3' />
+                </Button>
+              </div>
+              <Progress value={downloadProgress} className='h-2' />
+            </div>
+          ) : (
+            <Button variant='outline' size='sm' onClick={handleDownload}>
+              <Download className='mr-2 h-4 w-4' />
+              Download
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className='flex-1 bg-muted/10 rounded-lg overflow-hidden border'>
@@ -209,6 +259,13 @@ export default function MediaViewPage() {
           </div>
         )}
       </div>
+
+      <MediaEditDialog
+        media={media}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onUpdate={updated => setMedia(updated)}
+      />
     </div>
   );
 }
