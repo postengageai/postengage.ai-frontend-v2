@@ -92,13 +92,18 @@ export class AuthApi {
     return response.data!;
   }
 
-  // Check if user is authenticated by fetching profile
+  // Check if user is authenticated by fetching profile.
+  //
+  // IMPORTANT: uses _skipUnauthorizedHandler so the global logout redirect
+  // does NOT fire when this probe returns 401. This runs on every page mount
+  // (including public pages like /reset-password) and must be a silent check.
   static async checkAuth(): Promise<User | null> {
     try {
-      const response = await this.getCurrentUser();
-      return response.data;
+      const response = await httpClient.get<User>('/api/v1/users/profile', {
+        _skipUnauthorizedHandler: true,
+      });
+      return response.data?.data ?? null;
     } catch (error) {
-      // Check if error is a 401 or 403 status code
       if (
         error instanceof ApiError &&
         (error.statusCode === 401 || error.statusCode === 403)

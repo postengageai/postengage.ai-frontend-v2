@@ -39,18 +39,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   } = useAuthStore();
 
   // Wire up the HTTP-client logout handler so 401 responses clear auth state.
-  // Auth pages (/login, /2fa, /register, etc.) make unauthenticated requests by
-  // design — don't redirect to /login if we're already on one of those pages.
+  //
+  // PUBLIC_ROUTES must list every route that is accessible without auth.
+  // If a route is missing here AND the user lands on it while unauthenticated,
+  // the global handler will fire and redirect them to /login mid-page.
+  //
+  // Keep this list in sync with middleware.ts AUTH_ONLY_ROUTES.
   useEffect(() => {
-    const AUTH_PAGES = ['/login', '/2fa', '/register', '/forgot-password'];
+    const PUBLIC_ROUTES = [
+      '/login',
+      '/signup',
+      '/2fa',
+      '/forgot-password',
+      '/reset-password',
+      '/verify-email',
+      '/resend-verification',
+      '/account-locked',
+      '/account-suspended',
+    ];
     setLogoutHandler(() => {
       setUser(null);
       setIsAuthenticated(false);
-      const isAuthPage = AUTH_PAGES.some(p =>
+      const isPublicPage = PUBLIC_ROUTES.some(p =>
         window.location.pathname.startsWith(p)
       );
-      if (!isAuthPage) {
-        router.push('/login');
+      if (!isPublicPage) {
+        router.push('/login?session=expired');
       }
     });
   }, [setUser, setIsAuthenticated, router]);
