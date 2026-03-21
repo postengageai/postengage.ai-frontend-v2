@@ -72,6 +72,16 @@ export interface ApiRequestOptions extends AxiosRequestConfig {
   retry?: number;
   retryDelay?: number;
   requireAuth?: boolean;
+  /**
+   * When true, a 401 response from this specific request will NOT trigger the
+   * global logout/redirect handler.
+   *
+   * Use this for requests that are intentionally made on public pages where
+   * the user may not be authenticated — e.g. the initial session probe in
+   * AuthProvider.checkAuth(). Without this flag, visiting /reset-password or
+   * /verify-email would fire the global redirect-to-login on every page load.
+   */
+  _skipUnauthorizedHandler?: boolean;
 }
 
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
@@ -145,14 +155,26 @@ export class HttpClient {
           // Only fire the global logout handler for genuine session-level 401s
           // (expired token, missing token, revoked token).
           //
-          // Domain-level 401s (wrong TOTP code, wrong password, etc.) should
-          // NOT trigger a logout — the calling component handles them inline.
-          // The set of codes to skip is defined in `lib/error-codes.ts`.
+          // Two classes of requests must NOT trigger the global redirect:
+          //
+          //   1. Domain-level 401s (wrong TOTP code, wrong password, etc.) —
+          //      the calling component shows an inline error. Codes are in
+          //      INLINE_AUTH_ERROR_CODES in `lib/error-codes.ts`.
+          //
+          //   2. Requests with `_skipUnauthorizedHandler: true` — used by the
+          //      initial session probe (checkAuth) which runs on every page,
+          //      including public pages like /reset-password and /verify-email.
+          //      Without this flag those pages immediately redirect to /login.
           const responseCode = (
             error.response.data as { error?: { code?: string } }
           )?.error?.code;
 
+          const skipGlobal =
+            (error.config as ApiRequestOptions)?._skipUnauthorizedHandler ===
+            true;
+
           if (
+            !skipGlobal &&
             !INLINE_AUTH_ERROR_CODES.has(responseCode ?? '') &&
             onUnauthorized
           ) {

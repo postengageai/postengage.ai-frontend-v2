@@ -94,6 +94,7 @@ function LoginContent() {
     register,
     handleSubmit,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -278,7 +279,7 @@ function LoginContent() {
                     <span>
                       {' '}
                       <Link
-                        href={`/resend-verification?email=${encodeURIComponent('')}`}
+                        href={`/resend-verification?email=${encodeURIComponent(getValues('email'))}`}
                         className='underline underline-offset-2 font-medium'
                       >
                         Resend verification email
