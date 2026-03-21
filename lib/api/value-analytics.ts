@@ -168,7 +168,9 @@ export class ValueAnalyticsApi {
   }
 
   static async updateHourlyRate(hourlyRate: number): Promise<void> {
-    await httpClient.patch('api/v1/user/settings', { hourly_rate: hourlyRate });
+    await httpClient.patch('api/v1/users/settings', {
+      hourly_rate: hourlyRate,
+    });
   }
 }
 
