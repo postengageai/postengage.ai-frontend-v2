@@ -3,6 +3,12 @@
 All notable changes to **postengage.ai-frontend** are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.2](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.0.1...v1.0.2) (2026-03-21)
+
+### 🐛 Bug Fixes
+
+- **export:** resolve leads CSV/JSON download broken by blob mismatch ([60a3db0](https://github.com/postengageai/postengage.ai-frontend-v2/commit/60a3db0f3257e0f729c442fa2b554a2f9fcc65bb))
+
 ## [1.0.1](https://github.com/postengageai/postengage.ai-frontend-v2/compare/v1.0.0...v1.0.1) (2026-03-21)
 
 ### 🐛 Bug Fixes
