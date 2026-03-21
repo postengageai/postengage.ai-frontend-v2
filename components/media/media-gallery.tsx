@@ -11,6 +11,10 @@ import {
   Edit,
   Music,
   FileText,
+  Images,
+  Clapperboard,
+  ExternalLink,
+  Eye,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,6 +35,7 @@ interface MediaGalleryProps {
   onDelete?: (id: string) => void;
   onEdit?: (media: Media) => void;
   onView?: (media: Media) => void;
+  onViewInstagram?: (media: GetMediaResponse) => void;
   type: 'uploads' | 'instagram';
 }
 
@@ -42,6 +47,7 @@ export function MediaGallery({
   onDelete,
   onEdit,
   onView,
+  onViewInstagram,
   type,
 }: MediaGalleryProps) {
   const observer = useRef<IntersectionObserver | null>(null);
@@ -105,12 +111,18 @@ export function MediaGallery({
           ? uploadItem.mime_type === 'application/pdf'
           : false;
 
+        const isCarousel = !isUpload && instaItem.media_type === 'CAROUSEL';
+        const isReels = !isUpload && instaItem.media_type === 'REELS';
+
         return (
           <Card
             key={id}
             ref={index === items.length - 1 ? lastElementRef : undefined}
             className='group relative overflow-hidden aspect-square border-0 bg-muted/20 cursor-pointer'
-            onClick={() => isUpload && onView?.(uploadItem)}
+            onClick={() => {
+              if (isUpload) onView?.(uploadItem);
+              else onViewInstagram?.(instaItem);
+            }}
           >
             {isVideo ? (
               thumbnailUrl ? (
@@ -163,13 +175,23 @@ export function MediaGallery({
               </div>
             </div>
 
-            {isVideo && (
+            {isCarousel && (
+              <div className='absolute top-2 left-2 bg-black/60 rounded-full p-1.5 text-white'>
+                <Images className='h-3 w-3' />
+              </div>
+            )}
+            {isReels && (
+              <div className='absolute top-2 left-2 bg-black/60 rounded-full p-1.5 text-white'>
+                <Clapperboard className='h-3 w-3' />
+              </div>
+            )}
+            {isVideo && !isReels && (
               <div className='absolute top-2 right-2 bg-black/50 rounded-full p-1.5 text-white'>
                 <Film className='h-3 w-3' />
               </div>
             )}
 
-            {isUpload && (onDelete || onEdit) && (
+            {(isUpload ? onDelete || onEdit : true) && (
               <div
                 className='absolute top-2 right-2 transition-opacity sm:opacity-0 sm:group-hover:opacity-100'
                 onClick={e => e.stopPropagation()}
@@ -185,20 +207,47 @@ export function MediaGallery({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align='end'>
-                    {onEdit && (
-                      <DropdownMenuItem onClick={() => onEdit(uploadItem)}>
-                        <Edit className='mr-2 h-4 w-4' />
-                        Edit
-                      </DropdownMenuItem>
-                    )}
-                    {onDelete && (
-                      <DropdownMenuItem
-                        className='text-destructive focus:text-destructive'
-                        onClick={() => onDelete(id)}
-                      >
-                        <Trash className='mr-2 h-4 w-4' />
-                        Delete
-                      </DropdownMenuItem>
+                    {isUpload ? (
+                      <>
+                        {onEdit && (
+                          <DropdownMenuItem onClick={() => onEdit(uploadItem)}>
+                            <Edit className='mr-2 h-4 w-4' />
+                            Edit
+                          </DropdownMenuItem>
+                        )}
+                        {onDelete && (
+                          <DropdownMenuItem
+                            className='text-destructive focus:text-destructive'
+                            onClick={() => onDelete(id)}
+                          >
+                            <Trash className='mr-2 h-4 w-4' />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => onViewInstagram?.(instaItem)}
+                        >
+                          <Eye className='mr-2 h-4 w-4' />
+                          View Details
+                        </DropdownMenuItem>
+                        {instaItem.permalink && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              window.open(
+                                instaItem.permalink,
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
+                          >
+                            <ExternalLink className='mr-2 h-4 w-4' />
+                            View on Instagram
+                          </DropdownMenuItem>
+                        )}
+                      </>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>

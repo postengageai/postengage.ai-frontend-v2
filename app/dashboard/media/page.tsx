@@ -194,6 +194,12 @@ export default function MediaPage() {
     router.push(`/dashboard/media/view/${media.id}`);
   };
 
+  const handleViewInstagram = (media: GetMediaResponse) => {
+    router.push(
+      `/dashboard/media/instagram/${media.id}?account_id=${encodeURIComponent(selectedAccountId)}`
+    );
+  };
+
   const handleUpdate = (updatedMedia: Media) => {
     setItems(prev =>
       prev.map(item =>
@@ -279,6 +285,7 @@ export default function MediaPage() {
               isLoading={isLoading}
               hasMore={hasMore}
               onLoadMore={() => fetchMedia(true)}
+              onViewInstagram={handleViewInstagram}
               type='instagram'
             />
           )}
