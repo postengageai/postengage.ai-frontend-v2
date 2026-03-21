@@ -75,9 +75,13 @@ export function ExportLeadsDialog({
         tags: activeFilters?.tags?.length ? activeFilters.tags : undefined,
       };
 
-      const blob = await LeadsApi.exportLeads(params);
-      const ext = format === 'csv' ? 'csv' : 'json';
+      const result = await LeadsApi.exportLeads(params);
+      const ext = result.format === 'csv' ? 'csv' : 'json';
+      const mimeType =
+        result.format === 'csv' ? 'text/csv' : 'application/json';
       const filename = `leads-export-${new Date().toISOString().split('T')[0]}.${ext}`;
+
+      const blob = new Blob([result.content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -87,7 +91,7 @@ export function ExportLeadsDialog({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${estimatedCount} leads as ${ext.toUpperCase()}`);
+      toast.success(`Exported ${result.count} leads as ${ext.toUpperCase()}`);
       onOpenChange(false);
     } catch {
       toast.error('Export failed. Please try again.');

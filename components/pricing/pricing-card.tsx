@@ -18,19 +18,21 @@ function EnterpriseCard({ pack }: PricingCardProps) {
   const [sent, setSent] = useState(false);
 
   const handleContactSales = () => {
-    // Open Gmail compose in a new tab (works cross-platform, including Windows)
     window.open(GMAIL_COMPOSE_URL, '_blank', 'noopener,noreferrer');
-
-    // Show confirmation toast
     toast({
-      title: '🎉 Opening your email...',
+      title: 'Opening your email...',
       description: `Reach us at ${SUPPORT_EMAIL} — we typically reply within a few hours.`,
     });
-
-    // Disable button briefly so it can't be double-triggered
     setSent(true);
     setTimeout(() => setSent(false), 5000);
   };
+
+  const stats = [
+    { label: 'Credits', value: '50,000+' },
+    { label: 'Free actions', value: 'Unlimited' },
+    { label: 'Per credit', value: 'Lowest rate' },
+    { label: 'Billing', value: 'Volume discount' },
+  ];
 
   return (
     <div className='relative group rounded-2xl border border-dashed border-border p-5 sm:p-8 transition-all duration-300 hover:translate-y-[-4px] hover:border-primary/30 hover:shadow-lg bg-card'>
@@ -46,23 +48,21 @@ function EnterpriseCard({ pack }: PricingCardProps) {
         <div className='flex items-baseline gap-1'>
           <span className='text-4xl font-bold'>Custom</span>
         </div>
-        <div className='text-sm text-muted-foreground mt-1'>
-          {pack.credits_hint ?? '50,000+ credits'}
-        </div>
+        <div className='text-sm text-muted-foreground mt-1'>volume pricing</div>
       </div>
 
-      {pack.features && pack.features.length > 0 && (
-        <div className='space-y-3 mb-8'>
-          {pack.features.map((feature, i) => (
-            <div key={i} className='flex items-center gap-3'>
-              <div className='w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0'>
-                <Check className='w-3 h-3 text-success' />
-              </div>
-              <span className='text-sm text-muted-foreground'>{feature}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Stats rows */}
+      <div className='space-y-2 mb-8'>
+        {stats.map((stat, i) => (
+          <div
+            key={i}
+            className='flex items-center justify-between rounded-lg bg-muted/40 px-4 py-2.5'
+          >
+            <span className='text-sm text-muted-foreground'>{stat.label}</span>
+            <span className='text-sm font-semibold'>{stat.value}</span>
+          </div>
+        ))}
+      </div>
 
       <Button
         className='w-full'
@@ -98,7 +98,6 @@ export function PricingCard({ pack }: PricingCardProps) {
   const credits = pack.credits as number;
   const price = pack.price as number;
   const perCredit = price / credits;
-  const basicActions = calculateActions(credits, false);
   // Prefer approx_actions from API (already calculated by backend); fall back to local calculation
   const aiActions = pack.approx_actions ?? calculateActions(credits, true);
   const badge = pack.badge ?? (pack.popular ? 'Most Popular' : undefined);
@@ -159,27 +158,37 @@ export function PricingCard({ pack }: PricingCardProps) {
         </div>
 
         {/* Credits & Actions */}
-        <div className='space-y-3 mb-8 pb-8 border-b border-border'>
-          <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>Credits</span>
-            <span className='font-semibold'>{credits.toLocaleString()}</span>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>Basic actions</span>
-            <span className='font-semibold'>
-              {basicActions.toLocaleString()}
-            </span>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>AI actions</span>
-            <span className='font-semibold text-primary'>
-              {aiActions.toLocaleString()}
-            </span>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='text-muted-foreground'>Per credit</span>
-            <span className='text-sm'>{formattedPerCredit}</span>
-          </div>
+        <div className='space-y-2 mb-8'>
+          {[
+            {
+              label: 'Credits',
+              value: credits.toLocaleString(),
+              highlight: false,
+            },
+            { label: 'Free actions', value: 'Unlimited', highlight: false },
+            {
+              label: 'AI replies',
+              value: `~${aiActions.toLocaleString()}`,
+              highlight: true,
+            },
+            {
+              label: 'Per credit',
+              value: formattedPerCredit,
+              highlight: false,
+            },
+          ].map((row, i) => (
+            <div
+              key={i}
+              className='flex items-center justify-between rounded-lg bg-muted/40 px-4 py-2.5'
+            >
+              <span className='text-sm text-muted-foreground'>{row.label}</span>
+              <span
+                className={`text-sm font-semibold ${row.highlight ? 'text-primary' : ''}`}
+              >
+                {row.value}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Features */}

@@ -158,13 +158,29 @@ export class LeadsApi {
 
   // ── Export ────────────────────────────────────────────────────────────────
 
-  static async exportLeads(params: ExportLeadsParams): Promise<Blob> {
+  static async exportLeads(params: ExportLeadsParams): Promise<{
+    format: 'csv' | 'json';
+    content: string;
+    count: number;
+  }> {
     const body = { ...params };
     if (body.platform === 'all') delete body.platform;
 
-    const response = await httpClient.post<Blob>(`${BASE}/export`, body, {
-      responseType: 'blob',
-    });
-    return response.data as unknown as Blob;
+    const response = await httpClient.post<{
+      format: 'csv' | 'json';
+      csv?: string;
+      data?: unknown[];
+      count: number;
+    }>(`${BASE}/export`, body);
+
+    const result = response.data?.data;
+    if (!result) throw new Error('Export failed: empty response');
+
+    const content =
+      result.format === 'csv'
+        ? (result.csv ?? '')
+        : JSON.stringify(result.data, null, 2);
+
+    return { format: result.format, content, count: result.count };
   }
 }
