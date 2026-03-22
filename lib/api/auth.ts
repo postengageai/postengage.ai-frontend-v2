@@ -156,6 +156,18 @@ export class AuthApi {
     await httpClient.post(`${AUTH_BASE_URL}/2fa/disable`, { code });
   }
 
+  // Google OAuth — exchange a Google id_token for an app session
+  static async googleLogin(
+    idToken: string,
+    ref?: string
+  ): Promise<SuccessResponse<LoginResponse>> {
+    const response = await httpClient.post<LoginResponse>(
+      `${AUTH_BASE_URL}/google`,
+      { id_token: idToken, ...(ref ? { ref } : {}) }
+    );
+    return response.data!;
+  }
+
   // Platform-wide stats for the login page social proof.
   // Returns real data when the marketing API is live, fake baseline otherwise.
   static async getPlatformStats(): Promise<{
@@ -201,4 +213,5 @@ export const authApi = {
   setup2FA: AuthApi.setup2FA,
   verify2FA: AuthApi.verify2FA,
   disable2FA: AuthApi.disable2FA,
+  googleLogin: AuthApi.googleLogin,
 };

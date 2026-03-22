@@ -191,7 +191,7 @@ function EmailVerifiedCard({ countdown }: { countdown?: number }) {
         </svg>
         <div>
           <p className='text-sm font-semibold text-success'>
-            200 Free Credits Added!
+            100 Free Credits Added!
           </p>
           <p className='text-xs text-muted-foreground mt-0.5'>
             Use them to power your first automations

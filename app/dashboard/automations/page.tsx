@@ -54,6 +54,7 @@ import {
   AutomationTriggerType,
   AutomationActionType,
 } from '@/lib/constants/automations';
+import { AutomationTemplatesGallery } from '@/components/automations/automation-templates';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from '@/hooks/use-toast';
 import { parseApiError } from '@/lib/http/errors';
@@ -455,26 +456,31 @@ function AutomationSkeleton() {
 
 function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   return (
-    <div className='flex flex-col items-center justify-center py-20 text-center'>
-      <div className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-5'>
-        <Zap className='h-8 w-8 text-primary' />
+    <div className='space-y-8'>
+      <div className='flex flex-col items-center justify-center py-20 text-center'>
+        <div className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-5'>
+          <Zap className='h-8 w-8 text-primary' />
+        </div>
+        <h3 className='text-lg font-semibold mb-2'>
+          {hasFilters ? 'No results found' : 'No automations yet'}
+        </h3>
+        <p className='text-sm text-muted-foreground mb-6 max-w-xs'>
+          {hasFilters
+            ? 'Try adjusting your filters to see more results.'
+            : 'Create your first automation to start automatically engaging with your audience.'}
+        </p>
+        {!hasFilters && (
+          <Button asChild>
+            <Link href='/dashboard/automations/new'>
+              <Plus className='h-4 w-4 mr-2' />
+              Create Automation
+            </Link>
+          </Button>
+        )}
       </div>
-      <h3 className='text-lg font-semibold mb-2'>
-        {hasFilters ? 'No results found' : 'No automations yet'}
-      </h3>
-      <p className='text-sm text-muted-foreground mb-6 max-w-xs'>
-        {hasFilters
-          ? 'Try adjusting your filters to see more results.'
-          : 'Create your first automation to start automatically engaging with your audience.'}
-      </p>
-      {!hasFilters && (
-        <Button asChild>
-          <Link href='/dashboard/automations/new'>
-            <Plus className='h-4 w-4 mr-2' />
-            Create Automation
-          </Link>
-        </Button>
-      )}
+
+      {/* Show templates gallery when there are no automations and no filters */}
+      {!hasFilters && <AutomationTemplatesGallery variant='section' />}
     </div>
   );
 }
@@ -695,15 +701,22 @@ export default function AutomationsPage() {
             ))}
           </div>
         ) : automations.length > 0 ? (
-          <div className='space-y-3'>
-            {automations.map(automation => (
-              <AutomationCard
-                key={automation.id}
-                automation={automation}
-                onToggleStatus={handleToggleStatus}
-                onDelete={setDeleteTarget}
-              />
-            ))}
+          <div className='space-y-6'>
+            <div className='space-y-3'>
+              {automations.map(automation => (
+                <AutomationCard
+                  key={automation.id}
+                  automation={automation}
+                  onToggleStatus={handleToggleStatus}
+                  onDelete={setDeleteTarget}
+                />
+              ))}
+            </div>
+
+            {/* Templates section — always visible below existing automations */}
+            <div className='pt-4 border-t border-border/40'>
+              <AutomationTemplatesGallery variant='section' />
+            </div>
           </div>
         ) : (
           <EmptyState hasFilters={hasFilters} />

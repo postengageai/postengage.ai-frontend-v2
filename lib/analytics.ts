@@ -17,11 +17,11 @@ export type AnalyticsEvent =
   // ── Auth ──────────────────────────────────────────────────────────────────
   | {
       name: 'user_signed_up';
-      properties: { has_ref_code: boolean };
+      properties: { has_ref_code: boolean; method?: 'email' | 'google' };
     }
   | {
       name: 'user_logged_in';
-      properties: { method: 'email' | 'oauth' };
+      properties: { method: 'email' | 'oauth' | 'google' };
     }
   | {
       name: 'user_login_failed';

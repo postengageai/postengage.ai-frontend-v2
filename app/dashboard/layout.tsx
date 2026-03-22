@@ -6,6 +6,7 @@ import { LowCreditBanner } from '@/components/app/low-credit-banner';
 import { MobileHeader } from '@/components/app/mobile-header';
 import { TourButton } from '@/components/ui/tour-button';
 import { GlobalSocketProvider } from '@/components/app/global-socket-provider';
+import { DiscordWidget } from '@/components/app/discord-widget';
 
 export const metadata: Metadata = {
   title: 'Dashboard | PostEngageAI',
@@ -29,6 +30,7 @@ export default function DashboardLayout({
         </GlobalSocketProvider>
       </SidebarInset>
       <TourButton />
+      <DiscordWidget />
     </SidebarProvider>
   );
 }

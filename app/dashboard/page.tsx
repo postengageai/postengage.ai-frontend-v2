@@ -23,7 +23,10 @@ import { GrowthChart } from '@/components/dashboard/growth-chart';
 import { WinsFeed } from '@/components/dashboard/wins-feed';
 import { AutomationPerformanceCards } from '@/components/dashboard/automation-performance-cards';
 import { ROICalculatorWidget } from '@/components/dashboard/roi-calculator';
+import { CreditCalculator } from '@/components/dashboard/credit-calculator';
 import { MilestoneBanner } from '@/components/dashboard/milestone-banner';
+import { AutomationTemplatesGallery } from '@/components/automations/automation-templates';
+import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 import { useImpactSummary } from '@/lib/hooks';
 import { Zap, AlertTriangle, Plus } from 'lucide-react';
 import {
@@ -233,6 +236,9 @@ export default function DashboardPage() {
         className='p-4 sm:p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto'
         data-tour='dashboard-stats'
       >
+        {/* Onboarding checklist — shown for new users */}
+        <OnboardingChecklist />
+
         {/* Paused automations banner */}
         {hasAllPaused && lowCredits && (
           <div className='flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3'>
@@ -307,6 +313,9 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Templates gallery — shown when user has no automations */}
+        {hasNoAutomations && <AutomationTemplatesGallery variant='section' />}
+
         {/* ── ZONE 3b: Growth Chart ─────────────────────────────────────────── */}
         <GrowthChart />
 
@@ -318,6 +327,9 @@ export default function DashboardPage() {
           <WinsFeed />
           <ROICalculatorWidget />
         </div>
+
+        {/* ── ZONE 3c2: Credit Usage Calculator ────────────────────────────── */}
+        {data?.connected_account && <CreditCalculator />}
 
         {/* ── ZONE 3d: Automation Performance Cards ─────────────────────────── */}
         <AutomationPerformanceCards />

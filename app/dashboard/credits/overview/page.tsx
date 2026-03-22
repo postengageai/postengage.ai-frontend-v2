@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { CreditCalculator } from '@/components/dashboard/credit-calculator';
 import Link from 'next/link';
 import {
   useCreditsBalance,
@@ -399,6 +400,8 @@ function CreditsPageContent() {
           <InvoicesTab />
         </TabsContent>
       </Tabs>
+
+      <CreditCalculator />
 
       <CreditsInfoCard />
     </div>
