@@ -2,7 +2,7 @@
 
 import { Users, TrendingUp, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { ImpactSummaryResponse } from '@/lib/api/value-analytics';
 
 // ── ImpactStatCard ────────────────────────────────────────────────────────────
@@ -125,7 +125,11 @@ export function ImpactHero({ data, isLoading }: ImpactHeroProps) {
           isLoading={isLoading}
           icon={<Clock className='h-3 w-3' />}
           label='Value delivered'
-          value={data ? formatCurrency(data.dollar_value_saved) : '—'}
+          value={
+            data
+              ? `${data.currency_symbol}${data.value_saved.toLocaleString()}`
+              : '—'
+          }
           subtext={
             data
               ? `${data.total_hours_saved.toFixed(1)} hrs saved · ${data.automation_handle_rate}% handle rate`

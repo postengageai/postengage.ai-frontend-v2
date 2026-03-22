@@ -17,6 +17,9 @@ export interface ImpactSummaryResponse {
   readonly total_hours_saved: number;
   readonly dollar_value_saved: number;
   readonly automation_handle_rate: number;
+  readonly currency: string;
+  readonly currency_symbol: string;
+  readonly value_saved: number;
 }
 
 export interface GrowthChartPoint {
@@ -60,6 +63,9 @@ export interface RoiSummaryResponse {
   readonly dollar_value_saved: number;
   readonly weekly_plan_cost: number;
   readonly roi_multiple: number;
+  readonly currency: string;
+  readonly currency_symbol: string;
+  readonly value_saved: number;
 }
 
 export type AttributionConfidence = 'high' | 'medium' | 'low';
