@@ -111,7 +111,7 @@ function CheckInboxCard({ email }: { email: string }) {
 
       <p className='mt-5 text-sm text-muted-foreground leading-relaxed px-2'>
         We&apos;ve sent a verification link to your email. Click the link to
-        activate your account and get 200 free credits to start automating.
+        activate your account and get 100 free credits to start automating.
       </p>
 
       {/* 3-step progress */}
