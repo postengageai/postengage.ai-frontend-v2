@@ -21,8 +21,7 @@ export function CreditsInfoCard() {
     httpClient
       .get<CreditPricing>('/api/v1/credits/pricing')
       .then(res => {
-        const d = res.data as { data?: CreditPricing } & CreditPricing;
-        setPricing(d?.data ?? d);
+        setPricing(res.data?.data ?? null);
       })
       .catch(() => {});
   }, []);
