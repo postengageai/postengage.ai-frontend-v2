@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { Pencil, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, getCurrencySymbol, localRate } from '@/lib/utils';
 import { useRoiSummary } from '@/lib/hooks';
 import { ValueAnalyticsApi } from '@/lib/api/value-analytics';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -135,7 +135,9 @@ export function ROICalculatorWidget() {
           <div className='flex items-center gap-1'>
             {isEditing ? (
               <>
-                <span className='text-xs text-muted-foreground'>$</span>
+                <span className='text-xs text-muted-foreground'>
+                  {getCurrencySymbol()}
+                </span>
                 <input
                   type='number'
                   min={1}
@@ -157,7 +159,10 @@ export function ROICalculatorWidget() {
                 onClick={() => setIsEditing(true)}
                 className='flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors'
               >
-                <span>${effectiveRate}/hr</span>
+                <span>
+                  {getCurrencySymbol()}
+                  {localRate(effectiveRate)}/hr
+                </span>
                 <Pencil className='h-3 w-3' />
               </button>
             )}
@@ -224,7 +229,8 @@ export function ROICalculatorWidget() {
               </div>
               <div className='flex justify-between'>
                 <span className='text-muted-foreground'>
-                  At ${effectiveRate}/hr, PostEngage saved you
+                  At {getCurrencySymbol()}
+                  {localRate(effectiveRate)}/hr, PostEngage saved you
                 </span>
                 <span
                   className={cn(
@@ -232,7 +238,8 @@ export function ROICalculatorWidget() {
                     dollarSaved > 0 ? 'text-success' : 'text-foreground'
                   )}
                 >
-                  ${Math.round(dollarSaved).toLocaleString()}
+                  {getCurrencySymbol()}
+                  {Math.round(localRate(dollarSaved)).toLocaleString()}
                 </span>
               </div>
               {weeklyCost > 0 && (
@@ -241,7 +248,8 @@ export function ROICalculatorWidget() {
                     Plan cost this week
                   </span>
                   <span className='text-muted-foreground'>
-                    ${weeklyCost.toFixed(2)}
+                    {getCurrencySymbol()}
+                    {localRate(weeklyCost).toFixed(2)}
                   </span>
                 </div>
               )}

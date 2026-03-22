@@ -2,7 +2,7 @@
 
 import { Users, TrendingUp, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import type { ImpactSummaryResponse } from '@/lib/api/value-analytics';
 
 // ── ImpactStatCard ────────────────────────────────────────────────────────────
@@ -72,14 +72,6 @@ function formatDate(iso: string) {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
 }
 
 export function ImpactHero({ data, isLoading }: ImpactHeroProps) {
