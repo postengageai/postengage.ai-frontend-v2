@@ -52,10 +52,135 @@ const MEDIA_TYPE_LABELS: Record<string, string> = {
 const MAX_CAPTION = 2200;
 const MAX_CAROUSEL_ITEMS = 10;
 
-function buildIso(date: Date, hour: number, minute: number): string {
-  const d = new Date(date);
-  d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
+// Common timezones grouped by region
+const TIMEZONE_OPTIONS = [
+  {
+    group: 'Asia',
+    zones: [
+      'Asia/Kolkata',
+      'Asia/Dubai',
+      'Asia/Singapore',
+      'Asia/Tokyo',
+      'Asia/Shanghai',
+      'Asia/Jakarta',
+      'Asia/Karachi',
+      'Asia/Dhaka',
+      'Asia/Bangkok',
+      'Asia/Seoul',
+      'Asia/Manila',
+      'Asia/Kuala_Lumpur',
+    ],
+  },
+  {
+    group: 'Americas',
+    zones: [
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Los_Angeles',
+      'America/Toronto',
+      'America/Sao_Paulo',
+      'America/Mexico_City',
+      'America/Argentina/Buenos_Aires',
+    ],
+  },
+  {
+    group: 'Europe',
+    zones: [
+      'Europe/London',
+      'Europe/Paris',
+      'Europe/Berlin',
+      'Europe/Moscow',
+      'Europe/Istanbul',
+      'Europe/Amsterdam',
+      'Europe/Madrid',
+      'Europe/Rome',
+    ],
+  },
+  {
+    group: 'Other',
+    zones: [
+      'UTC',
+      'Pacific/Auckland',
+      'Australia/Sydney',
+      'Australia/Melbourne',
+      'Africa/Lagos',
+      'Africa/Cairo',
+      'Africa/Johannesburg',
+    ],
+  },
+];
+
+function getLocalTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'UTC';
+  }
+}
+
+function formatTzLabel(tz: string): string {
+  try {
+    const now = new Date();
+    const offset =
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        timeZoneName: 'shortOffset',
+      })
+        .formatToParts(now)
+        .find(p => p.type === 'timeZoneName')?.value ?? '';
+    const city = tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
+    return `${city} (${offset})`;
+  } catch {
+    return tz;
+  }
+}
+
+function buildIsoWithTimezone(
+  date: Date,
+  hour: number,
+  minute: number,
+  timezone: string
+): string {
+  // Build a date string in the selected timezone, then convert to UTC ISO
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const h = String(hour).padStart(2, '0');
+  const m = String(minute).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}T${h}:${m}:00`;
+
+  // Use the timezone to get the correct UTC offset
+  const localDate = new Date(dateStr);
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  // Find the offset between the timezone and UTC
+  const utcDate = new Date(dateStr + 'Z');
+  const tzParts = formatter.formatToParts(utcDate);
+  const getNum = (type: string) =>
+    parseInt(tzParts.find(p => p.type === type)?.value ?? '0', 10);
+
+  const tzTime = new Date(
+    getNum('year'),
+    getNum('month') - 1,
+    getNum('day'),
+    getNum('hour'),
+    getNum('minute'),
+    getNum('second')
+  );
+
+  const offsetMs = tzTime.getTime() - utcDate.getTime();
+  const scheduled = new Date(localDate.getTime() - offsetMs);
+  return scheduled.toISOString();
 }
 
 function isVideo(mimeType: string) {
@@ -487,9 +612,14 @@ export function SchedulePostModal({
   );
   const [caption, setCaption] = useState(editPost?.caption ?? '');
   const [hashtags, setHashtags] = useState<string[]>(editPost?.hashtags ?? []);
+  const [timezone, setTimezone] = useState(
+    editPost?.timezone && editPost.timezone !== 'UTC'
+      ? editPost.timezone
+      : getLocalTimezone()
+  );
   const [date, setDate] = useState<Date>(initDate);
-  const [hour, setHour] = useState(initDate.getUTCHours());
-  const [minute, setMinute] = useState(initDate.getUTCMinutes());
+  const [hour, setHour] = useState(initDate.getHours());
+  const [minute, setMinute] = useState(initDate.getMinutes());
   const [calOpen, setCalOpen] = useState(false);
 
   const handleBestTimePick = useCallback((rec: BestTimeRecommendation) => {
@@ -525,7 +655,8 @@ export function SchedulePostModal({
             caption: caption.trim(),
             media_urls: selectedMedia.map(m => m.url),
             hashtags: hashtags.length > 0 ? hashtags : undefined,
-            scheduled_at: buildIso(date, hour, minute),
+            scheduled_at: buildIsoWithTimezone(date, hour, minute, timezone),
+            timezone,
           },
         });
         toast({ title: 'Post updated' });
@@ -536,14 +667,15 @@ export function SchedulePostModal({
           caption: caption.trim(),
           media_urls: selectedMedia.map(m => m.url),
           hashtags: hashtags.length > 0 ? hashtags : undefined,
-          scheduled_at: buildIso(date, hour, minute),
+          scheduled_at: buildIsoWithTimezone(date, hour, minute, timezone),
+          timezone,
           save_as_draft: asDraft,
         });
         toast({
           title: asDraft ? 'Draft saved' : 'Post scheduled',
           description: asDraft
             ? 'Your draft has been saved.'
-            : `Scheduled for ${format(date, 'MMM d')} at ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} UTC`,
+            : `Scheduled for ${format(date, 'MMM d')} at ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${timezone.split('/').pop()?.replace(/_/g, ' ') ?? timezone}`,
         });
       }
       onSuccess?.();
@@ -660,10 +792,10 @@ export function SchedulePostModal({
             <HashtagInput tags={hashtags} onChange={setHashtags} />
           </div>
 
-          {/* Date + time */}
+          {/* Date + time + timezone */}
           <div className='space-y-1.5'>
             <label className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
-              Schedule Date & Time (UTC)
+              Schedule Date & Time
             </label>
 
             <BestTimePick onPick={handleBestTimePick} />
@@ -704,6 +836,25 @@ export function SchedulePostModal({
                   setMinute(m);
                 }}
               />
+            </div>
+
+            {/* Timezone selector */}
+            <div className='mt-2'>
+              <select
+                className='w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring'
+                value={timezone}
+                onChange={e => setTimezone(e.target.value)}
+              >
+                {TIMEZONE_OPTIONS.map(group => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.zones.map(tz => (
+                      <option key={tz} value={tz}>
+                        {formatTzLabel(tz)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             </div>
           </div>
 
