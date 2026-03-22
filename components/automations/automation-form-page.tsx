@@ -917,12 +917,50 @@ export function AutomationFormPage({
 
   // ── Submit ───────────────────────────────────────────────────────────────
   const submit = async (asDraft: boolean) => {
-    if (
-      !formData.platform ||
-      !formData.social_account_id ||
-      !formData.trigger_type
-    )
+    // Validate required fields and show toast for each missing one
+    if (!formData.social_account_id) {
+      toast({
+        title: 'Select an account',
+        description: 'Choose a connected social account before saving.',
+        variant: 'destructive',
+      });
       return;
+    }
+    if (!formData.trigger_type) {
+      toast({
+        title: 'Choose a trigger',
+        description: 'Select when this automation should run.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!asDraft && formData.actions.length === 0) {
+      toast({
+        title: 'Add an action',
+        description: 'Add at least one action to activate this automation.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!asDraft && !formData.name?.trim()) {
+      toast({
+        title: 'Name required',
+        description: 'Give your automation a name before activating.',
+        variant: 'destructive',
+      });
+      nameRef.current?.focus();
+      return;
+    }
+    if (keywordsEnabled && keywords.length === 0) {
+      toast({
+        title: 'Add keywords',
+        description:
+          "You enabled keyword filtering but didn't add any keywords.",
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!formData.platform) return;
     setIsSaving(true);
     try {
       const payload: CreateAutomationRequest = {
@@ -993,58 +1031,72 @@ export function AutomationFormPage({
   return (
     <div className='flex h-full flex-col bg-background'>
       {/* ── Sticky top bar ── */}
-      <header className='sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur sm:px-6'>
-        <button
-          onClick={onCancel}
-          className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-        >
-          <ArrowLeft className='h-4 w-4' />
-        </button>
+      <header className='sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur'>
+        <div className='flex items-center gap-3 px-4 py-3 sm:px-6'>
+          <button
+            onClick={onCancel}
+            className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+          >
+            <ArrowLeft className='h-4 w-4' />
+          </button>
 
-        {/* Inline name */}
-        <input
-          ref={nameRef}
-          value={formData.name ?? ''}
-          onChange={e => update({ name: e.target.value })}
-          placeholder='Automation name…'
-          className='min-w-0 flex-1 bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/60 sm:text-base'
-          spellCheck={false}
-        />
-
-        {/* Status pill */}
-        {isEditMode && (
-          <Badge
-            variant='outline'
-            className={cn(
-              'hidden shrink-0 text-xs sm:flex',
-              formData.status === AutomationStatus.ACTIVE
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
-                : 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+          {/* Automation name — prominent editable field */}
+          <div className='group relative min-w-0 flex-1'>
+            <input
+              ref={nameRef}
+              value={formData.name ?? ''}
+              onChange={e => update({ name: e.target.value })}
+              placeholder='Enter automation name…'
+              className={cn(
+                'w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm font-semibold text-foreground outline-none transition-all sm:text-base',
+                formData.name?.trim()
+                  ? 'border-transparent hover:border-border focus:border-primary focus:ring-1 focus:ring-primary/30'
+                  : 'border-destructive/50 bg-destructive/5 placeholder:text-destructive/60 focus:border-destructive focus:ring-1 focus:ring-destructive/30'
+              )}
+              spellCheck={false}
+            />
+            {!formData.name?.trim() && (
+              <p className='absolute -bottom-4 left-3 text-[10px] text-destructive'>
+                Name is required
+              </p>
             )}
-          >
-            {formData.status ?? 'draft'}
-          </Badge>
-        )}
+          </div>
 
-        <div className='flex flex-shrink-0 items-center gap-2'>
-          <Button
-            variant='outline'
-            size='sm'
-            disabled={isSaving}
-            onClick={() => void submit(true)}
-            className='hidden sm:flex'
-          >
-            Save draft
-          </Button>
-          <Button
-            size='sm'
-            disabled={isSaving || !canSubmit}
-            onClick={() => void submit(false)}
-            className='gap-1.5'
-          >
-            {isSaving && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
-            {isEditMode ? 'Save changes' : 'Activate'}
-          </Button>
+          {/* Status pill */}
+          {isEditMode && (
+            <Badge
+              variant='outline'
+              className={cn(
+                'hidden shrink-0 text-xs sm:flex',
+                formData.status === AutomationStatus.ACTIVE
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+              )}
+            >
+              {formData.status ?? 'draft'}
+            </Badge>
+          )}
+
+          <div className='flex flex-shrink-0 items-center gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={isSaving}
+              onClick={() => void submit(true)}
+              className='hidden sm:flex'
+            >
+              Save draft
+            </Button>
+            <Button
+              size='sm'
+              disabled={isSaving || !canSubmit}
+              onClick={() => void submit(false)}
+              className='gap-1.5'
+            >
+              {isSaving && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
+              {isEditMode ? 'Save changes' : 'Activate'}
+            </Button>
+          </div>
         </div>
       </header>
 

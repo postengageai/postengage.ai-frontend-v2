@@ -183,9 +183,14 @@ export default function EditAutomationPage() {
   }, [automationId, toastHook]);
 
   const handleComplete = async (request: CreateAutomationRequest) => {
-    await AutomationsApi.update(automationId, request);
-    toast.success('Automation updated successfully');
-    router.push(`/dashboard/automations/${automationId}`);
+    try {
+      await AutomationsApi.update(automationId, request);
+      toast.success('Automation updated successfully');
+      router.push(`/dashboard/automations/${automationId}`);
+    } catch (err) {
+      const e = parseApiError(err);
+      toast.error(e.title, { description: e.message });
+    }
   };
 
   const handleCancel = () => {
