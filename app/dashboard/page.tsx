@@ -18,16 +18,11 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import type { Notification } from '@/lib/types/notifications';
 import { analytics } from '@/lib/analytics';
 import { useDashboardStats, queryKeys } from '@/lib/hooks';
-import { ImpactHero } from '@/components/dashboard/impact-hero';
-import { GrowthChart } from '@/components/dashboard/growth-chart';
 import { WinsFeed } from '@/components/dashboard/wins-feed';
-import { AutomationPerformanceCards } from '@/components/dashboard/automation-performance-cards';
 import { ROICalculatorWidget } from '@/components/dashboard/roi-calculator';
-import { CreditCalculator } from '@/components/dashboard/credit-calculator';
 import { MilestoneBanner } from '@/components/dashboard/milestone-banner';
 import { AutomationTemplatesGallery } from '@/components/automations/automation-templates';
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
-import { useImpactSummary } from '@/lib/hooks';
 import { Zap, AlertTriangle, Plus } from 'lucide-react';
 import {
   AlertDialog,
@@ -48,7 +43,6 @@ export default function DashboardPage() {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data, isLoading } = useDashboardStats();
-  const { data: impactData, isLoading: impactLoading } = useImpactSummary();
 
   // ── First reply analytics tracking ────────────────────────────────────────
   const hasTrackedRef = React.useRef(false);
@@ -316,23 +310,11 @@ export default function DashboardPage() {
         {/* Templates gallery — shown when user has no automations */}
         {hasNoAutomations && <AutomationTemplatesGallery variant='section' />}
 
-        {/* ── ZONE 3b: Growth Chart ─────────────────────────────────────────── */}
-        <GrowthChart />
-
-        {/* ── ZONE 3b2: PostEngage Impact Hero ────────────────────────────────── */}
-        <ImpactHero data={impactData} isLoading={impactLoading} />
-
-        {/* ── ZONE 3c: Wins Feed + ROI (2-col) ──────────────────────────────── */}
+        {/* ── Wins Feed + ROI (2-col) ──────────────────────────────────────── */}
         <div className='grid gap-6 md:grid-cols-2'>
           <WinsFeed />
           <ROICalculatorWidget />
         </div>
-
-        {/* ── ZONE 3c2: Credit Usage Calculator ────────────────────────────── */}
-        {data?.connected_account && <CreditCalculator />}
-
-        {/* ── ZONE 3d: Automation Performance Cards ─────────────────────────── */}
-        <AutomationPerformanceCards />
 
         {/* ── ZONE 3e: Milestone Achievements ───────────────────────────────── */}
         <MilestoneBanner />

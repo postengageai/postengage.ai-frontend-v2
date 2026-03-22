@@ -46,6 +46,7 @@ import {
   Gift,
   CalendarDays,
   Trophy,
+  BarChart3,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -87,6 +88,12 @@ const navItems = [
     href: '/dashboard/media',
     icon: Sparkles,
     tourId: 'sidebar-media',
+  },
+  {
+    title: 'Analytics',
+    href: '/dashboard/analytics',
+    icon: BarChart3,
+    tourId: 'sidebar-analytics',
   },
   {
     title: 'Scheduler',
