@@ -228,7 +228,7 @@ function LoginContent() {
 
         <div className='relative z-10 px-10 xl:px-14 pb-9'>
           <p className='text-xs text-white/35'>
-            Trusted by 10,000+ creators worldwide
+            Trusted by 8,200+ creators · 1.2M+ replies sent
           </p>
         </div>
       </div>

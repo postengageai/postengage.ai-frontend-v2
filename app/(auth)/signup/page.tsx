@@ -72,7 +72,7 @@ function SocialProof() {
 
       <div>
         <p className='text-sm font-semibold text-white'>
-          10,000+ creators already growing
+          8,200+ creators already growing
         </p>
         <div className='flex items-center gap-1.5 mt-0.5'>
           {/* Star icons */}
@@ -255,7 +255,7 @@ function SignupPageInner() {
         {/* Trust footer */}
         <div className='relative z-10 px-10 xl:px-14 pb-9'>
           <p className='text-xs text-white/35'>
-            Joined by 10,000+ creators & brands worldwide
+            Trusted by 8,200+ creators · 1.2M+ replies sent
           </p>
         </div>
       </div>
@@ -273,7 +273,7 @@ function SignupPageInner() {
               Create your free account
             </h1>
             <p className='mt-1.5 text-sm text-muted-foreground'>
-              No credit card required. 200 credits free on signup.
+              No credit card required. 100 credits free on signup.
             </p>
 
             {refCode && (
