@@ -24,6 +24,7 @@ import {
 } from '@/lib/api/automations';
 import {
   AutomationTriggerType,
+  AutomationTriggerSource,
   AutomationTriggerScope,
   AutomationActionType,
   AutomationPlatform,
@@ -70,6 +71,7 @@ const TEMPLATES: AutomationTemplate[] = [
       status: AutomationStatus.DRAFT,
       trigger: {
         trigger_type: AutomationTriggerType.NEW_COMMENT,
+        trigger_source: AutomationTriggerSource.POST,
         trigger_scope: AutomationTriggerScope.ALL,
       },
       conditions: [
@@ -110,6 +112,7 @@ const TEMPLATES: AutomationTemplate[] = [
       status: AutomationStatus.DRAFT,
       trigger: {
         trigger_type: AutomationTriggerType.MESSAGING_REFERRAL,
+        trigger_source: AutomationTriggerSource.DIRECT_MESSAGE,
         trigger_scope: AutomationTriggerScope.ALL,
       },
       conditions: [],
@@ -145,6 +148,7 @@ const TEMPLATES: AutomationTemplate[] = [
       status: AutomationStatus.DRAFT,
       trigger: {
         trigger_type: AutomationTriggerType.NEW_COMMENT,
+        trigger_source: AutomationTriggerSource.POST,
         trigger_scope: AutomationTriggerScope.ALL,
       },
       conditions: [
@@ -188,6 +192,7 @@ const TEMPLATES: AutomationTemplate[] = [
       status: AutomationStatus.DRAFT,
       trigger: {
         trigger_type: AutomationTriggerType.NEW_COMMENT,
+        trigger_source: AutomationTriggerSource.POST,
         trigger_scope: AutomationTriggerScope.ALL,
       },
       conditions: [],
@@ -221,6 +226,7 @@ const TEMPLATES: AutomationTemplate[] = [
       status: AutomationStatus.DRAFT,
       trigger: {
         trigger_type: AutomationTriggerType.STORY_MENTION,
+        trigger_source: AutomationTriggerSource.STORY,
         trigger_scope: AutomationTriggerScope.ALL,
       },
       conditions: [],
@@ -256,6 +262,7 @@ const TEMPLATES: AutomationTemplate[] = [
       status: AutomationStatus.DRAFT,
       trigger: {
         trigger_type: AutomationTriggerType.NEW_COMMENT,
+        trigger_source: AutomationTriggerSource.POST,
         trigger_scope: AutomationTriggerScope.ALL,
       },
       conditions: [
