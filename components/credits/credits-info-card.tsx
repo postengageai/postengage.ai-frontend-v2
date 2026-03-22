@@ -1,7 +1,33 @@
+'use client';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { httpClient } from '@/lib/http/client';
+
+interface CreditPricing {
+  manual_actions: number;
+  ai_standard: number;
+  ai_with_knowledge: number;
+  ai_full_context: number;
+  byom: number;
+  ai_range: { min: number; max: number };
+}
 
 export function CreditsInfoCard() {
+  const [pricing, setPricing] = useState<CreditPricing | null>(null);
+
+  useEffect(() => {
+    httpClient
+      .get<CreditPricing>('/api/v1/credits/pricing')
+      .then(res => setPricing(res.data?.data ?? res.data))
+      .catch(() => {});
+  }, []);
+
+  const min = pricing?.ai_range?.min ?? '…';
+  const max = pricing?.ai_range?.max ?? '…';
+  const byom = pricing?.byom ?? '…';
+
   return (
     <Card className='bg-card border-border'>
       <CardContent className='flex items-start gap-3 p-4'>
@@ -23,14 +49,14 @@ export function CreditsInfoCard() {
             <p>
               •{' '}
               <span className='font-medium text-foreground'>
-                AI actions cost 6-13 credits
+                AI actions cost {min}–{max} credits
               </span>{' '}
               depending on complexity (Standard vs. Full Context).
             </p>
             <p>
               •{' '}
               <span className='font-medium text-foreground'>
-                BYOM mode costs only 1 credit
+                BYOM mode costs only {byom} credit
               </span>{' '}
               (infrastructure fee).
             </p>

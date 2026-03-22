@@ -182,14 +182,16 @@ export function HeroConversationChart({
                 />
                 <XAxis
                   dataKey='date'
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  tick={{ fill: '#94a3b8', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   dy={6}
+                  interval='preserveStartEnd'
+                  minTickGap={40}
                 />
                 <YAxis
                   yAxisId='left'
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  tick={{ fill: '#94a3b8', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
