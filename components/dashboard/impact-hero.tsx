@@ -132,7 +132,7 @@ export function ImpactHero({ data, isLoading }: ImpactHeroProps) {
           }
           subtext={
             data
-              ? `${data.total_hours_saved.toFixed(1)} hrs saved · ${data.automation_handle_rate}% handle rate`
+              ? `${data.total_hours_saved.toFixed(1)} hrs saved · ${Number(data.automation_handle_rate).toFixed(1)}% handle rate`
               : ''
           }
           accentClass='text-warning'

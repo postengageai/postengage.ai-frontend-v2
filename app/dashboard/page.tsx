@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { AutomationSummary } from '@/components/dashboard/automation-summary';
 import { QuickInsights } from '@/components/dashboard/quick-insights';
-import { PerformanceMetrics } from '@/components/dashboard/performance-metrics';
 import { DashboardSkeleton } from '@/components/dashboard/skeleton';
 import { GreetingBanner } from '@/components/dashboard/greeting-banner';
 import { HeroConversationChart } from '@/components/dashboard/hero-conversation-chart';
@@ -275,9 +274,6 @@ export default function DashboardPage() {
           uniquePeopleEngaged={data?.overview.unique_people_engaged ?? 0}
           weeklyGrowth={data?.overview.weekly_growth ?? 0}
         />
-
-        {/* Performance Metrics */}
-        {data?.performance && <PerformanceMetrics metrics={data.performance} />}
 
         {/* Empty state for new users */}
         {hasNoAutomations && (
