@@ -24,6 +24,7 @@ export default [
       '*.min.js',
       '*.min.css',
       '*.bundle.js',
+      'next-env.d.ts',
     ],
   },
   js.configs.recommended,
