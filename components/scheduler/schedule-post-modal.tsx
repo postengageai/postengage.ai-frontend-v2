@@ -28,9 +28,10 @@ import {
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useCreatePost, useBestTimes } from '@/lib/hooks';
+import { useCreatePost, useUpdatePost, useBestTimes } from '@/lib/hooks';
 import {
   ScheduledPostMediaType,
+  type ScheduledPost,
   type BestTimeRecommendation,
 } from '@/lib/api/scheduler';
 import { MediaApi, type Media } from '@/lib/api/media';
@@ -454,6 +455,8 @@ export interface SchedulePostModalProps {
   readonly onClose: () => void;
   readonly defaultDate?: Date;
   readonly onSuccess?: () => void;
+  /** Pass an existing post to enter edit mode */
+  readonly editPost?: ScheduledPost;
 }
 
 export function SchedulePostModal({
@@ -461,19 +464,32 @@ export function SchedulePostModal({
   onClose,
   defaultDate,
   onSuccess,
+  editPost,
 }: SchedulePostModalProps) {
   const { toast } = useToast();
   const createPost = useCreatePost();
+  const updatePost = useUpdatePost();
+  const isEditing = !!editPost;
+
+  const initDate = editPost
+    ? new Date(editPost.scheduled_at)
+    : (defaultDate ?? new Date());
 
   const [mediaType, setMediaType] = useState<string>(
-    ScheduledPostMediaType.IMAGE
+    editPost?.media_type ?? ScheduledPostMediaType.IMAGE
   );
-  const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
-  const [caption, setCaption] = useState('');
-  const [hashtags, setHashtags] = useState<string[]>([]);
-  const [date, setDate] = useState<Date>(defaultDate ?? new Date());
-  const [hour, setHour] = useState(9);
-  const [minute, setMinute] = useState(0);
+  const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>(
+    editPost?.media_urls.map(url => ({
+      url,
+      name: '',
+      mime_type: 'image/jpeg',
+    })) ?? []
+  );
+  const [caption, setCaption] = useState(editPost?.caption ?? '');
+  const [hashtags, setHashtags] = useState<string[]>(editPost?.hashtags ?? []);
+  const [date, setDate] = useState<Date>(initDate);
+  const [hour, setHour] = useState(initDate.getUTCHours());
+  const [minute, setMinute] = useState(initDate.getUTCMinutes());
   const [calOpen, setCalOpen] = useState(false);
 
   const handleBestTimePick = useCallback((rec: BestTimeRecommendation) => {
@@ -495,26 +511,41 @@ export function SchedulePostModal({
     setMediaType(ScheduledPostMediaType.IMAGE);
   };
 
+  const isPending = createPost.isPending || updatePost.isPending;
+
   const submitPost = async (asDraft: boolean) => {
     if (!caption.trim()) return;
     if (!asDraft && !canSubmit) return;
 
     try {
-      await createPost.mutateAsync({
-        media_type:
-          mediaType as (typeof ScheduledPostMediaType)[keyof typeof ScheduledPostMediaType],
-        caption: caption.trim(),
-        media_urls: selectedMedia.map(m => m.url),
-        hashtags: hashtags.length > 0 ? hashtags : undefined,
-        scheduled_at: buildIso(date, hour, minute),
-        save_as_draft: asDraft,
-      });
-      toast({
-        title: asDraft ? 'Draft saved' : 'Post scheduled',
-        description: asDraft
-          ? 'Your draft has been saved.'
-          : `Scheduled for ${format(date, 'MMM d')} at ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} UTC`,
-      });
+      if (isEditing) {
+        await updatePost.mutateAsync({
+          id: editPost.id,
+          dto: {
+            caption: caption.trim(),
+            media_urls: selectedMedia.map(m => m.url),
+            hashtags: hashtags.length > 0 ? hashtags : undefined,
+            scheduled_at: buildIso(date, hour, minute),
+          },
+        });
+        toast({ title: 'Post updated' });
+      } else {
+        await createPost.mutateAsync({
+          media_type:
+            mediaType as (typeof ScheduledPostMediaType)[keyof typeof ScheduledPostMediaType],
+          caption: caption.trim(),
+          media_urls: selectedMedia.map(m => m.url),
+          hashtags: hashtags.length > 0 ? hashtags : undefined,
+          scheduled_at: buildIso(date, hour, minute),
+          save_as_draft: asDraft,
+        });
+        toast({
+          title: asDraft ? 'Draft saved' : 'Post scheduled',
+          description: asDraft
+            ? 'Your draft has been saved.'
+            : `Scheduled for ${format(date, 'MMM d')} at ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} UTC`,
+        });
+      }
       onSuccess?.();
       onClose();
       resetForm();
@@ -532,7 +563,9 @@ export function SchedulePostModal({
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>Schedule a Post</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Edit Post' : 'Schedule a Post'}
+          </DialogTitle>
         </DialogHeader>
 
         <form
@@ -675,25 +708,25 @@ export function SchedulePostModal({
           </div>
 
           <DialogFooter className='flex-col sm:flex-row gap-2 pt-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => submitPost(true)}
-              disabled={createPost.isPending || !caption.trim()}
-            >
-              Save as Draft
-            </Button>
+            {!isEditing && (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => submitPost(true)}
+                disabled={isPending || !caption.trim()}
+              >
+                Save as Draft
+              </Button>
+            )}
             <Button
               type='submit'
               size='sm'
-              disabled={createPost.isPending || !canSubmit}
+              disabled={isPending || !canSubmit}
               className='bg-primary text-white hover:bg-primary/90'
             >
-              {createPost.isPending && (
-                <Loader2 className='h-4 w-4 animate-spin mr-2' />
-              )}
-              Schedule Post
+              {isPending && <Loader2 className='h-4 w-4 animate-spin mr-2' />}
+              {isEditing ? 'Update Post' : 'Schedule Post'}
             </Button>
           </DialogFooter>
         </form>

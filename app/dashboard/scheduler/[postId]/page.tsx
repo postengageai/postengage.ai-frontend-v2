@@ -2,6 +2,7 @@
 
 import { use } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   ArrowLeft,
   Calendar,
@@ -10,6 +11,7 @@ import {
   Hash,
   AlertCircle,
   RefreshCw,
+  Pencil,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { PostAnalyticsCard } from '@/components/scheduler/PostAnalyticsCard';
 import { useScheduledPost, useCancelPost } from '@/lib/hooks';
 import { ScheduledPostStatus } from '@/lib/api/scheduler';
+import { SchedulePostModal } from '@/components/scheduler/schedule-post-modal';
 import { useToast } from '@/components/ui/use-toast';
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -93,9 +96,10 @@ export default function ScheduledPostDetailPage({
   readonly params: Promise<{ postId: string }>;
 }) {
   const { postId } = use(params);
-  const { data: post, isLoading } = useScheduledPost(postId);
+  const { data: post, isLoading, refetch } = useScheduledPost(postId);
   const cancelPost = useCancelPost();
   const { toast } = useToast();
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const handleCancel = () => {
     cancelPost.mutate(postId, {
@@ -154,17 +158,30 @@ export default function ScheduledPostDetailPage({
                 {post.media_type}
               </Badge>
             </div>
-            {canCancel && (
-              <Button
-                variant='outline'
-                size='sm'
-                className='h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/5'
-                onClick={handleCancel}
-                disabled={cancelPost.isPending}
-              >
-                {cancelPost.isPending ? 'Cancelling…' : 'Cancel Post'}
-              </Button>
-            )}
+            <div className='flex items-center gap-2'>
+              {canCancel && (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='h-8 text-xs gap-1.5'
+                  onClick={() => setEditModalOpen(true)}
+                >
+                  <Pencil className='h-3.5 w-3.5' />
+                  Edit
+                </Button>
+              )}
+              {canCancel && (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/5'
+                  onClick={handleCancel}
+                  disabled={cancelPost.isPending}
+                >
+                  {cancelPost.isPending ? 'Cancelling…' : 'Cancel Post'}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Post details */}
@@ -241,6 +258,16 @@ export default function ScheduledPostDetailPage({
             <PostAnalyticsCard
               postId={postId}
               linkedAutomationId={post.linked_automation_id}
+            />
+          )}
+
+          {/* Edit modal */}
+          {canCancel && (
+            <SchedulePostModal
+              open={editModalOpen}
+              onClose={() => setEditModalOpen(false)}
+              editPost={post}
+              onSuccess={() => refetch()}
             />
           )}
         </>

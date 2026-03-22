@@ -8,12 +8,14 @@ import { BestTimePanel } from '@/components/scheduler/best-time-panel';
 import { BestTimeHeatmap } from '@/components/scheduler/BestTimeHeatmap';
 import { BulkScheduleUploader } from '@/components/scheduler/BulkScheduleUploader';
 import { SchedulePostModal } from '@/components/scheduler/schedule-post-modal';
+import { ScheduledPostsList } from '@/components/scheduler/scheduled-posts-list';
 import { usePublishingLimit } from '@/lib/hooks';
 import type {
   BestTimeRecommendation,
   ScheduledPost,
 } from '@/lib/api/scheduler';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 // ── Publishing limit bar ───────────────────────────────────────────────────────
 
@@ -63,6 +65,7 @@ function PublishingLimitBar() {
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function SchedulerPage() {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>();
 
@@ -71,8 +74,8 @@ export default function SchedulerPage() {
     setModalOpen(true);
   };
 
-  const handlePostClick = (_post: ScheduledPost) => {
-    // Future: open post detail drawer
+  const handlePostClick = (post: ScheduledPost) => {
+    router.push(`/dashboard/scheduler/${post.id}`);
   };
 
   const handleBestTimePick = (_rec: BestTimeRecommendation) => {
@@ -119,6 +122,9 @@ export default function SchedulerPage() {
           <BulkScheduleUploader />
         </aside>
       </div>
+
+      {/* Posts list */}
+      <ScheduledPostsList />
 
       {/* Schedule modal */}
       <SchedulePostModal
