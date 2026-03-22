@@ -447,58 +447,92 @@ export function ConfigureActionsStep({
                   ) : null}
 
                   {/* ── Per-action bot selector (only when AI is on) ────────── */}
-                  {hasAi && (
+                  {hasAi && bots.length === 0 && (
+                    <div className='mt-5 rounded-xl border-2 border-dashed border-warning/40 bg-warning/5 p-6 text-center'>
+                      <div className='mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10'>
+                        <BotIcon className='h-6 w-6 text-warning' />
+                      </div>
+                      <h4 className='text-sm font-bold text-foreground'>
+                        AI needs a bot to work
+                      </h4>
+                      <p className='mx-auto mt-1.5 max-w-xs text-xs text-muted-foreground'>
+                        Create an AI bot to power your auto-replies. You can
+                        configure its voice, knowledge base, and behavior.
+                      </p>
+                      <Button
+                        asChild
+                        size='sm'
+                        className='mt-4 h-9 px-5 font-semibold'
+                      >
+                        <Link href='/dashboard/intelligence/bots/new'>
+                          <Plus className='mr-2 h-4 w-4' />
+                          Create Your First Bot
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+
+                  {hasAi && bots.length > 0 && (
                     <div className='mt-5 rounded-lg border border-primary/20 bg-primary/5 p-4'>
-                      <div className='mb-3 flex items-center gap-2'>
-                        <BotIcon className='h-4 w-4 text-primary' />
-                        <h4 className='text-sm font-semibold text-primary'>
-                          AI Bot for this action
-                        </h4>
+                      <div className='mb-3 flex items-center justify-between'>
+                        <div className='flex items-center gap-2'>
+                          <BotIcon className='h-4 w-4 text-primary' />
+                          <h4 className='text-sm font-semibold text-primary'>
+                            AI Bot for this action
+                          </h4>
+                        </div>
+                        <Link
+                          href='/dashboard/intelligence/bots/new'
+                          className='text-xs text-primary hover:underline'
+                        >
+                          + New bot
+                        </Link>
                       </div>
 
-                      <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3'>
-                        <Select
-                          value={action.bot_id ?? ''}
-                          onValueChange={val => {
-                            const bot = bots.find(b => b._id === val);
-                            updateAction(index, {
-                              bot_id: val || undefined,
-                              bot_name: bot?.name,
-                            });
-                          }}
-                        >
-                          <SelectTrigger className='max-w-xs'>
-                            <SelectValue placeholder='Select a bot...' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {bots.map(bot => (
-                              <SelectItem key={bot._id} value={bot._id}>
-                                {bot.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <Select
+                        value={action.bot_id ?? ''}
+                        onValueChange={val => {
+                          const bot = bots.find(b => b._id === val);
+                          updateAction(index, {
+                            bot_id: val || undefined,
+                            bot_name: bot?.name,
+                          });
+                        }}
+                      >
+                        <SelectTrigger className='w-full sm:max-w-xs'>
+                          <SelectValue placeholder='Select a bot...' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bots.map(bot => (
+                            <SelectItem key={bot._id} value={bot._id}>
+                              <div className='flex items-center gap-2'>
+                                <BotIcon className='h-3.5 w-3.5 text-muted-foreground' />
+                                <span>{bot.name}</span>
+                                {bot.status === 'active' && (
+                                  <span className='ml-auto rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500'>
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                        {selectedBot && (
-                          <p className='text-xs text-muted-foreground'>
+                      {selectedBot && (
+                        <div className='mt-2.5 flex items-center gap-2 text-xs text-muted-foreground'>
+                          <span>
                             Using{' '}
                             <span className='font-medium text-foreground'>
                               {selectedBot.name}
                             </span>
-                          </p>
-                        )}
-                      </div>
-
-                      {bots.length === 0 && (
-                        <p className='mt-2 text-xs text-destructive'>
-                          No bots found.{' '}
-                          <Link
-                            href='/dashboard/intelligence/bots'
-                            className='underline'
-                          >
-                            Create one first.
-                          </Link>
-                        </p>
+                          </span>
+                          <span>·</span>
+                          <span>
+                            {creditCost} credit{creditCost !== 1 ? 's' : ''} per
+                            reply
+                          </span>
+                        </div>
                       )}
 
                       <div className='mt-2.5 flex gap-3 text-xs'>
