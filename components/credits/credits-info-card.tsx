@@ -20,7 +20,10 @@ export function CreditsInfoCard() {
   useEffect(() => {
     httpClient
       .get<CreditPricing>('/api/v1/credits/pricing')
-      .then(res => setPricing(res.data?.data ?? res.data))
+      .then(res => {
+        const d = res.data as { data?: CreditPricing } & CreditPricing;
+        setPricing(d?.data ?? d);
+      })
       .catch(() => {});
   }, []);
 
